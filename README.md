@@ -65,9 +65,15 @@ garage shelves" every 30 days). Overdue alerts surface on their own page.
 ```
 app/
   api/            REST endpoints (items, disposals, photos, stats, suggestions, alerts)
+  fonts.ts        self-hosted Inter + Instrument Serif via next/font/local
   items/          inventory list, add/edit form, item detail
   suggestions/    scored declutter candidates
   alerts/         recurring declutter prompts
+components/
+  icons.tsx       inline SVG icon set (no icon-font dependency)
+  ui.tsx          shared primitives: score gauge, stat tile, charts, empty state
+  NavLinks.tsx    sidebar nav with active-route highlighting
+fonts/            the .woff2 files themselves (committed, served via next/font)
 lib/
   db.ts           SQLite access layer (node:sqlite)
   schema.sql      the schema — single source of truth, read by app and seed
@@ -79,6 +85,22 @@ scripts/
 tests/
   scoring.test.ts
 ```
+
+### Design
+
+The UI is a custom design system, not default Tailwind:
+
+- **Type** — Inter for UI text, Instrument Serif for display headings. Both are
+  self-hosted in `fonts/` and served through `next/font/local`, so they are
+  fingerprinted, preloaded, and never require a network fetch at build or run time.
+- **Colour** — warm paper (`#f7f6f3`) ground, ink for text, moss for "keep",
+  clay for "get rid of". Every text/background pair clears WCAG AA (4.5:1),
+  verified per page.
+- **Layout** — persistent 256px sidebar on desktop, top bar plus bottom tab bar
+  on mobile. No horizontal overflow at 390px.
+- **Charts** — earnings are an SVG line/area chart with axis and gridlines;
+  declutter scores are donut gauges with severity-coloured strokes.
+
 
 ## Data
 
