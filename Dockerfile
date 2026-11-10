@@ -27,6 +27,9 @@ RUN mkdir -p /app/data/uploads && chown -R node:node /app/data
 COPY --from=builder --chown=node:node /app/public ./public
 # The schema is read from disk at runtime, so it must ship with the app.
 COPY --from=builder --chown=node:node /app/lib/schema.sql ./lib/schema.sql
+# The seed script ships too, so a fresh container can be populated with
+# sample data:  docker exec declutter node scripts/seed.mjs
+COPY --from=builder --chown=node:node /app/scripts/seed.mjs ./scripts/seed.mjs
 COPY --from=builder --chown=node:node /app/.next/standalone ./
 COPY --from=builder --chown=node:node /app/.next/static ./.next/static
 

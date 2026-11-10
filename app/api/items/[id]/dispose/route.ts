@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { disposeItem, getItem } from "@/lib/db";
 import type { Disposition } from "@/lib/db";
+import { apiUser } from "@/lib/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,9 +12,11 @@ type Ctx = { params: Promise<{ id: string }> };
 
 /** Mark an item as sold, donated, or disposed. */
 export async function POST(req: Request, { params }: Ctx) {
+  const user = await apiUser();
+  if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
   const { id } = await params;
   const itemId = Number(id);
-  if (!getItem(itemId)) return NextResponse.json({ error: "Item not found" }, { status: 404 });
+  if (!getItem(user.id, itemId)) return NextResponse.json({ error: "Item not found" }, { status: 404 });
 
   let body: Record<string, unknown>;
   try {
@@ -38,6 +41,6 @@ export async function POST(req: Request, { params }: Ctx) {
   // A donation or disposal has no price by default; only a sale earns money.
   const finalAmount = disposition === "sold" && Number.isFinite(amount) ? amount : 0;
 
-  const item = disposeItem(itemId, disposition, disposedAt, finalAmount, channel, notes);
+  const item = disposeItem(user.id, itemId, disposition, disposedAt, finalAmount, channel, notes);
   return NextResponse.json({ item });
 }

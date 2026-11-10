@@ -3,15 +3,15 @@
 Track every possession you own, get a nudge about what to get rid of, and keep
 a running record of what you sold, donated, and threw away.
 
-Built as a single-user self-hosted app: Next.js 15 (App Router) + SQLite via
-Node 22's built-in `node:sqlite`. No database server, no native modules, no
-external services.
+Built as a self-hosted app: Next.js 15 (App Router) + SQLite via Node 22's
+built-in `node:sqlite`. No database server, no native modules, no external
+services.
 
 ## Run it
 
 ```bash
 npm install
-npm run seed     # optional: 24 sample items so the screens aren't empty
+npm run seed     # optional: 28 sample items so the screens aren't empty
 npm run dev      # http://localhost:3000
 ```
 
@@ -21,6 +21,10 @@ Production:
 npm run build
 npm start
 ```
+
+The first thing you'll see is **Create an account**. The sample data is parked
+on a bootstrap account that can't log in — your first registration claims it,
+so you start with a populated app instead of an empty one.
 
 ## What it does
 
@@ -60,30 +64,83 @@ full disposal breakdown.
 **Alerts** — recurring declutter prompts on a cadence you choose ("review the
 garage shelves" every 30 days). Overdue alerts surface on their own page.
 
+## Accounts
+
+Everything — items, photos, disposals, stats, recommendations, alerts — belongs
+to an account. Two people can use the same server without seeing each other's
+inventory.
+
+**Registration and login** live at `/auth/register` and `/auth/login`. The
+first registration on a fresh database claims the seeded sample data; every
+account after that starts empty.
+
+**How the security works:**
+
+| Concern | How it's handled |
+|---|---|
+| Passwords | `scrypt` (N=16384, r=8, p=1) with a per-user random salt. Only the hash is stored. |
+| Sessions | 32 random bytes in an `httpOnly`, `sameSite=lax` cookie. Only the SHA-256 hash is stored in SQLite. |
+| Expiry | Sessions last 30 days and are purged server-side. |
+| Sign out | Destroys the session row server-side and clears the cookie — not just a client-side redirect. |
+| Authorization | Every query is scoped by owner id. A record belonging to another account returns 404, not 403, so ids don't leak. |
+| Photos | Uploaded files are named with the account id and are only served to their owner. A filename alone is never proof of ownership. |
+
+`middleware.ts` does a fast check for a missing session cookie and redirects
+unauthenticated page requests to the login screen. It is a convenience layer,
+**not** the security boundary — every page and API route independently resolves
+the session and enforces ownership server-side.
+
+**Cookie security** follows the request protocol, so local HTTP dev works and
+Caddy-terminated HTTPS still gets a `Secure` cookie:
+
+| Variable | Effect |
+|---|---|
+| (default) | `Secure` when the request arrives over HTTPS (including `x-forwarded-proto: https`) |
+| `DECLUTTER_FORCE_SECURE_COOKIE=1` | always set `Secure` |
+| `DECLUTTER_INSECURE_COOKIE=1` | never set `Secure` |
+
+**Environment variables**
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `DECLUTTER_DATA_DIR` | `./data` | where the SQLite DB and uploads live |
+| `DECLUTTER_FORCE_SECURE_COOKIE` | unset | force the `Secure` cookie flag |
+| `DECLUTTER_INSECURE_COOKIE` | unset | disable the `Secure` cookie flag |
+
 ## Layout
 
 ```
 app/
-  api/            REST endpoints (items, disposals, photos, stats, suggestions, alerts)
+  (app)/           account-gated pages (dashboard, items, suggestions, alerts)
+  auth/            login and registration
+  api/
+    auth/          login, register, session (login/register/logout)
+    items/         list, create, update, delete, restore, dispose, photo
+    photos/        owner-scoped photo serving
+    stats/         aggregates
+    suggestions/   scored candidates
+    alerts/        recurring prompts
   fonts.ts        self-hosted Inter + Instrument Serif via next/font/local
-  items/          inventory list, add/edit form, item detail
-  suggestions/    scored declutter candidates
-  alerts/         recurring declutter prompts
 components/
   icons.tsx       inline SVG icon set (no icon-font dependency)
   ui.tsx          shared primitives: score gauge, stat tile, charts, empty state
   NavLinks.tsx    sidebar nav with active-route highlighting
+  SignOutButton.tsx
 fonts/            the .woff2 files themselves (committed, served via next/font)
 lib/
-  db.ts           SQLite access layer (node:sqlite)
+  auth.ts         session resolution, cookies, server-side guards
+  password.ts     scrypt hashing (kept separate from next/headers so it's testable)
+  db.ts           SQLite access layer (node:sqlite), owner-scoped
   schema.sql      the schema — single source of truth, read by app and seed
   scoring.ts      the declutter heuristic
   stats.ts        stat aggregation
 scripts/
   seed.mjs        sample data
-  run-tests.mjs   scoring test runner
+  run-tests.mjs   test runner (scoring + auth suites)
 tests/
   scoring.test.ts
+  auth.test.ts
+middleware.ts     fast missing-cookie gate (not the security boundary)
 ```
 
 ### Design
@@ -113,13 +170,19 @@ Everything lives in `data/`:
 
 ## API
 
+All endpoints require a session cookie. Unauthenticated requests get `401`;
+pages redirect to `/auth/login`. Records owned by another account return `404`.
+
 | Method | Path | Purpose |
 |---|---|---|
+| POST | `/api/auth/register` | create an account (first one claims the sample data) |
+| POST | `/api/auth/login` | sign in |
+| GET/DELETE | `/api/auth/session` | current session / sign out |
 | GET/POST | `/api/items` | list / create |
 | GET/PATCH/DELETE/PUT | `/api/items/:id` | read / update / delete / restore |
 | POST | `/api/items/:id/dispose` | mark sold, donated, disposed |
 | POST | `/api/items/:id/photo` | upload a photo (multipart, field `photo`) |
-| GET | `/api/photos/:name` | serve a photo |
+| GET | `/api/photos/:name` | serve a photo (owner only) |
 | GET | `/api/stats` | all aggregate stats |
 | GET | `/api/suggestions?min=N` | scored candidates |
 | GET/POST/PATCH/DELETE | `/api/alerts` | recurring declutter prompts |
@@ -130,13 +193,45 @@ Everything lives in `data/`:
 npm test
 ```
 
-16 assertions over the scoring engine — signal weighting, manual overrides,
-duplicate detection, seasonal logic, and date handling.
+Two suites, 53 assertions:
+
+- **scoring** (21) — signal weighting, manual overrides, duplicate detection,
+  seasonal logic, and date handling.
+- **auth** (32) — password hashing and verification, hashed session storage,
+  session expiry, cross-account denial on read/update/delete/photo-lookup, and
+  bootstrap-data claiming. Runs against a throwaway database in a temp
+  directory, so it never touches your real data.
+
+## Seeding
+
+```bash
+npm run seed              # wipe and reseed, parked on the bootstrap account
+npm run seed -- keep      # keep existing rows, add sample data on top
+npm run seed -- you@x.com # attach the data to an existing account
+```
+
+In Docker:
+
+```bash
+docker exec declutter node scripts/seed.mjs
+```
 
 ## Deploying
 
 There's a `Dockerfile` and `docker-compose.yml` ready. It runs on host port
-5010 with `./data` bind-mounted for persistence. To put it behind Caddy on
-`declutter.tomjt.com`, add the site block and a Porkbun A record, and add
-server-side auth — the app has no authentication of its own, so don't publish
-it without one.
+5010 with `./data` bind-mounted for persistence, as uid 1000 so the bind mount
+stays writable without chowning inside the container. The image ships the
+schema and the seed script.
+
+To put it behind Caddy on `declutter.tomjt.com`:
+
+1. Add a Porkbun A record for `declutter.tomjt.com`.
+2. Add a Caddy site block proxying to the container.
+3. Change the Compose port mapping to `127.0.0.1:5010:3000` so only Caddy can
+   reach the backend.
+
+The app has server-side authentication and per-account isolation, so it is no
+longer publishable-without-auth. Two things to sort out before exposing it
+publicly: the sample data should be reseeded or removed, and you should
+confirm the cookie's `Secure` flag is being set (it follows the request
+protocol, so it will be behind Caddy).

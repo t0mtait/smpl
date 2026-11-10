@@ -13,6 +13,10 @@ export default function AlertsClient() {
 
   const load = async () => {
     const res = await fetch("/api/alerts");
+    if (res.status === 401) {
+      window.location.href = "/auth/login?next=/alerts";
+      return;
+    }
     const data = await res.json();
     setAlerts(data.alerts ?? []);
   };

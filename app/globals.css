@@ -24,7 +24,7 @@
 
   body {
     @apply text-ink;
-    font-family: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
     font-feature-settings: "cv11", "ss01";
     background-color: var(--paper);
   }
@@ -53,7 +53,7 @@
   /* Display headings use the serif — this is what gives the app a voice
      instead of looking like every other Tailwind dashboard. */
   .display {
-    font-family: var(--font-serif), ui-serif, Georgia, serif;
+    font-family: var(--font-display), ui-serif, Georgia, serif;
     @apply font-normal tracking-[-0.015em] text-ink;
   }
 

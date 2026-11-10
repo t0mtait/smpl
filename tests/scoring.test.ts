@@ -4,6 +4,7 @@ import type { Item } from "../lib/db";
 function makeItem(overrides: Partial<Item> = {}): Item {
   return {
     id: 1,
+    ownerId: 1,
     name: "Test item",
     category: "misc",
     description: "",

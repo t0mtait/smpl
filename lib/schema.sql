@@ -1,8 +1,36 @@
 -- Schema for the declutter app.
 -- Single source of truth: lib/db.ts reads this at runtime, scripts/seed.mjs too.
+--
+-- Every row that belongs to a person is owned by exactly one account:
+-- items.owner_id and alerts.owner_id point at users.id. Disposals hang off an
+-- item, so they inherit the owner through that join and carry no owner column
+-- of their own (one source of truth, no drift).
+
+CREATE TABLE IF NOT EXISTS users (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  email         TEXT    NOT NULL UNIQUE,
+  name          TEXT    NOT NULL DEFAULT '',
+  password_hash TEXT    NOT NULL DEFAULT '',
+  -- A bootstrap account holds data that predates accounts. It has no
+  -- password, cannot log in, and is claimed by the first real registration.
+  is_bootstrap  INTEGER NOT NULL DEFAULT 0,
+  created_at    TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS sessions (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_hash TEXT    NOT NULL UNIQUE,
+  expires_at TEXT    NOT NULL,
+  created_at TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token_hash);
+CREATE INDEX IF NOT EXISTS idx_sessions_user  ON sessions(user_id);
 
 CREATE TABLE IF NOT EXISTS items (
   id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  owner_id        INTEGER REFERENCES users(id),
   name            TEXT    NOT NULL,
   category        TEXT    NOT NULL DEFAULT 'uncategorized',
   description     TEXT    NOT NULL DEFAULT '',
@@ -39,6 +67,7 @@ CREATE INDEX IF NOT EXISTS idx_disposals_at   ON disposals(disposed_at);
 
 CREATE TABLE IF NOT EXISTS alerts (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  owner_id     INTEGER REFERENCES users(id),
   label        TEXT    NOT NULL,
   cadence_days INTEGER NOT NULL DEFAULT 30,
   next_due     TEXT    NOT NULL,

@@ -4,6 +4,7 @@ import { getItem, listDisposals, listItems } from "@/lib/db";
 import { scoreItem, findDuplicateItemIds } from "@/lib/scoring";
 import { formatDate, formatMoney, FREQUENCY_LABELS, relativeDays, STATUS_LABELS, STATUS_STYLES } from "@/lib/format";
 import { daysSince } from "@/lib/scoring";
+import { requireUser } from "@/lib/auth";
 import { ItemPhoto, ScoreRing } from "@/components/ui";
 import { IconArrowLeft, IconPencil } from "@/components/icons";
 import ItemActions from "./ItemActions";
@@ -12,12 +13,13 @@ export const dynamic = "force-dynamic";
 
 export default async function ItemPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const item = getItem(Number(id));
+  const user = await requireUser(`/items/${id}`);
+  const item = getItem(user.id, Number(id));
   if (!item) notFound();
 
-  const disposals = listDisposals().filter((d) => d.itemId === item.id);
+  const disposals = listDisposals(user.id).filter((d) => d.itemId === item.id);
   // Duplicate detection needs the whole owned set, not just this item.
-  const owned = listItems().filter((i) => i.status === "owned");
+  const owned = listItems(user.id).filter((i) => i.status === "owned");
   const scored = scoreItem(item, findDuplicateItemIds(owned));
 
   const facts: { label: string; value: React.ReactNode }[] = [

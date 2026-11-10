@@ -3,6 +3,7 @@ import { getStats } from "@/lib/stats";
 import { scoreAll } from "@/lib/scoring";
 import { listItems } from "@/lib/db";
 import { formatMoney, relativeDays } from "@/lib/format";
+import { requireUser } from "@/lib/auth";
 import { BarRow, EarningsChart, ItemPhoto, ScoreRing, StatTile } from "@/components/ui";
 import {
   IconBox,
@@ -21,9 +22,10 @@ const DISPOSITION_META: Record<string, { icon: React.ReactNode; tone: string; la
   disposed: { icon: <IconRecycle width={16} height={16} />, tone: "bg-clay-50 text-clay-500", label: "Disposed" },
 };
 
-export default function DashboardPage() {
-  const stats = getStats();
-  const suggestions = scoreAll(listItems()).filter((s) => s.score > 0).slice(0, 5);
+export default async function DashboardPage() {
+  const user = await requireUser();
+  const stats = getStats(user.id);
+  const suggestions = scoreAll(listItems(user.id)).filter((s) => s.score > 0).slice(0, 5);
   const maxCatValue = Math.max(1, ...stats.byCategory.map((c) => c.value));
   const goneCount = stats.soldItems + stats.donatedItems + stats.disposedItems;
 

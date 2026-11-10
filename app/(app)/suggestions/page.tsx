@@ -3,6 +3,7 @@ import { listItems } from "@/lib/db";
 import { scoreAll } from "@/lib/scoring";
 import type { ScoredItem } from "@/lib/scoring";
 import { formatMoney, relativeDays } from "@/lib/format";
+import { requireUser } from "@/lib/auth";
 import { ItemPhoto, ScoreRing } from "@/components/ui";
 import { IconCheck, IconSparkles } from "@/components/icons";
 
@@ -108,8 +109,9 @@ function Section({
   );
 }
 
-export default function SuggestionsPage() {
-  const scored = scoreAll(listItems());
+export default async function SuggestionsPage() {
+  const user = await requireUser();
+  const scored = scoreAll(listItems(user.id));
   const strong = scored.filter((s) => s.score >= 40);
   const moderate = scored.filter((s) => s.score > 0 && s.score < 40);
   const keep = scored.filter((s) => s.score === 0);

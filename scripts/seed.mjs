@@ -1,11 +1,16 @@
 /**
  * Seed the declutter database with realistic sample data.
  *
- *   npm run seed          # wipe and reseed
- *   npm run seed -- keep  # keep existing rows, add sample data on top
+ *   npm run seed                # wipe and reseed (parks data on the bootstrap account)
+ *   npm run seed -- keep        # keep existing rows, add sample data on top
+ *   npm run seed -- you@x.com   # attach the data to an existing account
  *
  * The schema comes from lib/schema.sql — the same file the app reads — so
  * seed and runtime can never drift.
+ *
+ * Ownership: seeded rows belong to an account. With no email argument the
+ * data is parked on the non-loginable bootstrap account, and the first real
+ * registration claims it. Pass an email to seed straight into that account.
  */
 import { DatabaseSync } from "node:sqlite";
 import fs from "node:fs";
@@ -15,6 +20,9 @@ const ROOT = process.cwd();
 const DATA_DIR = path.join(ROOT, "data");
 const DB_PATH = path.join(DATA_DIR, "declutter.db");
 const keepExisting = process.argv.includes("keep");
+const emailArg = process.argv.find(
+  (a) => a.includes("@") && !a.startsWith("--")
+);
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
 fs.mkdirSync(path.join(DATA_DIR, "uploads"), { recursive: true });
@@ -24,6 +32,33 @@ db.exec("PRAGMA journal_mode = WAL;");
 db.exec("PRAGMA foreign_keys = ON;");
 db.exec(fs.readFileSync(path.join(ROOT, "lib", "schema.sql"), "utf8"));
 
+/* ------------------------------------------------------------- owner */
+
+const BOOTSTRAP_EMAIL = "bootstrap@declutter.invalid";
+
+function resolveOwnerId() {
+  if (emailArg) {
+    const email = emailArg.trim().toLowerCase();
+    const row = db.prepare("SELECT id FROM users WHERE email = ? COLLATE NOCASE").get(email);
+    if (!row) {
+      console.error(`No account found for ${email}. Register it in the app first.`);
+      process.exit(1);
+    }
+    return Number(row.id);
+  }
+  // Bootstrap account — cannot log in, exists so pre-account data has a home.
+  const existing = db.prepare("SELECT id FROM users WHERE is_bootstrap = 1 LIMIT 1").get();
+  if (existing) return Number(existing.id);
+  const res = db
+    .prepare(
+      "INSERT INTO users (email, name, password_hash, is_bootstrap) VALUES (?, ?, '', 1)"
+    )
+    .run(BOOTSTRAP_EMAIL, "Previous owner");
+  return Number(res.lastInsertRowid);
+}
+
+const ownerId = resolveOwnerId();
+
 if (!keepExisting) {
   db.exec("DELETE FROM disposals; DELETE FROM items; DELETE FROM alerts;");
 }
@@ -31,9 +66,9 @@ if (!keepExisting) {
 const daysAgo = (n) => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
 
 const insert = db.prepare(
-  `INSERT INTO items (name, category, description, location, purchase_date, purchase_price,
+  `INSERT INTO items (owner_id, name, category, description, location, purchase_date, purchase_price,
                        current_value, status, last_used_at, use_frequency, priority, created_at)
-   VALUES (?, ?, ?, ?, ?, ?, ?, 'owned', ?, ?, ?, datetime('now'))`
+   VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'owned', ?, ?, ?, datetime('now'))`
 );
 
 // [name, category, description, location, age, paid, value, idleDays, frequency, priority]
@@ -64,12 +99,16 @@ for (const [name, category, description, location, age, paid, value, idle, freq,
   // A "never used" item has no last-used date at all — that is the whole
   // point of the never-used signal.
   const lastUsed = freq === "never" ? null : daysAgo(idle);
-  insert.run(name, category, description, location, daysAgo(age), paid, value, lastUsed, freq, prio);
+  insert.run(
+    ownerId, name, category, description, location, daysAgo(age), paid, value,
+    lastUsed, freq, prio
+  );
 }
 
 // Two grinders — the duplicate signal should catch these.
 for (const i of [1, 2]) {
   insert.run(
+    ownerId,
     `Coffee grinder ${i}`,
     "kitchen",
     i === 1 ? "The good one" : "Backup, never used",
@@ -95,15 +134,20 @@ const gone = [
 
 const ids = new Map();
 for (const [name, category, description, location, age, paid, value, idle] of gone) {
-  insert.run(name, category, description, location, daysAgo(age), paid, value, daysAgo(idle), "rare", "auto");
-  const row = db.prepare("SELECT id FROM items WHERE name = ? ORDER BY id DESC LIMIT 1").get(name);
+  insert.run(
+    ownerId, name, category, description, location, daysAgo(age), paid, value,
+    daysAgo(idle), "rare", "auto"
+  );
+  const row = db
+    .prepare("SELECT id FROM items WHERE owner_id = ? AND name = ? ORDER BY id DESC LIMIT 1")
+    .get(ownerId, name);
   ids.set(name, row.id);
 }
 
 const dispose = db.prepare(
   `INSERT INTO disposals (item_id, disposition, disposed_at, amount, channel, notes) VALUES (?, ?, ?, ?, ?, ?)`
 );
-const setStatus = db.prepare("UPDATE items SET status = ? WHERE id = ?");
+const setStatus = db.prepare("UPDATE items SET status = ? WHERE id = ? AND owner_id = ?");
 
 // Disposals are spread over the last several months so the earnings chart
 // has something to show.
@@ -120,21 +164,32 @@ for (const [name, disposition, age, amount, value, channel, notes] of disposals)
   const id = ids.get(name);
   if (!id) continue;
   dispose.run(id, disposition, daysAgo(age), amount, channel, notes);
-  setStatus.run(disposition, id);
+  setStatus.run(disposition, id, ownerId);
 }
 
-const alert = db.prepare("INSERT INTO alerts (label, cadence_days, next_due) VALUES (?, ?, ?)");
-alert.run("Review the garage shelves", 30, daysAgo(2));
-alert.run("Reconsider the winter gear", 90, daysAgo(1));
-alert.run("One-in, one-out check on purchases", 14, daysAgo(10));
+const alert = db.prepare(
+  "INSERT INTO alerts (owner_id, label, cadence_days, next_due) VALUES (?, ?, ?, ?)"
+);
+alert.run(ownerId, "Review the garage shelves", 30, daysAgo(2));
+alert.run(ownerId, "Reconsider the winter gear", 90, daysAgo(1));
+alert.run(ownerId, "One-in, one-out check on purchases", 14, daysAgo(10));
 
 const counts = {
-  items: db.prepare("SELECT COUNT(*) c FROM items").get().c,
-  disposals: db.prepare("SELECT COUNT(*) c FROM disposals").get().c,
-  alerts: db.prepare("SELECT COUNT(*) c FROM alerts").get().c,
-  sales: db.prepare("SELECT COALESCE(SUM(amount),0) s FROM disposals WHERE disposition='sold'").get().s,
+  items: db.prepare("SELECT COUNT(*) c FROM items WHERE owner_id = ?").get(ownerId).c,
+  disposals: db
+    .prepare(
+      "SELECT COUNT(*) c FROM disposals d JOIN items i ON i.id = d.item_id WHERE i.owner_id = ?"
+    )
+    .get(ownerId).c,
+  alerts: db.prepare("SELECT COUNT(*) c FROM alerts WHERE owner_id = ?").get(ownerId).c,
+  sales: db
+    .prepare(
+      "SELECT COALESCE(SUM(d.amount),0) s FROM disposals d JOIN items i ON i.id = d.item_id WHERE d.disposition='sold' AND i.owner_id = ?"
+    )
+    .get(ownerId).s,
 };
 
-console.log(`Seeded ${counts.items} items, ${counts.disposals} disposals, ${counts.alerts} alerts.`);
+const ownerLabel = emailArg ? emailArg.trim().toLowerCase() : "the bootstrap account (first registration claims it)";
+console.log(`Seeded ${counts.items} items, ${counts.disposals} disposals, ${counts.alerts} alerts for ${ownerLabel}.`);
 console.log(`Lifetime sales earnings: $${counts.sales}`);
 db.close();

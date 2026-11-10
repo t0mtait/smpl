@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createItem, listItems } from "@/lib/db";
 import type { ItemInput, ItemStatus, Priority, UseFrequency } from "@/lib/db";
+import { apiUser } from "@/lib/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,7 +19,9 @@ const FREQUENCIES: UseFrequency[] = [
 const PRIORITIES: Priority[] = ["auto", "keep", "get_rid"];
 
 export async function GET() {
-  return NextResponse.json({ items: listItems() });
+  const user = await apiUser();
+  if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  return NextResponse.json({ items: listItems(user.id) });
 }
 
 function parseInput(body: Record<string, unknown>): ItemInput {
@@ -52,6 +55,9 @@ function parseInput(body: Record<string, unknown>): ItemInput {
 }
 
 export async function POST(req: Request) {
+  const user = await apiUser();
+  if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+
   let body: Record<string, unknown>;
   try {
     body = (await req.json()) as Record<string, unknown>;
@@ -61,6 +67,6 @@ export async function POST(req: Request) {
   if (!body.name || typeof body.name !== "string" || !body.name.trim()) {
     return NextResponse.json({ error: "name is required" }, { status: 400 });
   }
-  const item = createItem(parseInput(body));
+  const item = createItem(user.id, parseInput(body));
   return NextResponse.json({ item }, { status: 201 });
 }

@@ -21,6 +21,10 @@ function InventoryInner() {
   const load = async () => {
     try {
       const res = await fetch("/api/items");
+      if (res.status === 401) {
+        window.location.href = "/auth/login?next=/items";
+        return;
+      }
       const data = await res.json();
       setItems(data.items ?? []);
       setError(null);

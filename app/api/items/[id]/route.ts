@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { deleteItem, getItem, restoreItem, updateItem } from "@/lib/db";
 import type { ItemStatus, Priority, UseFrequency } from "@/lib/db";
+import { apiUser } from "@/lib/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -8,16 +9,20 @@ export const dynamic = "force-dynamic";
 type Ctx = { params: Promise<{ id: string }> };
 
 export async function GET(_req: Request, { params }: Ctx) {
+  const user = await apiUser();
+  if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
   const { id } = await params;
-  const item = getItem(Number(id));
+  const item = getItem(user.id, Number(id));
   if (!item) return NextResponse.json({ error: "Item not found" }, { status: 404 });
   return NextResponse.json({ item });
 }
 
 export async function PATCH(req: Request, { params }: Ctx) {
+  const user = await apiUser();
+  if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
   const { id } = await params;
   const itemId = Number(id);
-  if (!getItem(itemId)) return NextResponse.json({ error: "Item not found" }, { status: 404 });
+  if (!getItem(user.id, itemId)) return NextResponse.json({ error: "Item not found" }, { status: 404 });
 
   let body: Record<string, unknown>;
   try {
@@ -61,22 +66,26 @@ export async function PATCH(req: Request, { params }: Ctx) {
     patch.photoPath = body.photoPath || null;
   }
 
-  const item = updateItem(itemId, patch);
+  const item = updateItem(user.id, itemId, patch);
   return NextResponse.json({ item });
 }
 
 /** Delete an item outright (with its disposal history). */
 export async function DELETE(_req: Request, { params }: Ctx) {
+  const user = await apiUser();
+  if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
   const { id } = await params;
-  const ok = deleteItem(Number(id));
+  const ok = deleteItem(user.id, Number(id));
   if (!ok) return NextResponse.json({ error: "Item not found" }, { status: 404 });
   return NextResponse.json({ ok: true });
 }
 
 /** Restore a sold/donated/disposed item back to owned. */
 export async function PUT(_req: Request, { params }: Ctx) {
+  const user = await apiUser();
+  if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
   const { id } = await params;
-  const item = restoreItem(Number(id));
+  const item = restoreItem(user.id, Number(id));
   if (!item) return NextResponse.json({ error: "Item not found" }, { status: 404 });
   return NextResponse.json({ item });
 }

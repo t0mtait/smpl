@@ -129,6 +129,6 @@ export function computeStats(items: Item[], disposals: Disposal[]): Stats {
   };
 }
 
-export function getStats(): Stats {
-  return computeStats(listItems(), listDisposals());
+export function getStats(ownerId: number): Stats {
+  return computeStats(listItems(ownerId), listDisposals(ownerId));
 }
