@@ -4,9 +4,16 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { Disposition, Item } from "@/lib/db";
-import { formatDate, formatMoney, FREQUENCY_LABELS, STATUS_LABELS, STATUS_STYLES } from "@/lib/format";
+import { formatDate, formatMoney, STATUS_LABELS, STATUS_STYLES } from "@/lib/format";
+import { IconCash, IconHeart, IconPencil, IconRecycle, IconTrash, IconUndo } from "@/components/icons";
 
 const CHANNELS = ["eBay", "Facebook Marketplace", "Craigslist", "Poshmark", "OfferUp", "Buy Nothing", "Other"];
+
+const OUTCOMES: { value: Disposition; label: string; icon: React.ReactNode }[] = [
+  { value: "sold", label: "Sold", icon: <IconCash width={15} height={15} /> },
+  { value: "donated", label: "Donated", icon: <IconHeart width={15} height={15} /> },
+  { value: "disposed", label: "Disposed", icon: <IconRecycle width={15} height={15} /> },
+];
 
 export default function ItemActions({ item }: { item: Item }) {
   const router = useRouter();
@@ -64,52 +71,68 @@ export default function ItemActions({ item }: { item: Item }) {
 
   if (item.status !== "owned") {
     return (
-      <div className="card space-y-3">
-        <div className="flex items-center justify-between">
-          <span className={`pill ${STATUS_STYLES[item.status]}`}>
-            {STATUS_LABELS[item.status]} {formatDate(item.lastUsedAt)}
-          </span>
+      <section className="card p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <span className={`pill ${STATUS_STYLES[item.status]}`}>
+              {STATUS_LABELS[item.status]} {formatDate(item.lastUsedAt)}
+            </span>
+            <p className="mt-2 text-[13px] text-muted">
+              Restoring returns this item to “owned” and removes the disposal record.
+            </p>
+          </div>
           <button className="btn-secondary" onClick={restore} disabled={busy}>
+            <IconUndo width={15} height={15} />
             Put back in my inventory
           </button>
         </div>
-        <p className="text-xs text-ink-400">
-          Restoring returns this item to “owned” and removes the disposal record.
-        </p>
-      </div>
+      </section>
     );
   }
 
   return (
-    <div className="card space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-semibold">Get rid of it</h2>
-        {!open && (
+    <section className="card overflow-hidden">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-6 py-4">
+        <h2 className="display text-lg">Get rid of it</h2>
+        {!open ? (
           <button className="btn-clay" onClick={() => setOpen(true)}>
+            <IconRecycle width={15} height={15} />
             Mark as sold / donated / disposed
           </button>
-        )}
+        ) : null}
       </div>
 
-      {open && (
-        <form onSubmit={submit} className="space-y-4 border-t border-ink-100 pt-4">
-          {error && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>}
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div>
-              <label className="label" htmlFor="disposition">
-                Outcome
-              </label>
-              <select
-                id="disposition"
-                className="input"
-                value={disposition}
-                onChange={(e) => setDisposition(e.target.value as Disposition)}
-              >
-                <option value="sold">Sold</option>
-                <option value="donated">Donated</option>
-                <option value="disposed">Disposed</option>
-              </select>
+      {open ? (
+        <form onSubmit={submit} className="space-y-5 p-6">
+          {error ? (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              {error}
             </div>
+          ) : null}
+
+          <div>
+            <span className="label">Outcome</span>
+            <div className="flex flex-wrap gap-2">
+              {OUTCOMES.map((o) => (
+                <button
+                  key={o.value}
+                  type="button"
+                  onClick={() => setDisposition(o.value)}
+                  aria-pressed={disposition === o.value}
+                  className={`btn border ${
+                    disposition === o.value
+                      ? "border-ink bg-ink text-paper"
+                      : "border-line bg-card text-ink-600 hover:border-ink-300"
+                  }`}
+                >
+                  {o.icon}
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-3">
             <div>
               <label className="label" htmlFor="amount">
                 Amount ($)
@@ -156,7 +179,7 @@ export default function ItemActions({ item }: { item: Item }) {
                 ))}
               </select>
             </div>
-            <div className="sm:col-span-2">
+            <div className="sm:col-span-3">
               <label className="label" htmlFor="notes">
                 Notes
               </label>
@@ -169,7 +192,8 @@ export default function ItemActions({ item }: { item: Item }) {
               />
             </div>
           </div>
-          <div className="flex gap-3">
+
+          <div className="flex gap-2">
             <button type="submit" className="btn-moss" disabled={busy}>
               {busy ? "Saving…" : "Record it"}
             </button>
@@ -178,16 +202,18 @@ export default function ItemActions({ item }: { item: Item }) {
             </button>
           </div>
         </form>
-      )}
+      ) : null}
 
-      <div className="flex items-center justify-between border-t border-ink-100 pt-4">
+      <div className="flex items-center justify-between gap-3 border-t border-line px-6 py-4">
         <Link href={`/items/${item.id}/edit`} className="btn-secondary">
+          <IconPencil width={15} height={15} />
           Edit details
         </Link>
         <button className="btn-danger" onClick={remove} disabled={busy}>
+          <IconTrash width={15} height={15} />
           Delete permanently
         </button>
       </div>
-    </div>
+    </section>
   );
 }

@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Item, Priority, UseFrequency } from "@/lib/db";
 import { CATEGORIES, FREQUENCY_LABELS } from "@/lib/format";
+import { IconCamera } from "@/components/icons";
 
 interface Props {
   item?: Item | null;
@@ -90,12 +91,14 @@ export default function ItemForm({ item }: Props) {
   };
 
   return (
-    <form onSubmit={submit} className="space-y-6">
-      {error && <div className="card border-red-200 bg-red-50 text-sm text-red-700">{error}</div>}
+    <form onSubmit={submit} className="space-y-5">
+      {error ? (
+        <div className="card border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
+      ) : null}
 
-      <section className="card space-y-4">
-        <h2 className="font-semibold">The basics</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
+      <section className="card p-6">
+        <h2 className="display text-lg">The basics</h2>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <label className="label" htmlFor="name">
               Name *
@@ -149,9 +152,9 @@ export default function ItemForm({ item }: Props) {
         </div>
       </section>
 
-      <section className="card space-y-4">
-        <h2 className="font-semibold">Money</h2>
-        <div className="grid gap-4 sm:grid-cols-3">
+      <section className="card p-6">
+        <h2 className="display text-lg">Money</h2>
+        <div className="mt-5 grid gap-4 sm:grid-cols-3">
           <div>
             <label className="label" htmlFor="purchaseDate">
               Purchase date
@@ -195,9 +198,9 @@ export default function ItemForm({ item }: Props) {
         </div>
       </section>
 
-      <section className="card space-y-4">
-        <h2 className="font-semibold">Usage</h2>
-        <div className="grid gap-4 sm:grid-cols-3">
+      <section className="card p-6">
+        <h2 className="display text-lg">Usage</h2>
+        <div className="mt-5 grid gap-4 sm:grid-cols-3">
           <div>
             <label className="label" htmlFor="lastUsedAt">
               Last used
@@ -245,38 +248,45 @@ export default function ItemForm({ item }: Props) {
         </div>
       </section>
 
-      <section className="card space-y-3">
-        <h2 className="font-semibold">Photo</h2>
-        {photoPreview && (
-          <div className="h-40 w-40 overflow-hidden rounded-lg bg-ink-100">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={photoPreview} alt="Item preview" className="h-full w-full object-cover" />
+      <section className="card p-6">
+        <h2 className="display text-lg">Photo</h2>
+        <div className="mt-5 flex flex-wrap items-center gap-4">
+          <div className="h-28 w-28 overflow-hidden rounded-xl border border-line bg-paper">
+            {photoPreview ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={photoPreview} alt="Item preview" className="h-full w-full object-cover" />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-ink-400">
+                <IconCamera width={22} height={22} />
+              </div>
+            )}
           </div>
-        )}
-        <div className="flex flex-wrap items-center gap-3">
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => handleFile(e.target.files?.[0])}
-          />
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={() => fileRef.current?.click()}
-            disabled={!item}
-            title={item ? undefined : "Save the item first, then add a photo"}
-          >
-            {photoPreview ? "Replace photo" : "Upload photo"}
-          </button>
-          {!item && (
-            <span className="text-xs text-ink-400">Save the item first to attach a photo.</span>
-          )}
+          <div className="flex flex-col gap-2">
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => handleFile(e.target.files?.[0])}
+            />
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => fileRef.current?.click()}
+              disabled={!item}
+              title={item ? undefined : "Save the item first, then add a photo"}
+            >
+              <IconCamera width={15} height={15} />
+              {photoPreview ? "Replace photo" : "Upload photo"}
+            </button>
+            {!item ? (
+              <span className="text-xs text-muted">Save the item first to attach a photo.</span>
+            ) : null}
+          </div>
         </div>
       </section>
 
-      <div className="flex gap-3">
+      <div className="flex gap-2">
         <button type="submit" className="btn-primary" disabled={saving}>
           {saving ? "Saving…" : item ? "Save changes" : "Add item"}
         </button>

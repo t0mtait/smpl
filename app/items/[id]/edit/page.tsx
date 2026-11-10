@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getItem } from "@/lib/db";
+import { IconArrowLeft } from "@/components/icons";
 import ItemForm from "../../ItemForm";
 
 export const dynamic = "force-dynamic";
@@ -10,15 +11,18 @@ export default async function EditItemPage({ params }: { params: Promise<{ id: s
   const item = getItem(Number(id));
   if (!item) notFound();
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Edit {item.name}</h1>
-          <Link href={`/items/${item.id}`} className="mt-1 inline-block text-sm text-ink-500 hover:underline">
-            ← Back to item
-          </Link>
-        </div>
-      </div>
+    <div className="mx-auto max-w-3xl space-y-7">
+      <header className="animate-rise">
+        <p className="eyebrow">Edit</p>
+        <h1 className="display mt-2 text-4xl leading-[1.1]">{item.name}</h1>
+        <Link
+          href={`/items/${item.id}`}
+          className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-muted transition-colors hover:text-ink"
+        >
+          <IconArrowLeft width={15} height={15} />
+          Back to item
+        </Link>
+      </header>
       <ItemForm item={item} />
     </div>
   );

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { Alert } from "@/lib/db";
 import { formatDate } from "@/lib/format";
+import { IconBell, IconPlus, IconTrash } from "@/components/icons";
 
 export default function AlertsClient() {
   const [alerts, setAlerts] = useState<Alert[] | null>(null);
@@ -64,27 +65,38 @@ export default function AlertsClient() {
   const Row = ({ alert }: { alert: Alert }) => {
     const overdue = alert.active && alert.nextDue <= today;
     return (
-      <li className="flex flex-wrap items-center justify-between gap-3 py-3">
-        <div>
-          <p className={`font-medium ${!alert.active ? "text-ink-400 line-through" : ""}`}>
+      <li className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
+        <div className="min-w-0">
+          <p
+            className={`font-medium ${
+              !alert.active ? "text-muted line-through" : "text-ink"
+            }`}
+          >
             {alert.label}
           </p>
-          <p className="text-xs text-ink-400">
-            {overdue ? "Due now" : `Next ${formatDate(alert.nextDue)}`} · every {alert.cadenceDays}{" "}
-            day{alert.cadenceDays === 1 ? "" : "s"}
+          <p className="mt-0.5 text-[13px] text-muted">
+            {overdue ? "Due now" : `Next ${formatDate(alert.nextDue)}`} · every{" "}
+            {alert.cadenceDays} day{alert.cadenceDays === 1 ? "" : "s"}
           </p>
         </div>
-        <div className="flex gap-2">
-          {overdue && (
+        <div className="flex shrink-0 gap-2">
+          {overdue ? (
             <button className="btn-moss" onClick={() => act(alert.id, "snooze")}>
               Done for now
             </button>
-          )}
-          <button className="btn-secondary" onClick={() => act(alert.id, "toggle", !alert.active)}>
+          ) : null}
+          <button
+            className="btn-secondary"
+            onClick={() => act(alert.id, "toggle", !alert.active)}
+          >
             {alert.active ? "Pause" : "Resume"}
           </button>
-          <button className="btn-danger" onClick={() => remove(alert.id)}>
-            Delete
+          <button
+            className="btn-danger"
+            onClick={() => remove(alert.id)}
+            aria-label={`Delete ${alert.label}`}
+          >
+            <IconTrash width={15} height={15} />
           </button>
         </div>
       </li>
@@ -92,16 +104,17 @@ export default function AlertsClient() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Declutter alerts</h1>
-        <p className="mt-1 max-w-2xl text-sm text-ink-500">
-          Recurring prompts to keep the pile down. “Reconsider the camping gear” every quarter is
-          more effective than a one-time purge.
+    <div className="space-y-8">
+      <header className="animate-rise">
+        <p className="eyebrow">Alerts</p>
+        <h1 className="display mt-2 text-4xl leading-[1.1] sm:text-5xl">Keep the pile down</h1>
+        <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-muted">
+          Recurring prompts to stay on top of it. “Reconsider the camping gear” every quarter
+          beats a heroic one-time purge.
         </p>
-      </div>
+      </header>
 
-      <form onSubmit={create} className="card flex flex-wrap items-end gap-3">
+      <form onSubmit={create} className="card flex flex-wrap items-end gap-3 p-5">
         <div className="min-w-[240px] flex-1">
           <label className="label" htmlFor="label">
             Alert
@@ -130,17 +143,27 @@ export default function AlertsClient() {
           />
         </div>
         <button type="submit" className="btn-primary">
+          <IconPlus width={15} height={15} />
           Add alert
         </button>
       </form>
-      {error && <div className="card border-red-200 bg-red-50 text-sm text-red-700">{error}</div>}
 
-      <section className="card">
-        <h2 className="mb-2 font-semibold text-clay-600">Due now ({due.length})</h2>
+      {error ? (
+        <div className="card border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
+      ) : null}
+
+      <section className="card overflow-hidden">
+        <div className="flex items-center gap-3 border-b border-line px-6 py-4">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-clay-50 text-clay-500">
+            <IconBell width={15} height={15} />
+          </span>
+          <h2 className="display text-lg">Due now</h2>
+          <span className="pill bg-clay-50 text-clay-600 ml-auto">{due.length}</span>
+        </div>
         {due.length === 0 ? (
-          <p className="py-4 text-sm text-ink-400">Nothing due. Enjoy the quiet.</p>
+          <p className="px-6 py-10 text-center text-sm text-muted">Nothing due. Enjoy the quiet.</p>
         ) : (
-          <ul className="divide-y divide-ink-100">
+          <ul className="divide-y divide-line">
             {due.map((a) => (
               <Row key={a.id} alert={a} />
             ))}
@@ -148,12 +171,16 @@ export default function AlertsClient() {
         )}
       </section>
 
-      <section className="card">
-        <h2 className="mb-2 font-semibold">Scheduled</h2>
+      <section className="card overflow-hidden">
+        <div className="border-b border-line px-6 py-4">
+          <h2 className="display text-lg">Scheduled</h2>
+        </div>
         {rest.length === 0 ? (
-          <p className="py-4 text-sm text-ink-400">No alerts scheduled yet.</p>
+          <p className="px-6 py-10 text-center text-sm text-muted">
+            No alerts scheduled yet. Add one above.
+          </p>
         ) : (
-          <ul className="divide-y divide-ink-100">
+          <ul className="divide-y divide-line">
             {rest.map((a) => (
               <Row key={a.id} alert={a} />
             ))}

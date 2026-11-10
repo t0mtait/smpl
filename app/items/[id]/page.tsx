@@ -4,6 +4,8 @@ import { getItem, listDisposals, listItems } from "@/lib/db";
 import { scoreItem, findDuplicateItemIds } from "@/lib/scoring";
 import { formatDate, formatMoney, FREQUENCY_LABELS, relativeDays, STATUS_LABELS, STATUS_STYLES } from "@/lib/format";
 import { daysSince } from "@/lib/scoring";
+import { ItemPhoto, ScoreRing } from "@/components/ui";
+import { IconArrowLeft, IconPencil } from "@/components/icons";
 import ItemActions from "./ItemActions";
 
 export const dynamic = "force-dynamic";
@@ -18,116 +20,128 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
   const owned = listItems().filter((i) => i.status === "owned");
   const scored = scoreItem(item, findDuplicateItemIds(owned));
 
+  const facts: { label: string; value: React.ReactNode }[] = [
+    { label: "Category", value: <span className="capitalize">{item.category}</span> },
+    { label: "Location", value: item.location || "—" },
+    { label: "Paid", value: <span className="tabular">{formatMoney(item.purchasePrice)}</span> },
+    { label: "Worth today", value: <span className="tabular">{formatMoney(item.currentValue)}</span> },
+    { label: "Acquired", value: formatDate(item.purchaseDate) },
+    { label: "Last used", value: formatDate(item.lastUsedAt) },
+    { label: "Frequency", value: FREQUENCY_LABELS[item.useFrequency] ?? item.useFrequency },
+    { label: "Idle", value: relativeDays(daysSince(item.lastUsedAt ?? item.purchaseDate)) },
+  ];
+
   return (
-    <div className="space-y-6">
-      <Link href="/items" className="inline-block text-sm text-ink-500 hover:underline">
-        ← Inventory
+    <div className="space-y-7">
+      <Link
+        href="/items"
+        className="inline-flex items-center gap-1.5 text-[13px] font-medium text-muted transition-colors hover:text-ink"
+      >
+        <IconArrowLeft width={15} height={15} />
+        Inventory
       </Link>
 
-      <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+      <div className="grid gap-6 lg:grid-cols-[300px_1fr] lg:gap-8">
+        {/* ---------------- Left rail ---------------- */}
         <div className="space-y-4">
-          <div className="overflow-hidden rounded-xl border border-ink-200 bg-white">
-            {item.photoPath ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={`/api/photos/${item.photoPath}`}
+          <div className="overflow-hidden rounded-2xl border border-line bg-card">
+            <div className="aspect-square w-full">
+              <ItemPhoto
+                src={item.photoPath ? `/api/photos/${item.photoPath}` : null}
                 alt={item.name}
-                className="aspect-square w-full object-cover"
               />
-            ) : (
-              <div className="flex aspect-square w-full items-center justify-center bg-ink-100 text-sm text-ink-400">
-                no photo
-              </div>
-            )}
+            </div>
           </div>
-          {item.status === "owned" && (
-            <div className="card">
-              <p className="text-xs font-medium uppercase tracking-wide text-ink-500">
-                Declutter score
-              </p>
-              <p className="mt-1 text-3xl font-semibold tabular-nums">{scored.score}</p>
-              <p className="text-xs text-ink-400">higher = more reason to let it go</p>
-              {scored.reasons.length > 0 && (
-                <ul className="mt-3 space-y-1 border-t border-ink-100 pt-3 text-xs text-ink-600">
+
+          {item.status === "owned" ? (
+            <div className="card p-5">
+              <div className="flex items-start gap-4">
+                <ScoreRing score={scored.score} size={64} stroke={6} />
+                <div className="min-w-0 flex-1">
+                  <p className="eyebrow">Declutter score</p>
+                  <p className="mt-1 text-[13px] leading-snug text-muted">
+                    {scored.score >= 40
+                      ? "The app thinks this is dead weight."
+                      : scored.score > 0
+                        ? "Something is slightly off about this."
+                        : "In use and worth keeping."}
+                  </p>
+                </div>
+              </div>
+              {scored.reasons.length > 0 ? (
+                <ul className="mt-4 space-y-2 border-t border-line pt-4">
                   {scored.reasons.map((r, i) => (
-                    <li key={`${r.label}-${i}`}>
-                      {r.label}
-                      {r.weight > 0 && <span className="text-ink-400"> (+{r.weight})</span>}
+                    <li
+                      key={`${r.label}-${i}`}
+                      className="flex items-start justify-between gap-3 text-[13px]"
+                    >
+                      <span className="text-ink-700">{r.label}</span>
+                      {r.weight > 0 ? (
+                        <span className="tabular shrink-0 font-medium text-clay-500">+{r.weight}</span>
+                      ) : null}
                     </li>
                   ))}
                 </ul>
-              )}
+              ) : null}
             </div>
-          )}
+          ) : null}
         </div>
 
+        {/* ---------------- Main ---------------- */}
         <div className="space-y-6">
-          <div>
+          <header className="animate-rise">
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-2xl font-semibold tracking-tight">{item.name}</h1>
+              <h1 className="display text-4xl leading-[1.1]">{item.name}</h1>
               <span className={`pill ${STATUS_STYLES[item.status]}`}>{STATUS_LABELS[item.status]}</span>
             </div>
-            {item.description && (
-              <p className="mt-2 max-w-2xl text-sm text-ink-600">{item.description}</p>
-            )}
-          </div>
+            {item.description ? (
+              <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-muted">
+                {item.description}
+              </p>
+            ) : null}
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link href={`/items/${item.id}/edit`} className="btn-secondary">
+                <IconPencil width={15} height={15} />
+                Edit details
+              </Link>
+            </div>
+          </header>
 
-          <div className="card grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <div>
-              <p className="label">Category</p>
-              <p className="text-sm capitalize">{item.category}</p>
-            </div>
-            <div>
-              <p className="label">Location</p>
-              <p className="text-sm">{item.location || "—"}</p>
-            </div>
-            <div>
-              <p className="label">Paid</p>
-              <p className="text-sm tabular-nums">{formatMoney(item.purchasePrice)}</p>
-            </div>
-            <div>
-              <p className="label">Worth today</p>
-              <p className="text-sm tabular-nums">{formatMoney(item.currentValue)}</p>
-            </div>
-            <div>
-              <p className="label">Acquired</p>
-              <p className="text-sm">{formatDate(item.purchaseDate)}</p>
-            </div>
-            <div>
-              <p className="label">Last used</p>
-              <p className="text-sm">{formatDate(item.lastUsedAt)}</p>
-            </div>
-            <div>
-              <p className="label">Frequency</p>
-              <p className="text-sm">{FREQUENCY_LABELS[item.useFrequency] ?? item.useFrequency}</p>
-            </div>
-            <div>
-              <p className="label">Idle</p>
-              <p className="text-sm">{relativeDays(daysSince(item.lastUsedAt ?? item.purchaseDate))}</p>
-            </div>
+          <div className="card grid grid-cols-2 gap-x-4 gap-y-5 p-6 sm:grid-cols-4">
+            {facts.map((f) => (
+              <div key={f.label}>
+                <p className="label">{f.label}</p>
+                <p className="text-sm text-ink">{f.value}</p>
+              </div>
+            ))}
           </div>
 
           <ItemActions item={item} />
 
-          {disposals.length > 0 && (
-            <div className="card">
-              <h2 className="mb-3 font-semibold">Disposal history</h2>
-              <ul className="divide-y divide-ink-100">
+          {disposals.length > 0 ? (
+            <section className="card overflow-hidden">
+              <div className="border-b border-line px-6 py-4">
+                <h2 className="display text-lg">Disposal history</h2>
+              </div>
+              <ul className="divide-y divide-line">
                 {disposals.map((d) => (
-                  <li key={d.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
-                    <span className="capitalize">
+                  <li
+                    key={d.id}
+                    className="flex flex-wrap items-center justify-between gap-2 px-6 py-3 text-sm"
+                  >
+                    <span className="capitalize text-ink">
                       {d.disposition} · {formatDate(d.disposedAt)}
                       {d.channel ? ` · ${d.channel}` : ""}
                     </span>
-                    <span className="tabular-nums text-ink-500">
+                    <span className="tabular text-muted">
                       {d.disposition === "sold" ? formatMoney(d.amount) : ""}
                       {d.notes ? ` · ${d.notes}` : ""}
                     </span>
                   </li>
                 ))}
               </ul>
-            </div>
-          )}
+            </section>
+          ) : null}
         </div>
       </div>
     </div>

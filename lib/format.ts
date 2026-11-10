@@ -33,9 +33,9 @@ export const STATUS_LABELS: Record<string, string> = {
 
 export const STATUS_STYLES: Record<string, string> = {
   owned: "bg-ink-100 text-ink-700",
-  sold: "bg-moss-500/15 text-moss-700",
-  donated: "bg-sky-500/15 text-sky-700",
-  disposed: "bg-clay-500/15 text-clay-600",
+  sold: "bg-moss-50 text-moss-600",
+  donated: "bg-sky-50 text-sky-700",
+  disposed: "bg-clay-50 text-clay-600",
 };
 
 export const FREQUENCY_LABELS: Record<string, string> = {
