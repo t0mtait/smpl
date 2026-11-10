@@ -3,6 +3,7 @@ node_modules
 out
 *.tsbuildinfo
 next-env.d.ts
+.test-build
 
 # Local data: SQLite DB + uploaded item photos. Never commit.
 data/
