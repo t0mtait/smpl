@@ -1,0 +1,9 @@
+node_modules
+.next
+out
+*.tsbuildinfo
+next-env.d.ts
+
+# Local data: SQLite DB + uploaded item photos. Never commit.
+data/
+.env*.local

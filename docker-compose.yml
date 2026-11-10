@@ -1,0 +1,18 @@
+services:
+  declutter:
+    container_name: declutter
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: declutter:latest
+    restart: unless-stopped
+    # The image runs as uid 1000 so the bind-mounted ./data stays writable
+    # without chowning it inside the container.
+    user: "1000:1000"
+    ports:
+      # Host port for LAN access. When Caddy fronts it, switch to
+      # "127.0.0.1:5010:3000" so only Caddy can reach the backend.
+      - "5010:3000"
+    volumes:
+      # SQLite DB + uploaded item photos. This is the app's entire state.
+      - ./data:/app/data

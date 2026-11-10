@@ -1,0 +1,38 @@
+# Build stage
+FROM node:22-alpine AS deps
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+
+FROM node:22-alpine AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV BUILD_STANDALONE=1
+RUN npm run build
+
+FROM node:22-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+
+# The official node image already ships a `node` user at uid/gid 1000. Using
+# it means a host bind mount owned by the host user (tom = 1000) is writable
+# without chowning inside the container.
+RUN mkdir -p /app/data/uploads && chown -R node:node /app/data
+
+# node:sqlite is a built-in module in Node 22 — no native compile needed.
+COPY --from=builder --chown=node:node /app/public ./public
+# The schema is read from disk at runtime, so it must ship with the app.
+COPY --from=builder --chown=node:node /app/lib/schema.sql ./lib/schema.sql
+COPY --from=builder --chown=node:node /app/.next/standalone ./
+COPY --from=builder --chown=node:node /app/.next/static ./.next/static
+
+# The SQLite file and uploaded photos live here. Mount a volume over it.
+VOLUME ["/app/data"]
+
+USER node
+EXPOSE 3000
+CMD ["node", "server.js"]
