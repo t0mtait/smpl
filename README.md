@@ -193,7 +193,7 @@ pages redirect to `/auth/login`. Records owned by another account return `404`.
 npm test
 ```
 
-Two suites, 53 assertions:
+Five suites, 207 assertions:
 
 - **scoring** (21) — signal weighting, manual overrides, duplicate detection,
   seasonal logic, and date handling.
@@ -201,6 +201,42 @@ Two suites, 53 assertions:
   session expiry, cross-account denial on read/update/delete/photo-lookup, and
   bootstrap-data claiming. Runs against a throwaway database in a temp
   directory, so it never touches your real data.
+- **money** (35) — unknown (`NULL`) versus explicit zero, nullable purchase
+  prices, current values and disposal proceeds, tri-state duplicate-price
+  matching, and `closed` terminal items.
+- **dates** (23) — local-calendar date writing and parsing, whole-day ages,
+  and the DST boundaries that previously shifted a result by a day.
+- **import** (96) — the StuffDB workbook mapper and the destructive write
+  path, including the hidden-row accounting, unknown-vs-zero money, duplicate
+  rows, and owner scoping.
+
+## Importing a workbook
+
+```bash
+node scripts/import-stuffdb.mjs --xlsx ~/Downloads/StuffDB.xlsx --email mail@tomjt.com --dry-run
+node scripts/import-stuffdb.mjs --xlsx ~/Downloads/StuffDB.xlsx --email mail@tomjt.com
+```
+
+The importer replaces the target account's inventory with every row in the
+workbook — including rows hidden behind a saved AutoFilter, which is where the
+sale history usually lives. It is destructive for that account only: other
+accounts' items, alerts, and photos are untouched.
+
+What it guarantees:
+
+- Missing money stays unknown (`NULL`) rather than becoming `$0`. An explicit
+  `$0` in the source stays a numeric zero. The two are different facts.
+- Every source row is kept, including exact duplicates. They are flagged, not
+  dropped.
+- `Close` maps to a `closed` terminal state — gone, but with no invented sale,
+  donation, throw-out, or proceeds.
+- `Sold` / `Donated` / `Thrown Out` map to `sold` / `donated` / `disposed`.
+- Source-only fields (`Brand`, `Quality`, `Acquisition`, `EOL`) are preserved
+  in the item notes, because the app has no dedicated columns for them.
+- `Received` is read in context: proceeds for a sale, asking price for a
+  listed item.
+
+Always run with `--dry-run` first and read the plan.
 
 ## Seeding
 
@@ -220,8 +256,8 @@ docker exec declutter node scripts/seed.mjs
 
 There's a `Dockerfile` and `docker-compose.yml` ready. It runs on host port
 5010 with `./data` bind-mounted for persistence, as uid 1000 so the bind mount
-stays writable without chowning inside the container. The image ships the
-schema and the seed script.
+stays writable without chowning it inside the container. The image ships the
+schema, the seed script, and the workbook importer.
 
 To put it behind Caddy on `declutter.tomjt.com`:
 

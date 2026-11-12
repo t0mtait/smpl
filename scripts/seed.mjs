@@ -63,7 +63,15 @@ if (!keepExisting) {
   db.exec("DELETE FROM disposals; DELETE FROM items; DELETE FROM alerts;");
 }
 
-const daysAgo = (n) => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
+// Local calendar dates, matching how the app reads them back.
+const daysAgo = (n) => {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
 
 const insert = db.prepare(
   `INSERT INTO items (owner_id, name, category, description, location, purchase_date, purchase_price,

@@ -1,5 +1,6 @@
-import { listDisposals, listItems } from "./db";
-import type { Item, Disposal } from "./db";
+import { listDisposals, listItems } from "./db.ts";
+import type { Item, Disposal } from "./db.ts";
+import { daysSince } from "./scoring.ts";
 
 export interface Stats {
   totalItems: number;
@@ -7,13 +8,25 @@ export interface Stats {
   soldItems: number;
   donatedItems: number;
   disposedItems: number;
+  /** Items that left the inventory without a recorded outcome. */
+  closedItems: number;
+  /** Sum of the values we actually know. Items with an unknown value are excluded. */
   totalValueOwned: number;
+  /** Sum of the prices we actually know. Items with an unknown price are excluded. */
   totalSpent: number;
   lifetimeSalesEarnings: number;
   lifetimeDonationValue: number;
   itemsDisposed: number;
   declutterRate: number;
   averageOwnedValue: number;
+  /** How many owned items have no recorded value — the totals above are partial. */
+  ownedWithoutValue: number;
+  /** How many items have no recorded purchase price. */
+  itemsWithoutPrice: number;
+  /** How many disposals have no recorded amount (gifted away, or never written down). */
+  disposalsWithoutAmount: number;
+  /** Sales with no recorded proceeds. The earnings total covers only the rest. */
+  soldWithoutAmount: number;
   byCategory: { category: string; count: number; value: number }[];
   earningsByMonth: { month: string; amount: number }[];
   disposalBreakdown: { disposition: string; count: number; amount: number }[];
@@ -31,19 +44,28 @@ export function computeStats(items: Item[], disposals: Disposal[]): Stats {
   const sold = items.filter((i) => i.status === "sold");
   const donated = items.filter((i) => i.status === "donated");
   const disposed = items.filter((i) => i.status === "disposed");
+  const closed = items.filter((i) => i.status === "closed");
 
-  const totalValueOwned = owned.reduce((sum, i) => sum + i.currentValue, 0);
-  const totalSpent = items.reduce((sum, i) => sum + i.purchasePrice, 0);
+  // Only known amounts count towards a total. An unknown value is not $0 —
+  // folding it in would quietly understate what the inventory is worth.
+  const totalValueOwned = owned.reduce((sum, i) => sum + (i.currentValue ?? 0), 0);
+  const totalSpent = items.reduce((sum, i) => sum + (i.purchasePrice ?? 0), 0);
+  const ownedWithoutValue = owned.filter((i) => i.currentValue === null).length;
+  const itemsWithoutPrice = items.filter((i) => i.purchasePrice === null).length;
 
   const lifetimeSalesEarnings = disposals
     .filter((d) => d.disposition === "sold")
-    .reduce((sum, d) => sum + d.amount, 0);
+    .reduce((sum, d) => sum + (d.amount ?? 0), 0);
   const lifetimeDonationValue = disposals
     .filter((d) => d.disposition === "donated")
-    .reduce((sum, d) => sum + d.amount, 0);
+    .reduce((sum, d) => sum + (d.amount ?? 0), 0);
+  const disposalsWithoutAmount = disposals.filter((d) => d.amount === null).length;
+  const soldWithoutAmount = disposals.filter(
+    (d) => d.disposition === "sold" && d.amount === null
+  ).length;
 
-  const closed = items.length - owned.length;
-  const declutterRate = items.length === 0 ? 0 : Math.round((closed / items.length) * 100);
+  const goneCount = items.length - owned.length;
+  const declutterRate = items.length === 0 ? 0 : Math.round((goneCount / items.length) * 100);
 
   // Categories
   const catMap = new Map<string, { count: number; value: number }>();
@@ -51,7 +73,7 @@ export function computeStats(items: Item[], disposals: Disposal[]): Stats {
     const key = item.category || "uncategorized";
     const entry = catMap.get(key) ?? { count: 0, value: 0 };
     entry.count += 1;
-    entry.value += item.currentValue;
+    entry.value += item.currentValue ?? 0;
     catMap.set(key, entry);
   }
   const byCategory = [...catMap.entries()]
@@ -70,7 +92,7 @@ export function computeStats(items: Item[], disposals: Disposal[]): Stats {
   for (const d of disposals) {
     if (d.disposition !== "sold") continue;
     const key = monthKey(d.disposedAt);
-    if (earnMap.has(key)) earnMap.set(key, (earnMap.get(key) ?? 0) + d.amount);
+    if (earnMap.has(key)) earnMap.set(key, (earnMap.get(key) ?? 0) + (d.amount ?? 0));
   }
   const earningsByMonth = monthKeys.map((month) => ({ month, amount: earnMap.get(month) ?? 0 }));
 
@@ -78,10 +100,10 @@ export function computeStats(items: Item[], disposals: Disposal[]): Stats {
   for (const d of disposals) {
     const entry = breakdownMap.get(d.disposition) ?? { count: 0, amount: 0 };
     entry.count += 1;
-    entry.amount += d.amount;
+    entry.amount += d.amount ?? 0;
     breakdownMap.set(d.disposition, entry);
   }
-  const disposalBreakdown = ["sold", "donated", "disposed"].map((disposition) => ({
+  const disposalBreakdown = ["sold", "donated", "disposed", "closed"].map((disposition) => ({
     disposition,
     count: breakdownMap.get(disposition)?.count ?? 0,
     amount: breakdownMap.get(disposition)?.amount ?? 0,
@@ -97,29 +119,37 @@ export function computeStats(items: Item[], disposals: Disposal[]): Stats {
     .sort((a, b) => b.count - a.count)
     .slice(0, 8);
 
-  const nowMs = Date.now();
   const neverUsed = owned.filter((i) => !i.lastUsedAt).length;
   const idleOver90Days = owned.filter((i) => {
     const ref = i.lastUsedAt ?? i.purchaseDate;
     if (!ref) return false;
-    const t = new Date(ref.includes("T") ? ref : `${ref}T00:00:00`).getTime();
-    if (Number.isNaN(t)) return false;
-    return nowMs - t > 90 * 86400000;
+    // Calendar days, not elapsed milliseconds: an item last used on the
+    // 90th day is idle once the 90 days are up, not a few hours early.
+    const days = daysSince(ref);
+    return days !== null && days > 90;
   }).length;
 
   return {
     totalItems: items.length,
     ownedItems: owned.length,
     soldItems: sold.length,
+    soldWithoutAmount,
     donatedItems: donated.length,
     disposedItems: disposed.length,
+    closedItems: closed.length,
     totalValueOwned,
     totalSpent,
     lifetimeSalesEarnings,
     lifetimeDonationValue,
     itemsDisposed: disposed.length,
     declutterRate,
-    averageOwnedValue: owned.length === 0 ? 0 : totalValueOwned / owned.length,
+    averageOwnedValue:
+      owned.length - ownedWithoutValue === 0
+        ? 0
+        : totalValueOwned / (owned.length - ownedWithoutValue),
+    ownedWithoutValue,
+    itemsWithoutPrice,
+    disposalsWithoutAmount,
     byCategory,
     earningsByMonth,
     disposalBreakdown,

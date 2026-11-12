@@ -31,14 +31,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
       {/* ---------------- Sidebar (desktop) ---------------- */}
-      <aside className="hidden w-64 shrink-0 border-r border-line bg-card lg:flex lg:flex-col">
-        <div className="flex items-center gap-2.5 px-6 py-6">
+      <aside className="hidden w-64 shrink-0 border-r border-line bg-shell lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col">
+        <div className="flex items-center gap-3 px-6 pb-6 pt-7">
           <span className="display flex h-9 w-9 items-center justify-center rounded-xl bg-ink text-[19px] leading-none text-paper">
             D
           </span>
           <div>
-            <div className="display text-[19px] leading-none">Declutter</div>
-            <div className="mt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
+            <div className="display text-[19px] leading-none tracking-[-0.01em]">Declutter</div>
+            <div className="mt-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
               less, but better
             </div>
           </div>
@@ -50,7 +50,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           ))}
         </nav>
 
-        <div className="p-3">
+        <div className="px-3 pb-3">
           <Link href="/items/new" className="btn-primary w-full">
             <IconPlus width={16} height={16} />
             Add item
@@ -67,12 +67,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </aside>
 
       {/* ---------------- Mobile top bar ---------------- */}
-      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-card/90 px-4 py-3 backdrop-blur lg:hidden">
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-shell/90 px-4 py-3 backdrop-blur lg:hidden">
         <Link href="/" className="flex items-center gap-2">
           <span className="display flex h-8 w-8 items-center justify-center rounded-lg bg-ink text-[17px] leading-none text-paper">
             D
           </span>
-          <span className="display text-[17px] leading-none">Declutter</span>
+          <span className="display text-[17px] leading-none tracking-[-0.01em]">Declutter</span>
         </Link>
         <div className="flex items-center gap-2">
           <span className="max-w-[9rem] truncate text-[12px] text-muted">{accountName}</span>
@@ -86,7 +86,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
       {/* ---------------- Main ---------------- */}
       <main className="min-w-0 flex-1">
-        <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-10 lg:py-12">{children}</div>
+        <div className="mx-auto max-w-5xl px-4 py-8 pb-24 sm:px-6 lg:px-10 lg:py-12">{children}</div>
       </main>
 
       {/* ---------------- Mobile bottom nav ---------------- */}

@@ -42,13 +42,17 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if (body.lastUsedAt === null || typeof body.lastUsedAt === "string") {
     patch.lastUsedAt = body.lastUsedAt || null;
   }
+  // Money accepts a number, an explicit null (unknown) or an empty string
+  // (also unknown). A blank field must never become $0.
   for (const key of ["purchasePrice", "currentValue"]) {
-    if (body[key] !== undefined) {
+    if (body[key] === null) {
+      patch[key] = null;
+    } else if (body[key] !== undefined && body[key] !== "") {
       const n = Number(body[key]);
-      patch[key] = Number.isFinite(n) ? n : 0;
+      if (Number.isFinite(n)) patch[key] = n;
     }
   }
-  const statuses: ItemStatus[] = ["owned", "sold", "donated", "disposed"];
+  const statuses: ItemStatus[] = ["owned", "sold", "donated", "disposed", "closed"];
   if (statuses.includes(body.status as ItemStatus)) patch.status = body.status;
   const freqs: UseFrequency[] = [
     "daily",

@@ -30,6 +30,15 @@ COPY --from=builder --chown=node:node /app/lib/schema.sql ./lib/schema.sql
 # The seed script ships too, so a fresh container can be populated with
 # sample data:  docker exec declutter node scripts/seed.mjs
 COPY --from=builder --chown=node:node /app/scripts/seed.mjs ./scripts/seed.mjs
+# The StuffDB importer ships with the app so a container can import a
+# workbook without reaching back to the host checkout. It loads the same
+# TypeScript modules the server uses, so those files ship alongside it.
+COPY --from=builder --chown=node:node /app/scripts/import-stuffdb.mjs ./scripts/import-stuffdb.mjs
+COPY --from=builder --chown=node:node /app/scripts/xlsx.mjs ./scripts/xlsx.mjs
+COPY --from=builder --chown=node:node /app/lib/db.ts ./lib/db.ts
+COPY --from=builder --chown=node:node /app/lib/dates.ts ./lib/dates.ts
+COPY --from=builder --chown=node:node /app/lib/format.ts ./lib/format.ts
+COPY --from=builder --chown=node:node /app/lib/stuffdb-map.ts ./lib/stuffdb-map.ts
 COPY --from=builder --chown=node:node /app/.next/standalone ./
 COPY --from=builder --chown=node:node /app/.next/static ./.next/static
 

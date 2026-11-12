@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { Alert } from "@/lib/db";
 import { formatDate } from "@/lib/format";
+import { today } from "@/lib/dates";
 import { IconBell, IconPlus, IconTrash } from "@/components/icons";
 
 export default function AlertsClient() {
@@ -62,12 +63,12 @@ export default function AlertsClient() {
     }
   };
 
-  const today = new Date().toISOString().slice(0, 10);
-  const due = (alerts ?? []).filter((a) => a.active && a.nextDue <= today);
-  const rest = (alerts ?? []).filter((a) => !(a.active && a.nextDue <= today));
+  const todayStr = today();
+  const due = (alerts ?? []).filter((a) => a.active && a.nextDue <= todayStr);
+  const rest = (alerts ?? []).filter((a) => !(a.active && a.nextDue <= todayStr));
 
   const Row = ({ alert }: { alert: Alert }) => {
-    const overdue = alert.active && alert.nextDue <= today;
+    const overdue = alert.active && alert.nextDue <= todayStr;
     return (
       <li className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
         <div className="min-w-0">

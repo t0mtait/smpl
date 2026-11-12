@@ -36,8 +36,10 @@ CREATE TABLE IF NOT EXISTS items (
   description     TEXT    NOT NULL DEFAULT '',
   location        TEXT    NOT NULL DEFAULT '',
   purchase_date   TEXT,
-  purchase_price  REAL    NOT NULL DEFAULT 0,
-  current_value   REAL    NOT NULL DEFAULT 0,
+  -- Money is nullable on purpose: NULL means "we don't know", 0 means
+  -- "genuinely free". A 0 default would be a claim we cannot back up.
+  purchase_price  REAL,
+  current_value   REAL,
   status          TEXT    NOT NULL DEFAULT 'owned',
   last_used_at    TEXT,
   use_frequency   TEXT    NOT NULL DEFAULT 'unknown',
@@ -56,7 +58,8 @@ CREATE TABLE IF NOT EXISTS disposals (
   item_id     INTEGER NOT NULL REFERENCES items(id),
   disposition TEXT    NOT NULL,
   disposed_at TEXT    NOT NULL,
-  amount      REAL    NOT NULL DEFAULT 0,
+  -- NULL = proceeds never recorded (a gift, or we simply don't know).
+  amount      REAL,
   channel     TEXT    NOT NULL DEFAULT '',
   notes       TEXT    NOT NULL DEFAULT '',
   created_at  TEXT    NOT NULL DEFAULT (datetime('now'))

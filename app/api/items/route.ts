@@ -6,7 +6,7 @@ import { apiUser } from "@/lib/auth";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const STATUSES: ItemStatus[] = ["owned", "sold", "donated", "disposed"];
+const STATUSES: ItemStatus[] = ["owned", "sold", "donated", "disposed", "closed"];
 const FREQUENCIES: UseFrequency[] = [
   "daily",
   "weekly",
@@ -24,11 +24,18 @@ export async function GET() {
   return NextResponse.json({ items: listItems(user.id) });
 }
 
+/**
+ * Money fields accept three states: a number, an explicit null ("I don't
+ * know") or an empty/absent value (also "I don't know"). Only a real number
+ * is ever stored — a blank field must never become $0.
+ */
+function money(v: unknown): number | null {
+  if (v === null || v === undefined || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
 function parseInput(body: Record<string, unknown>): ItemInput {
-  const num = (v: unknown): number => {
-    const n = Number(v);
-    return Number.isFinite(n) ? n : 0;
-  };
   const str = (v: unknown): string => (typeof v === "string" ? v.trim() : "");
   const status = STATUSES.includes(body.status as ItemStatus) ? (body.status as ItemStatus) : "owned";
   const useFrequency = FREQUENCIES.includes(body.useFrequency as UseFrequency)
@@ -44,8 +51,8 @@ function parseInput(body: Record<string, unknown>): ItemInput {
     description: str(body.description),
     location: str(body.location),
     purchaseDate: typeof body.purchaseDate === "string" && body.purchaseDate ? body.purchaseDate : null,
-    purchasePrice: num(body.purchasePrice),
-    currentValue: num(body.currentValue),
+    purchasePrice: money(body.purchasePrice),
+    currentValue: money(body.currentValue),
     status,
     lastUsedAt: typeof body.lastUsedAt === "string" && body.lastUsedAt ? body.lastUsedAt : null,
     useFrequency,

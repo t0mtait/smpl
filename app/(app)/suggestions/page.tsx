@@ -115,7 +115,13 @@ export default async function SuggestionsPage() {
   const strong = scored.filter((s) => s.score >= 40);
   const moderate = scored.filter((s) => s.score > 0 && s.score < 40);
   const keep = scored.filter((s) => s.score === 0);
-  const reclaimable = strong.reduce((sum, s) => sum + s.item.currentValue, 0);
+  // Unknown values are excluded, not treated as $0 — a sum that silently
+  // counts unpriced items as worthless would overstate what you can reclaim.
+  const reclaimable = strong.reduce(
+    (sum, s) => sum + (s.item.currentValue ?? 0),
+    0
+  );
+  const unpriced = strong.filter((s) => s.item.currentValue === null).length;
 
   return (
     <div className="space-y-8">

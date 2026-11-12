@@ -1,6 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 import fs from "node:fs";
 import path from "node:path";
+import { daysFromNow } from "./dates.ts";
 
 export const DATA_DIR = process.env.DECLUTTER_DATA_DIR
   ? path.resolve(process.env.DECLUTTER_DATA_DIR)
@@ -34,6 +35,90 @@ function ensureColumn(d: DatabaseSync, table: string, column: string, ddl: strin
  * instead of orphaning them behind a migration that needs manual repair.
  */
 const BOOTSTRAP_EMAIL = "bootstrap@declutter.invalid";
+
+/**
+ * Money columns have to be nullable: NULL means "never recorded", 0 means
+ * "genuinely free". Databases created before that distinction existed store
+ * the money columns as NOT NULL DEFAULT 0, and SQLite cannot relax a NOT NULL
+ * constraint with ALTER TABLE — the table has to be rebuilt.
+ *
+ * The rebuild renames the old table aside, recreates it from lib/schema.sql
+ * (the canonical definition), copies the rows across and drops the leftover.
+ * `legacy_alter_table` keeps SQLite from rewriting the REFERENCES clauses in
+ * other tables while the table is renamed.
+ */
+function isNotNull(d: DatabaseSync, table: string, column: string): boolean {
+  const cols = d.prepare(`PRAGMA table_info(${table})`).all() as {
+    name: string;
+    notnull: number;
+  }[];
+  const col = cols.find((c) => c.name === column);
+  return !!col && col.notnull === 1;
+}
+
+/** Pull the canonical CREATE TABLE statement for one table out of the schema. */
+function createTableStatement(schema: string, table: string): string {
+  const match = new RegExp(`CREATE TABLE IF NOT EXISTS ${table}\\s*\\([\\s\\S]*?\\n\\);`).exec(
+    schema
+  );
+  if (!match) throw new Error(`lib/schema.sql has no CREATE TABLE for ${table}`);
+  return match[0];
+}
+
+/** Rebuild one table so it matches the current schema, keeping every row. */
+function rebuildTable(d: DatabaseSync, schema: string, table: string): void {
+  const legacy = `${table}_pre_nullable`;
+  const existing = (d.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]).map(
+    (c) => c.name
+  );
+  d.exec(`ALTER TABLE ${table} RENAME TO ${legacy}`);
+  d.exec(createTableStatement(schema, table));
+  const target = (d.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]).map(
+    (c) => c.name
+  );
+  const shared = target.filter((c) => existing.includes(c));
+  if (shared.length > 0) {
+    const list = shared.join(", ");
+    d.exec(`INSERT INTO ${table} (${list}) SELECT ${list} FROM ${legacy}`);
+  }
+  d.exec(`DROP TABLE ${legacy}`);
+}
+
+/**
+ * Idempotent migration: make the money columns nullable if they are not
+ * already. Safe to run on every open — it does nothing once the columns
+ * allow NULL.
+ */
+function migrateMoneyColumns(d: DatabaseSync): void {
+  const schema = readSchema();
+  const itemsNeedRebuild =
+    isNotNull(d, "items", "purchase_price") || isNotNull(d, "items", "current_value");
+  const disposalsNeedRebuild = isNotNull(d, "disposals", "amount");
+  if (!itemsNeedRebuild && !disposalsNeedRebuild) return;
+
+  d.exec("PRAGMA foreign_keys = OFF;");
+  d.exec("PRAGMA legacy_alter_table = ON;");
+  try {
+    d.exec("BEGIN;");
+    // Items first: disposals reference items(id), and the legacy rename must
+    // not rewrite those references.
+    if (itemsNeedRebuild) rebuildTable(d, schema, "items");
+    if (disposalsNeedRebuild) rebuildTable(d, schema, "disposals");
+    d.exec("COMMIT;");
+  } catch (err) {
+    try {
+      d.exec("ROLLBACK;");
+    } catch {
+      /* the transaction was never opened */
+    }
+    throw err;
+  } finally {
+    d.exec("PRAGMA legacy_alter_table = OFF;");
+    d.exec("PRAGMA foreign_keys = ON;");
+  }
+  // The old tables took their indexes with them — recreate them.
+  d.exec(schema);
+}
 
 function ensureBootstrapUser(d: DatabaseSync): number {
   const existing = d.prepare("SELECT id FROM users WHERE is_bootstrap = 1 LIMIT 1").get() as
@@ -81,6 +166,8 @@ export function getDb(): DatabaseSync {
   // Pre-account databases need the owner columns added before anything else.
   ensureColumn(db, "items", "owner_id", "owner_id INTEGER REFERENCES users(id)");
   ensureColumn(db, "alerts", "owner_id", "owner_id INTEGER REFERENCES users(id)");
+  // Money columns must allow NULL ("never recorded") rather than 0 ("free").
+  migrateMoneyColumns(db);
   db.exec("CREATE INDEX IF NOT EXISTS idx_items_owner ON items(owner_id);");
   db.exec("CREATE INDEX IF NOT EXISTS idx_alerts_owner ON alerts(owner_id);");
   adoptOrphans(db);
@@ -97,8 +184,8 @@ function toItem(row: Record<string, unknown>): Item {
     description: String(row.description),
     location: String(row.location),
     purchaseDate: (row.purchase_date as string) ?? null,
-    purchasePrice: Number(row.purchase_price ?? 0),
-    currentValue: Number(row.current_value ?? 0),
+    purchasePrice: row.purchase_price == null ? null : Number(row.purchase_price),
+    currentValue: row.current_value == null ? null : Number(row.current_value),
     status: String(row.status) as ItemStatus,
     lastUsedAt: (row.last_used_at as string) ?? null,
     useFrequency: String(row.use_frequency) as UseFrequency,
@@ -109,9 +196,15 @@ function toItem(row: Record<string, unknown>): Item {
   };
 }
 
-export type ItemStatus = "owned" | "sold" | "donated" | "disposed";
+/**
+ * "closed" is a fourth terminal state: the item is gone from the inventory
+ * but we never recorded how it went. The source inventory uses "Close" for
+ * items that stopped being tracked without a sale, donation or disposal —
+ * inventing one of those three would be a claim we cannot back up.
+ */
+export type ItemStatus = "owned" | "sold" | "donated" | "disposed" | "closed";
 export type Priority = "auto" | "keep" | "get_rid";
-export type Disposition = "sold" | "donated" | "disposed";
+export type Disposition = "sold" | "donated" | "disposed" | "closed";
 export type UseFrequency = "daily" | "weekly" | "monthly" | "seasonal" | "rare" | "never" | "unknown";
 
 export interface Item {
@@ -122,8 +215,8 @@ export interface Item {
   description: string;
   location: string;
   purchaseDate: string | null;
-  purchasePrice: number;
-  currentValue: number;
+  purchasePrice: number | null;
+  currentValue: number | null;
   status: ItemStatus;
   lastUsedAt: string | null;
   useFrequency: UseFrequency;
@@ -138,7 +231,7 @@ export interface Disposal {
   itemId: number;
   disposition: Disposition;
   disposedAt: string;
-  amount: number;
+  amount: number | null;
   channel: string;
   notes: string;
 }
@@ -274,8 +367,8 @@ export interface ItemInput {
   description: string;
   location: string;
   purchaseDate: string | null;
-  purchasePrice: number;
-  currentValue: number;
+  purchasePrice: number | null;
+  currentValue: number | null;
   status: ItemStatus;
   lastUsedAt: string | null;
   useFrequency: UseFrequency;
@@ -317,8 +410,9 @@ export function updateItem(ownerId: number, id: number, input: Partial<ItemInput
     description: input.description ?? existing.description,
     location: input.location ?? existing.location,
     purchaseDate: input.purchaseDate !== undefined ? input.purchaseDate : existing.purchaseDate,
-    purchasePrice: input.purchasePrice ?? existing.purchasePrice,
-    currentValue: input.currentValue ?? existing.currentValue,
+    purchasePrice:
+      input.purchasePrice !== undefined ? input.purchasePrice : existing.purchasePrice,
+    currentValue: input.currentValue !== undefined ? input.currentValue : existing.currentValue,
     status: input.status ?? existing.status,
     lastUsedAt: input.lastUsedAt !== undefined ? input.lastUsedAt : existing.lastUsedAt,
     useFrequency: input.useFrequency ?? existing.useFrequency,
@@ -369,7 +463,7 @@ export function disposeItem(
   id: number,
   disposition: Disposition,
   disposedAt: string,
-  amount: number,
+  amount: number | null,
   channel: string,
   notes: string
 ): Item | null {
@@ -413,7 +507,7 @@ export function listDisposals(ownerId: number): Disposal[] {
     itemId: Number(r.item_id),
     disposition: String(r.disposition) as Disposition,
     disposedAt: String(r.disposed_at),
-    amount: Number(r.amount ?? 0),
+    amount: r.amount == null ? null : Number(r.amount),
     channel: String(r.channel ?? ""),
     notes: String(r.notes ?? ""),
   }));
@@ -435,7 +529,9 @@ export function listAlerts(ownerId: number): Alert[] {
 }
 
 export function createAlert(ownerId: number, label: string, cadenceDays: number): Alert {
-  const nextDue = new Date(Date.now() + cadenceDays * 86400000).toISOString().slice(0, 10);
+  // A local calendar date, not a UTC one: "due in 30 days" means 30 days
+  // from today where the user is.
+  const nextDue = daysFromNow(cadenceDays);
   const res = getDb()
     .prepare(
       "INSERT INTO alerts (owner_id, label, cadence_days, next_due) VALUES (?, ?, ?, ?)"

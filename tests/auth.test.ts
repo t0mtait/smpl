@@ -13,8 +13,8 @@
  * Run with: npm test
  */
 import { DatabaseSync } from "node:sqlite";
-import { hashPassword, verifyPassword } from "../lib/password";
-import * as db from "../lib/db";
+import { hashPassword, verifyPassword } from "../lib/password.ts";
+import * as db from "../lib/db.ts";
 
 let passed = 0;
 let failed = 0;

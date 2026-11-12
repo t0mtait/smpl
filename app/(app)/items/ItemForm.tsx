@@ -27,8 +27,9 @@ export default function ItemForm({ item }: Props) {
     description: item?.description ?? "",
     location: item?.location ?? "",
     purchaseDate: item?.purchaseDate ?? "",
-    purchasePrice: String(item?.purchasePrice ?? 0),
-    currentValue: String(item?.currentValue ?? 0),
+    // An empty money field means "never recorded" — it must not become $0.
+    purchasePrice: item?.purchasePrice === null || item?.purchasePrice === undefined ? "" : String(item.purchasePrice),
+    currentValue: item?.currentValue === null || item?.currentValue === undefined ? "" : String(item.currentValue),
     lastUsedAt: item?.lastUsedAt ?? "",
     useFrequency: item?.useFrequency ?? "unknown",
   });
@@ -62,8 +63,8 @@ export default function ItemForm({ item }: Props) {
       description: form.description,
       location: form.location,
       purchaseDate: form.purchaseDate || null,
-      purchasePrice: Number(form.purchasePrice) || 0,
-      currentValue: Number(form.currentValue) || 0,
+      purchasePrice: form.purchasePrice.trim() === "" ? null : Number(form.purchasePrice),
+      currentValue: form.currentValue.trim() === "" ? null : Number(form.currentValue),
       lastUsedAt: form.lastUsedAt || null,
       useFrequency: form.useFrequency,
       priority,
@@ -170,6 +171,7 @@ export default function ItemForm({ item }: Props) {
           <div>
             <label className="label" htmlFor="purchasePrice">
               Paid
+              <span className="ml-1 font-normal text-muted">optional</span>
             </label>
             <input
               id="purchasePrice"
@@ -179,11 +181,13 @@ export default function ItemForm({ item }: Props) {
               className="input"
               value={form.purchasePrice}
               onChange={set("purchasePrice")}
+              placeholder="not recorded"
             />
           </div>
           <div>
             <label className="label" htmlFor="currentValue">
               Worth today
+              <span className="ml-1 font-normal text-muted">optional</span>
             </label>
             <input
               id="currentValue"
@@ -193,6 +197,7 @@ export default function ItemForm({ item }: Props) {
               className="input"
               value={form.currentValue}
               onChange={set("currentValue")}
+              placeholder="not recorded"
             />
           </div>
         </div>

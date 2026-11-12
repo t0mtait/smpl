@@ -12,6 +12,7 @@ import {
   IconLeaf,
   IconRecycle,
   IconSparkles,
+  IconTag,
 } from "@/components/icons";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +21,8 @@ const DISPOSITION_META: Record<string, { icon: React.ReactNode; tone: string; la
   sold: { icon: <IconCash width={16} height={16} />, tone: "bg-moss-50 text-moss-600", label: "Sold" },
   donated: { icon: <IconHeart width={16} height={16} />, tone: "bg-sky-50 text-sky-600", label: "Donated" },
   disposed: { icon: <IconRecycle width={16} height={16} />, tone: "bg-clay-50 text-clay-500", label: "Disposed" },
+  // Gone, but with no recorded outcome — a different thing from being sold.
+  closed: { icon: <IconTag width={16} height={16} />, tone: "bg-ink-100 text-ink-600", label: "Closed" },
 };
 
 export default async function DashboardPage() {
@@ -27,14 +30,15 @@ export default async function DashboardPage() {
   const stats = getStats(user.id);
   const suggestions = scoreAll(listItems(user.id)).filter((s) => s.score > 0).slice(0, 5);
   const maxCatValue = Math.max(1, ...stats.byCategory.map((c) => c.value));
-  const goneCount = stats.soldItems + stats.donatedItems + stats.disposedItems;
+  const goneCount =
+    stats.soldItems + stats.donatedItems + stats.disposedItems + stats.closedItems;
 
   return (
     <div className="space-y-10">
       {/* ---------------- Hero ---------------- */}
       <header className="animate-rise">
         <p className="eyebrow">Dashboard</p>
-        <h1 className="display mt-2 text-4xl leading-[1.1] sm:text-5xl">
+        <h1 className="display mt-2 text-4xl leading-[1.1] tracking-[-0.02em] sm:text-5xl">
           Your stuff, at a glance.
         </h1>
         <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-muted">
@@ -63,7 +67,13 @@ export default async function DashboardPage() {
         <StatTile
           label="Value owned"
           value={<span className="text-3xl font-semibold leading-none">{formatMoney(stats.totalValueOwned)}</span>}
-          sub={`avg ${formatMoney(stats.averageOwnedValue)} per item`}
+          sub={
+            // The total covers only the items with a recorded value. Say so,
+            // rather than presenting a partial sum as the whole inventory.
+            stats.ownedWithoutValue > 0
+              ? `${stats.ownedItems - stats.ownedWithoutValue} of ${stats.ownedItems} items valued`
+              : `avg ${formatMoney(stats.averageOwnedValue)} per item`
+          }
           icon={<IconLeaf width={15} height={15} />}
           tone="moss"
           href="/items?status=owned"
@@ -71,7 +81,13 @@ export default async function DashboardPage() {
         <StatTile
           label="Lifetime sales"
           value={<span className="text-3xl font-semibold leading-none">{formatMoney(stats.lifetimeSalesEarnings)}</span>}
-          sub={`${stats.soldItems} item${stats.soldItems === 1 ? "" : "s"} sold`}
+          sub={
+            // The total only covers sales with a recorded price, so say so
+            // when some are missing rather than implying it is everything.
+            stats.soldWithoutAmount > 0
+              ? `${stats.soldItems - stats.soldWithoutAmount} of ${stats.soldItems} sold, proceeds recorded`
+              : `${stats.soldItems} item${stats.soldItems === 1 ? "" : "s"} sold`
+          }
           icon={<IconCash width={15} height={15} />}
           tone="moss"
           href="/items?status=sold"
@@ -82,7 +98,7 @@ export default async function DashboardPage() {
           sub={`${goneCount} item${goneCount === 1 ? "" : "s"} gone`}
           icon={<IconRecycle width={15} height={15} />}
           tone="clay"
-          href="/items?status=donated"
+          href="/items"
         />
       </div>
 
@@ -178,7 +194,7 @@ export default async function DashboardPage() {
           <h2 className="display text-xl">Lifetime disposal record</h2>
           <span className="text-xs text-muted">everything that left</span>
         </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {stats.disposalBreakdown.map((d) => {
             const meta = DISPOSITION_META[d.disposition];
             return (
@@ -196,8 +212,10 @@ export default async function DashboardPage() {
                   <p className="text-[13px] font-medium text-ink">{meta.label}</p>
                   <p className="tabular text-2xl font-semibold leading-tight text-ink">{d.count}</p>
                   {d.disposition === "sold" ? (
-                    <p className="tabular text-xs text-moss-600">{formatMoney(d.amount)} earned</p>
-                  ) : d.amount > 0 ? (
+                    <p className="tabular text-xs text-moss-600">
+                      {d.amount === null ? "proceeds not recorded" : `${formatMoney(d.amount)} earned`}
+                    </p>
+                  ) : d.amount !== null && d.amount > 0 ? (
                     <p className="tabular text-xs text-muted">{formatMoney(d.amount)} value</p>
                   ) : null}
                 </div>

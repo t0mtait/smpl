@@ -5,15 +5,24 @@
 /* ------------------------------------------------------------------
    Type — the @font-face rules are emitted by next/font/local in
    app/fonts.ts, which fingerprints the files and preloads them.
+
+   Fraunces (display) and Instrument Sans (body) each ship in two
+   subsets. The browser falls through the stack one character at a
+   time, so the latin file leads and the latin-ext file covers the
+   characters it lacks.
    ------------------------------------------------------------------ */
 
 @layer base {
   :root {
-    --paper: #f7f6f3;
+    --paper: #f6f4ef;
     --card: #ffffff;
-    --line: #e6e3dc;
-    --muted: #726f65;
+    --line: #e4e0d8;
+    --line-soft: #eeebe4;
+    --muted: #6e6b61;
     --ink: #22211d;
+
+    /* Sidebar and mobile chrome sit a shade cooler than the page. */
+    --shell: #fbfaf7;
   }
 
   html {
@@ -24,9 +33,17 @@
 
   body {
     @apply text-ink;
-    font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-    font-feature-settings: "cv11", "ss01";
+    font-family: var(--font-sans), var(--font-sans-ext), ui-sans-serif, system-ui,
+      -apple-system, "Segoe UI", sans-serif;
+    font-feature-settings: "ss01";
     background-color: var(--paper);
+    /* A very faint wash keeps the paper from reading as flat grey. */
+    background-image: radial-gradient(
+      120% 80% at 50% -10%,
+      rgba(255, 255, 255, 0.9) 0%,
+      rgba(255, 255, 255, 0) 60%
+    );
+    background-attachment: fixed;
   }
 
   /* Numeric data should line up in columns. */
@@ -38,7 +55,7 @@
 
   ::selection {
     background: #22211d;
-    color: #f7f6f3;
+    color: #f6f4ef;
   }
 
   /* Focus rings that don't scream. */
@@ -47,14 +64,37 @@
     outline-offset: 2px;
     border-radius: 4px;
   }
+
+  /* The scrollbar should belong to the paper, not the OS. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #d6d2c8 transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background-color: #d6d2c8;
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: #bfb9ac;
+  }
 }
 
 @layer components {
-  /* Display headings use the serif — this is what gives the app a voice
+  /* Display headings use Fraunces — this is what gives the app a voice
      instead of looking like every other Tailwind dashboard. */
   .display {
-    font-family: var(--font-display), ui-serif, Georgia, serif;
-    @apply font-normal tracking-[-0.015em] text-ink;
+    font-family: var(--font-display), var(--font-display-ext), ui-serif, Georgia, serif;
+    /* Fraunces carries an optical-size axis: the browser picks the
+       letterforms that suit the rendered size, so large headings get
+       the high-contrast cut and small ones stay sturdy. */
+    font-optical-sizing: auto;
+    @apply font-normal text-ink;
   }
 
   .eyebrow {
@@ -112,6 +152,25 @@
 
   .pill {
     @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide;
+  }
+
+  /* A hairline rule with a little air around it — the editorial
+     separator used between panels and list sections. */
+  .rule {
+    @apply h-px w-full border-0 bg-line;
+  }
+
+  /* The placeholder shown where a photo would be: a soft inset well so
+     an un-photographed item still looks deliberate rather than broken. */
+  .photo-empty {
+    @apply flex h-full w-full items-center justify-center bg-paper text-ink-300;
+    background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.6), rgba(0, 0, 0, 0.015));
+  }
+
+  /* A section heading inside a card: the serif title with a rule that
+     runs to the edge of the panel. */
+  .panel-head {
+    @apply flex items-baseline justify-between gap-3 border-b border-line px-6 py-5;
   }
 }
 

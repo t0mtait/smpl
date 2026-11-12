@@ -6,9 +6,11 @@ const config: Config = {
     extend: {
       colors: {
         // Warm paper neutrals — the whole app sits on these.
-        paper: "#f7f6f3",
+        paper: "#f6f4ef",
         card: "#ffffff",
-        line: "#e6e3dc",
+        shell: "#fbfaf7",
+        line: "#e4e0d8",
+        "line-soft": "#eeebe4",
         muted: "#726f65",
         ink: {
           50: "#f6f6f4",
@@ -47,8 +49,23 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ["var(--font-sans)", "ui-sans-serif", "system-ui", "sans-serif"],
-        display: ["var(--font-display)", "ui-serif", "Georgia", "serif"],
+        // The latin and latin-ext files are separate @font-face families;
+        // the browser walks the stack per character, so the ext file only
+        // supplies glyphs the latin file is missing.
+        sans: [
+          "var(--font-sans)",
+          "var(--font-sans-ext)",
+          "ui-sans-serif",
+          "system-ui",
+          "sans-serif",
+        ],
+        display: [
+          "var(--font-display)",
+          "var(--font-display-ext)",
+          "ui-serif",
+          "Georgia",
+          "serif",
+        ],
       },
       boxShadow: {
         card: "0 1px 2px rgba(34, 33, 29, 0.04), 0 1px 1px rgba(34, 33, 29, 0.03)",

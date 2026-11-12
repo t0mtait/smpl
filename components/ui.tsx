@@ -275,3 +275,31 @@ export function ItemPhoto({
     <img src={src} alt={alt} className={`h-full w-full object-cover ${className}`} />
   );
 }
+
+/* ------------------------------------------------------------------
+   Section heading — the eyebrow + serif title pairing used across
+   the app's panels.
+   ------------------------------------------------------------------ */
+
+export function SectionHeading({
+  eyebrow,
+  title,
+  sub,
+  action,
+}: {
+  eyebrow?: string;
+  title: string;
+  sub?: ReactNode;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="mb-5 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+      <div className="min-w-0">
+        {eyebrow ? <p className="eyebrow mb-1.5">{eyebrow}</p> : null}
+        <h2 className="display text-xl tracking-[-0.01em]">{title}</h2>
+        {sub ? <p className="mt-1 text-[13px] leading-snug text-muted">{sub}</p> : null}
+      </div>
+      {action ? <div className="shrink-0">{action}</div> : null}
+    </div>
+  );
+}

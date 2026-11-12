@@ -60,7 +60,10 @@ function InventoryInner() {
     if (sort === "recent") {
       sorted.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     } else if (sort === "value") {
-      sorted.sort((a, b) => b.currentValue - a.currentValue);
+      // Null means "never recorded" — it must sort with the unknowns, not
+      // poison the comparator with NaN.
+      const value = (i: Item) => i.currentValue ?? -1;
+      sorted.sort((a, b) => value(b) - value(a));
     } else if (sort === "idle") {
       const idle = (i: Item) => daysSince(i.lastUsedAt ?? i.purchaseDate) ?? -1;
       sorted.sort((a, b) => idle(b) - idle(a));
@@ -123,6 +126,7 @@ function InventoryInner() {
               <option value="sold">Sold</option>
               <option value="donated">Donated</option>
               <option value="disposed">Disposed</option>
+              <option value="closed">Closed</option>
             </select>
           </div>
           <div className="sm:w-44">

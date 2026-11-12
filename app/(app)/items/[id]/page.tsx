@@ -131,13 +131,17 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
                     key={d.id}
                     className="flex flex-wrap items-center justify-between gap-2 px-6 py-3 text-sm"
                   >
-                    <span className="capitalize text-ink">
-                      {d.disposition} · {formatDate(d.disposedAt)}
+                    <span className="text-ink">
+                      {STATUS_LABELS[d.disposition] ?? d.disposition} ·{" "}
+                      {formatDate(d.disposedAt)}
                       {d.channel ? ` · ${d.channel}` : ""}
                     </span>
                     <span className="tabular text-muted">
-                      {d.disposition === "sold" ? formatMoney(d.amount) : ""}
-                      {d.notes ? ` · ${d.notes}` : ""}
+                      {/* An unknown amount renders as nothing at all — no
+                          dangling separator before the notes. */}
+                      {d.amount !== null ? formatMoney(d.amount) : ""}
+                      {d.amount !== null && d.notes ? " · " : ""}
+                      {d.notes}
                     </span>
                   </li>
                 ))}

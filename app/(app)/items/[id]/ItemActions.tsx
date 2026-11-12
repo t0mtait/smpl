@@ -5,7 +5,16 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { Disposition, Item } from "@/lib/db";
 import { formatDate, formatMoney, STATUS_LABELS, STATUS_STYLES } from "@/lib/format";
-import { IconCash, IconHeart, IconPencil, IconRecycle, IconTrash, IconUndo } from "@/components/icons";
+import { today } from "@/lib/dates";
+import {
+  IconArchive,
+  IconCash,
+  IconHeart,
+  IconPencil,
+  IconRecycle,
+  IconTrash,
+  IconUndo,
+} from "@/components/icons";
 
 const CHANNELS = ["eBay", "Facebook Marketplace", "Craigslist", "Poshmark", "OfferUp", "Buy Nothing", "Other"];
 
@@ -13,16 +22,18 @@ const OUTCOMES: { value: Disposition; label: string; icon: React.ReactNode }[] =
   { value: "sold", label: "Sold", icon: <IconCash width={15} height={15} /> },
   { value: "donated", label: "Donated", icon: <IconHeart width={15} height={15} /> },
   { value: "disposed", label: "Disposed", icon: <IconRecycle width={15} height={15} /> },
+  // "Closed" is for things that simply left without a recorded outcome.
+  { value: "closed", label: "Closed", icon: <IconArchive width={15} height={15} /> },
 ];
 
 export default function ItemActions({ item }: { item: Item }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [disposition, setDisposition] = useState<Disposition>("sold");
-  const [amount, setAmount] = useState(String(item.currentValue || ""));
+  const [amount, setAmount] = useState(item.currentValue === null ? "" : String(item.currentValue));
   const [channel, setChannel] = useState("");
   const [notes, setNotes] = useState("");
-  const [disposedAt, setDisposedAt] = useState(new Date().toISOString().slice(0, 10));
+  const [disposedAt, setDisposedAt] = useState(today());
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -37,7 +48,8 @@ export default function ItemActions({ item }: { item: Item }) {
         body: JSON.stringify({
           disposition,
           disposedAt,
-          amount: Number(amount) || 0,
+          // An empty amount means "never recorded" — never $0.
+          amount: amount.trim() === "" ? null : Number(amount),
           channel,
           notes,
         }),
@@ -97,7 +109,7 @@ export default function ItemActions({ item }: { item: Item }) {
         {!open ? (
           <button className="btn-clay" onClick={() => setOpen(true)}>
             <IconRecycle width={15} height={15} />
-            Mark as sold / donated / disposed
+            Mark as sold / donated / disposed / closed
           </button>
         ) : null}
       </div>
@@ -136,6 +148,9 @@ export default function ItemActions({ item }: { item: Item }) {
             <div>
               <label className="label" htmlFor="amount">
                 Amount ($)
+                {disposition === "sold" ? (
+                  <span className="ml-1 font-normal text-muted">optional</span>
+                ) : null}
               </label>
               <input
                 id="amount"

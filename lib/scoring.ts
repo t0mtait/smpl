@@ -1,4 +1,5 @@
-import type { Item, UseFrequency } from "./db";
+import type { Item, UseFrequency } from "./db.ts";
+import { daysSinceDate } from "./dates.ts";
 
 /**
  * The declutter heuristic.
@@ -74,29 +75,41 @@ function baseName(name: string): string {
 }
 
 /**
- * Two items count as duplicates when they share a base name AND their
- * purchase prices are in the same ballpark. The price check is what keeps
- * "iPhone 7" and "iPhone 9" (different price brackets) from being called
- * duplicates of each other.
+ * Price comparison between two possible duplicates.
+ *
+ *   match   - the prices sit in the same ballpark
+ *   differ  - the prices rule them out (different price brackets)
+ *   unknown - we never recorded one of the prices, so nothing rules them out
+ *
+ * The price check is what keeps "iPhone 7" and "iPhone 9" from being called
+ * duplicates of each other. An unknown price is not evidence of a difference,
+ * so it never rules a pair out — it just leaves them unproven.
  */
-function pricesMatch(a: number, b: number): boolean {
-  if (a <= 0 && b <= 0) return true;
-  if (a <= 0 || b <= 0) return false;
+function priceEvidence(a: number | null, b: number | null): "match" | "differ" | "unknown" {
+  if (a === null || b === null) return "unknown";
+  if (a <= 0 && b <= 0) return "match";
+  if (a <= 0 || b <= 0) return "differ";
   const high = Math.max(a, b);
   const low = Math.min(a, b);
-  return high - low <= Math.max(5, high * 0.25);
+  return high - low <= Math.max(5, high * 0.25) ? "match" : "differ";
 }
 
-function parseDate(value: string | null): Date | null {
-  if (!value) return null;
-  const d = new Date(value.includes("T") ? value : `${value}T00:00:00`);
-  return Number.isNaN(d.getTime()) ? null : d;
+/** Identical names (ignoring case and punctuation) mean the same product. */
+function namesMatch(a: string, b: string): boolean {
+  return normalizeName(a) === normalizeName(b);
 }
 
+/**
+ * Whole calendar days between a date and now.
+ *
+ * This compares calendar days, not elapsed milliseconds. A date stored as
+ * "2026-11-09" means local midnight on the 9th, so at 23:42 on the 12th
+ * that is three calendar days — not 2.98 days, which would floor to 2.
+ * Elapsed-time arithmetic makes every date look a day older than it is
+ * for most of the day, and makes "today" negative in the evening.
+ */
 export function daysSince(value: string | null): number | null {
-  const d = parseDate(value);
-  if (!d) return null;
-  return Math.floor((Date.now() - d.getTime()) / 86400000);
+  return daysSinceDate(value);
 }
 
 function seasonOf(category: string): "summer" | "winter" | null {
@@ -209,15 +222,24 @@ export function scoreItem(item: Item, duplicateIds: Set<number>): ScoredItem {
 
   // 4. Low value — up to 15 points. The resale upside is small, so keeping
   //    it around costs more space than it is worth.
+  //
+  //    An unknown value is not a low value. If we treated "never recorded" as
+  //    $0, every priceless item we failed to price would be pushed to the top
+  //    of the declutter list. Unknown values simply carry no signal.
   const value = item.currentValue;
-  if (value < 50) {
-    const points = value <= 0 ? 15 : Math.round((1 - value / 50) * 15);
-    reasons.push({ label: value <= 0 ? "No resale value" : `Low value ($${value.toFixed(0)})`, weight: points });
-    score += points;
-  } else if (value < 200) {
-    const points = Math.round((1 - (value - 50) / 150) * 8);
-    reasons.push({ label: `Modest value ($${value.toFixed(0)})`, weight: points });
-    score += points;
+  if (value !== null) {
+    if (value < 50) {
+      const points = value <= 0 ? 15 : Math.round((1 - value / 50) * 15);
+      reasons.push({
+        label: value <= 0 ? "No resale value" : `Low value ($${value.toFixed(0)})`,
+        weight: points,
+      });
+      score += points;
+    } else if (value < 200) {
+      const points = Math.round((1 - (value - 50) / 150) * 8);
+      reasons.push({ label: `Modest value ($${value.toFixed(0)})`, weight: points });
+      score += points;
+    }
   }
 
   // 5. Duplicates — 12 points.
@@ -239,7 +261,13 @@ export function scoreItem(item: Item, duplicateIds: Set<number>): ScoredItem {
   }
 
   // 7. Depreciating + already paid for — up to 8 points of pure sunk cost.
-  if (DEPRECIATING.has(item.category.toLowerCase()) && item.purchasePrice > item.currentValue) {
+  //    Only computable when both figures are known.
+  if (
+    DEPRECIATING.has(item.category.toLowerCase()) &&
+    item.purchasePrice !== null &&
+    item.currentValue !== null &&
+    item.purchasePrice > item.currentValue
+  ) {
     const lost = item.purchasePrice - item.currentValue;
     const points = Math.min(8, Math.max(2, Math.round(lost / 100)));
     reasons.push({ label: `Lost ~$${lost.toFixed(0)} in value`, weight: points });
@@ -299,7 +327,9 @@ export function findDuplicateItemIds(items: Item[]): Set<number> {
     for (const item of group) {
       const hasTwin = group.some(
         (other) =>
-          other.id !== item.id && pricesMatch(item.purchasePrice, other.purchasePrice)
+          other.id !== item.id &&
+          (namesMatch(item.name, other.name) ||
+            priceEvidence(item.purchasePrice, other.purchasePrice) !== "differ")
       );
       if (hasTwin) dupes.add(item.id);
     }

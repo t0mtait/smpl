@@ -1,5 +1,5 @@
-import { scoreItem, scoreAll, findDuplicateNames, findDuplicateItemIds, daysSince } from "../lib/scoring";
-import type { Item } from "../lib/db";
+import { scoreItem, scoreAll, findDuplicateNames, findDuplicateItemIds, daysSince } from "../lib/scoring.ts";
+import type { Item } from "../lib/db.ts";
 
 function makeItem(overrides: Partial<Item> = {}): Item {
   return {
@@ -23,8 +23,19 @@ function makeItem(overrides: Partial<Item> = {}): Item {
   };
 }
 
+/**
+ * A local calendar date N days back.
+ *
+ * Local, not UTC: the app reads a stored date back as local midnight, so a
+ * UTC-built date string is a different day for part of every evening.
+ */
 function daysAgo(n: number): string {
-  return new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 let passed = 0;

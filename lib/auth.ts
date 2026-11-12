@@ -21,9 +21,9 @@ import {
   getUserByEmail,
   getUserById,
   purgeExpiredSessions,
-} from "./db";
-import type { User } from "./db";
-import { fakeVerify, hashPassword, verifyPassword } from "./password";
+} from "./db.ts";
+import type { User } from "./db.ts";
+import { fakeVerify, hashPassword, verifyPassword } from "./password.ts";
 
 export const SESSION_COOKIE = "declutter_session";
 const SESSION_DAYS = 30;
