@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { formatCategory, getCategoryStyle } from "@/lib/format";
 
 /* ------------------------------------------------------------------
    Score ring — a donut gauge for the 0-100 declutter score.
@@ -364,6 +365,27 @@ export function StatusTag({
     <span className={`status-tag ${status.style} ${className}`} title={status.label}>
       <span className="status-tag-eyelet" aria-hidden="true" />
       <span>{status.label}</span>
+    </span>
+  );
+}
+
+/* ------------------------------------------------------------------
+   Category tag — a tag-shaped badge with an eyelet hole for categories.
+   ------------------------------------------------------------------ */
+
+export function CategoryTag({
+  category,
+  className = "",
+}: {
+  category: string | null | undefined;
+  className?: string;
+}) {
+  const formatted = formatCategory(category);
+  const style = getCategoryStyle(category);
+  return (
+    <span className={`status-tag ${style} ${className}`} title={formatted}>
+      <span className="status-tag-eyelet" aria-hidden="true" />
+      <span>{formatted}</span>
     </span>
   );
 }

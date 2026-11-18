@@ -167,6 +167,7 @@ export function getDb(): DatabaseSync {
   ensureColumn(db, "items", "owner_id", "owner_id INTEGER REFERENCES users(id)");
   ensureColumn(db, "items", "offloaded_date", "offloaded_date TEXT");
   ensureColumn(db, "items", "brand", "brand TEXT NOT NULL DEFAULT ''");
+  ensureColumn(db, "items", "subcategory", "subcategory TEXT NOT NULL DEFAULT ''");
   ensureColumn(db, "items", "quality", "quality TEXT NOT NULL DEFAULT ''");
   ensureColumn(db, "users", "avatar_path", "avatar_path TEXT");
   // Money columns must allow NULL ("never recorded") rather than 0 ("free").
@@ -202,6 +203,15 @@ function backfillBrandAndQuality(d: DatabaseSync): void {
       const q = extractTag(r.description, "Quality");
       if (q) d.prepare("UPDATE items SET quality = ? WHERE id = ?").run(q, r.id);
     }
+    const sRows = d
+      .prepare(
+        "SELECT id, description FROM items WHERE (subcategory IS NULL OR subcategory = '') AND (description LIKE '%Type:%' OR description LIKE '%Subcategory:%')"
+      )
+      .all() as { id: number; description: string }[];
+    for (const r of sRows) {
+      const s = extractTag(r.description, "Subcategory") || extractTag(r.description, "Type");
+      if (s) d.prepare("UPDATE items SET subcategory = ? WHERE id = ?").run(s, r.id);
+    }
   } catch {
     /* ignore backfill errors */
   }
@@ -214,6 +224,10 @@ function toItem(row: Record<string, unknown>): Item {
     row.brand != null && String(row.brand).trim()
       ? String(row.brand).trim()
       : extractTag(desc, "Brand");
+  const subcategory =
+    row.subcategory != null && String(row.subcategory).trim()
+      ? String(row.subcategory).trim()
+      : (extractTag(desc, "Subcategory") || extractTag(desc, "Type"));
   const quality =
     row.quality != null && String(row.quality).trim()
       ? String(row.quality).trim()
@@ -225,6 +239,7 @@ function toItem(row: Record<string, unknown>): Item {
     name: String(row.name),
     brand,
     category: String(row.category),
+    subcategory,
     quality,
     description: desc,
     location: String(row.location ?? ""),
@@ -259,6 +274,7 @@ export interface Item {
   name: string;
   brand: string;
   category: string;
+  subcategory: string;
   quality: string;
   description: string;
   location: string;
@@ -445,6 +461,7 @@ export interface ItemInput {
   name: string;
   brand?: string;
   category: string;
+  subcategory?: string;
   quality?: string;
   description: string;
   location: string;
@@ -462,15 +479,16 @@ export interface ItemInput {
 export function createItem(ownerId: number, input: ItemInput): Item {
   const res = getDb()
     .prepare(
-      `INSERT INTO items (owner_id, name, brand, category, quality, description, location, purchase_date, offloaded_date,
+      `INSERT INTO items (owner_id, name, brand, category, subcategory, quality, description, location, purchase_date, offloaded_date,
                           purchase_price, current_value, status, last_used_at, use_frequency, photo_path, priority)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       ownerId,
       input.name,
       input.brand ?? "",
       input.category,
+      input.subcategory ?? "",
       input.quality ?? "",
       input.description,
       input.location,
@@ -494,6 +512,7 @@ export function updateItem(ownerId: number, id: number, input: Partial<ItemInput
     name: input.name ?? existing.name,
     brand: input.brand !== undefined ? input.brand : existing.brand,
     category: input.category ?? existing.category,
+    subcategory: input.subcategory !== undefined ? input.subcategory : existing.subcategory,
     quality: input.quality !== undefined ? input.quality : existing.quality,
     description: input.description ?? existing.description,
     location: input.location ?? existing.location,
@@ -511,7 +530,7 @@ export function updateItem(ownerId: number, id: number, input: Partial<ItemInput
   };
   getDb()
     .prepare(
-      `UPDATE items SET name = ?, brand = ?, category = ?, quality = ?, description = ?, location = ?, purchase_date = ?, offloaded_date = ?,
+      `UPDATE items SET name = ?, brand = ?, category = ?, subcategory = ?, quality = ?, description = ?, location = ?, purchase_date = ?, offloaded_date = ?,
               purchase_price = ?, current_value = ?, status = ?, last_used_at = ?, use_frequency = ?,
               photo_path = ?, priority = ?, updated_at = datetime('now')
        WHERE id = ? AND owner_id = ?`
@@ -520,6 +539,7 @@ export function updateItem(ownerId: number, id: number, input: Partial<ItemInput
       merged.name,
       merged.brand ?? "",
       merged.category,
+      merged.subcategory ?? "",
       merged.quality ?? "",
       merged.description,
       merged.location,

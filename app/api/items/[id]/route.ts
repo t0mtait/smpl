@@ -35,6 +35,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if (typeof body.name === "string" && body.name.trim()) patch.name = body.name.trim();
   if (typeof body.brand === "string") patch.brand = body.brand.trim();
   if (typeof body.category === "string") patch.category = body.category.trim() || "uncategorized";
+  if (typeof body.subcategory === "string") patch.subcategory = body.subcategory.trim();
   if (typeof body.quality === "string") patch.quality = body.quality.trim();
   if (typeof body.description === "string") patch.description = body.description;
   if (typeof body.location === "string") patch.location = body.location;

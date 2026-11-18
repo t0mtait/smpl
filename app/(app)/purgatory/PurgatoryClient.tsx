@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { Item } from "@/lib/db";
 import { formatMoney, formatQuarter } from "@/lib/format";
 import { currentQuarter } from "@/lib/dates";
+import { CategoryTag } from "@/components/ui";
 import { IconArrowLeft, IconBox, IconCheck, IconFlame, IconUndo } from "@/components/icons";
 
 interface OffloadModalProps {
@@ -253,8 +254,8 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                         </span>
                       ) : null}
                     </th>
-                    <td className="px-4 py-3 text-[13px] capitalize text-ink-soft">
-                      {item.category}
+                    <td className="px-4 py-3">
+                      <CategoryTag category={item.category} />
                     </td>
                     <td className="tabular px-4 py-3 text-right text-[13px] font-medium text-ink">
                       {formatMoney(item.currentValue)}

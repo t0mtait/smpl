@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Item } from "@/lib/db";
 import { formatCategory, formatMoney, formatQuarter, getItemStatusInfo } from "@/lib/format";
-import { StatusTag } from "@/components/ui";
+import { CategoryTag, StatusTag } from "@/components/ui";
 import {
   IconArchive,
   IconBox,
@@ -38,6 +38,7 @@ export default function OffloadedClient({ initialItems }: { initialItems: Item[]
         item.name.toLowerCase().includes(q) ||
         (item.brand && item.brand.toLowerCase().includes(q)) ||
         item.category.toLowerCase().includes(q) ||
+        (item.subcategory && item.subcategory.toLowerCase().includes(q)) ||
         item.description.toLowerCase().includes(q) ||
         item.location.toLowerCase().includes(q)
       );
@@ -229,8 +230,8 @@ export default function OffloadedClient({ initialItems }: { initialItems: Item[]
                         </Link>
                       </th>
                       <td className="px-4 py-3 text-[13px] text-ink-soft">{item.brand || "—"}</td>
-                      <td className="px-4 py-3 text-[13px] text-ink-soft">
-                        {formatCategory(item.category)}
+                      <td className="px-4 py-3">
+                        <CategoryTag category={item.category} />
                       </td>
                       <td className="px-4 py-3">
                         <StatusTag status={statusInfo} />

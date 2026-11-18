@@ -168,3 +168,55 @@ export function formatCategory(category: string | null | undefined): string {
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(" ");
 }
+
+export const CATEGORY_STYLES: Record<string, string> = {
+  clothing: "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300",
+  electronics: "bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300",
+  computer: "bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300",
+  phone: "bg-cyan-100 text-cyan-800 dark:bg-cyan-950/60 dark:text-cyan-300",
+  console: "bg-violet-100 text-violet-800 dark:bg-violet-950/60 dark:text-violet-300",
+  kitchen: "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300",
+  furniture: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300",
+  tools: "bg-orange-100 text-orange-800 dark:bg-orange-950/60 dark:text-orange-300",
+  books: "bg-yellow-100 text-yellow-800 dark:bg-yellow-950/60 dark:text-yellow-300",
+  sports: "bg-lime-100 text-lime-800 dark:bg-lime-950/60 dark:text-lime-300",
+  hobby: "bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-950/60 dark:text-fuchsia-300",
+  toys: "bg-pink-100 text-pink-800 dark:bg-pink-950/60 dark:text-pink-300",
+  vehicle: "bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300",
+  appliance: "bg-teal-100 text-teal-800 dark:bg-teal-950/60 dark:text-teal-300",
+  camping: "bg-green-100 text-green-800 dark:bg-green-950/60 dark:text-green-300",
+  jewelry: "bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300",
+  documents: "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300",
+  christmas: "bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300",
+  misc: "bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-300",
+  uncategorized: "bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-300",
+};
+
+const CATEGORY_PALETTE = [
+  "bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300",
+  "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300",
+  "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300",
+  "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300",
+  "bg-violet-100 text-violet-800 dark:bg-violet-950/60 dark:text-violet-300",
+  "bg-orange-100 text-orange-800 dark:bg-orange-950/60 dark:text-orange-300",
+  "bg-cyan-100 text-cyan-800 dark:bg-cyan-950/60 dark:text-cyan-300",
+  "bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-950/60 dark:text-fuchsia-300",
+  "bg-lime-100 text-lime-800 dark:bg-lime-950/60 dark:text-lime-300",
+  "bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300",
+  "bg-yellow-100 text-yellow-800 dark:bg-yellow-950/60 dark:text-yellow-300",
+  "bg-pink-100 text-pink-800 dark:bg-pink-950/60 dark:text-pink-300",
+  "bg-teal-100 text-teal-800 dark:bg-teal-950/60 dark:text-teal-300",
+  "bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300",
+];
+
+export function getCategoryStyle(category: string | null | undefined): string {
+  if (!category) return CATEGORY_STYLES.uncategorized;
+  const key = category.trim().toLowerCase();
+  if (CATEGORY_STYLES[key]) return CATEGORY_STYLES[key];
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) {
+    hash = (hash << 5) - hash + key.charCodeAt(i);
+    hash |= 0;
+  }
+  return CATEGORY_PALETTE[Math.abs(hash) % CATEGORY_PALETTE.length];
+}

@@ -24,6 +24,7 @@ function makeItem(overrides: Partial<Item> = {}): Item {
     name: "Test item",
     brand: "",
     category: "misc",
+    subcategory: "",
     quality: "",
     description: "",
     location: "",

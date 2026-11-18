@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS items (
   name            TEXT    NOT NULL,
   brand           TEXT    NOT NULL DEFAULT '',
   category        TEXT    NOT NULL DEFAULT 'uncategorized',
+  subcategory     TEXT    NOT NULL DEFAULT '',
   quality         TEXT    NOT NULL DEFAULT '',
   description     TEXT    NOT NULL DEFAULT '',
   location        TEXT    NOT NULL DEFAULT '',

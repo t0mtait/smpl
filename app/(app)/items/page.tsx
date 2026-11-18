@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type { Item } from "@/lib/db";
 import { formatCategory, formatDate, formatMoney, formatQuarter, getItemStatusInfo } from "@/lib/format";
-import { StatusTag } from "@/components/ui";
+import { CategoryTag, StatusTag } from "@/components/ui";
 import { IconBox, IconFlame, IconPlus, IconSearch, IconX } from "@/components/icons";
 import {
   DEFAULT_SORT,
@@ -196,7 +196,7 @@ function InventoryInner() {
       {sorted.length > 0 ? (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1020px] border-collapse text-left">
+            <table className="w-full min-w-[1120px] border-collapse text-left">
               <caption className="sr-only">
                 Your inventory: {sorted.length} item{sorted.length === 1 ? "" : "s"}. Choose a column
                 heading to sort by that column.
@@ -262,7 +262,10 @@ function InventoryInner() {
                         </Link>
                       </th>
                       <td className="px-4 py-3 text-[13px] text-ink-soft">{item.brand || "—"}</td>
-                      <td className="px-4 py-3 text-[13px] text-ink-soft">{formatCategory(item.category)}</td>
+                      <td className="px-4 py-3">
+                        <CategoryTag category={item.category} />
+                      </td>
+                      <td className="px-4 py-3 text-[13px] text-ink-soft">{item.subcategory || "—"}</td>
                       <td className="px-4 py-3 text-[13px] text-ink-soft">{item.quality || "—"}</td>
                       <td className="px-4 py-3">
                         <StatusTag status={statusInfo} />

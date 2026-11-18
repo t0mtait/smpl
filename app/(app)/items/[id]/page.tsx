@@ -4,7 +4,7 @@ import { getItem, listDisposals, listItems } from "@/lib/db";
 import { scoreItem, findDuplicateItemIds } from "@/lib/scoring";
 import { formatDate, formatMoney, formatQuarter, formatCategory, FREQUENCY_LABELS, getItemStatusInfo, STATUS_LABELS } from "@/lib/format";
 import { requireUser } from "@/lib/auth";
-import { ScoreRing, StatusTag } from "@/components/ui";
+import { ScoreRing, StatusTag, CategoryTag } from "@/components/ui";
 import { IconArrowLeft, IconPencil } from "@/components/icons";
 import ItemActions from "./ItemActions";
 
@@ -24,7 +24,8 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
 
   const facts: { label: string; value: React.ReactNode }[] = [
     { label: "Brand", value: item.brand || "—" },
-    { label: "Category", value: formatCategory(item.category) },
+    { label: "Category", value: <CategoryTag category={item.category} /> },
+    { label: "Subcategory", value: item.subcategory || "—" },
     { label: "Quality", value: item.quality || "—" },
     { label: "Location", value: item.location || "—" },
     { label: "Paid", value: <span className="tabular">{formatMoney(item.purchasePrice)}</span> },

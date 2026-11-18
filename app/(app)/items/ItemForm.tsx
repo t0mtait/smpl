@@ -19,6 +19,7 @@ export default function ItemForm({ item }: Props) {
     name: item?.name ?? "",
     brand: item?.brand ?? "",
     category: item?.category ?? "uncategorized",
+    subcategory: item?.subcategory ?? "",
     quality: item?.quality ?? "",
     description: item?.description ?? "",
     location: item?.location ?? "",
@@ -47,6 +48,7 @@ export default function ItemForm({ item }: Props) {
       name: form.name,
       brand: form.brand,
       category: form.category,
+      subcategory: form.subcategory,
       quality: form.quality,
       description: form.description,
       location: form.location,
@@ -125,6 +127,18 @@ export default function ItemForm({ item }: Props) {
                 </option>
               ))}
             </select>
+          </div>
+          <div>
+            <label className="label" htmlFor="subcategory">
+              Subcategory
+            </label>
+            <input
+              id="subcategory"
+              className="input"
+              value={form.subcategory}
+              onChange={set("subcategory")}
+              placeholder="e.g. Entertainment, Audio, Tools"
+            />
           </div>
           <div>
             <label className="label" htmlFor="quality">

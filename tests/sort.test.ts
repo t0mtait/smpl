@@ -69,6 +69,7 @@ function item(overrides: Partial<Item> = {}): Item {
     name: "Item",
     brand: "",
     category: "misc",
+    subcategory: "",
     quality: "",
     description: "",
     location: "",
@@ -137,6 +138,20 @@ function names(items: Item[]): string[] {
   eqList("name descending reverses it",
     names(sortItems(items, { key: "name", direction: "desc" })),
     ["Desk", "Chair", "apple"]);
+}
+
+/* -------------------------------------------------- sorting: subcategory */
+
+{
+  const items = [
+    item({ name: "Monitor", id: 1, subcategory: "Peripherals" }),
+    item({ name: "Headphones", id: 2, subcategory: "Audio" }),
+    item({ name: "Cable", id: 3, subcategory: "Accessories" }),
+  ];
+
+  eqList("subcategory ascending sorts alphabetically",
+    names(sortItems(items, { key: "subcategory", direction: "asc" })),
+    ["Cable", "Headphones", "Monitor"]);
 }
 
 /* -------------------------------------------------------- sorting: value */
@@ -279,6 +294,10 @@ function names(items: Item[]): string[] {
   eqList("the query matches the category",
     names(filterItems(items, { query: "kitchen", status: "all", category: "all" })),
     ["Cast Iron Pan"]);
+
+  eqList("the query matches the subcategory",
+    names(filterItems([item({ name: "A", subcategory: "Coffee" }), item({ name: "B", subcategory: "Tea" })], { query: "coffee", status: "all", category: "all" })),
+    ["A"]);
 
   eqList("the query matches the location",
     names(filterItems(items, { query: "garage", status: "all", category: "all" })),

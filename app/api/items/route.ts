@@ -49,6 +49,7 @@ function parseInput(body: Record<string, unknown>): ItemInput {
     name: str(body.name) || "Untitled item",
     brand: str(body.brand),
     category: str(body.category) || "uncategorized",
+    subcategory: str(body.subcategory),
     quality: str(body.quality),
     description: str(body.description),
     location: str(body.location),

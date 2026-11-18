@@ -21,7 +21,7 @@
 import type { Item, ItemStatus } from "./db.ts";
 import { daysSince } from "./scoring.ts";
 
-export type SortKey = "name" | "brand" | "category" | "quality" | "status" | "value" | "acquired" | "offloaded" | "idle" | "added";
+export type SortKey = "name" | "brand" | "category" | "subcategory" | "quality" | "status" | "value" | "acquired" | "offloaded" | "idle" | "added";
 export type SortDirection = "asc" | "desc";
 
 export interface SortState {
@@ -75,6 +75,7 @@ const DEFAULT_DIRECTION: Record<SortKey, SortDirection> = {
   name: "asc",
   brand: "asc",
   category: "asc",
+  subcategory: "asc",
   quality: "asc",
   status: "asc",
   value: "desc",
@@ -94,6 +95,7 @@ export const SORT_COLUMNS: { key: SortKey; label: string; numeric?: boolean }[] 
   { key: "name", label: "Item" },
   { key: "brand", label: "Brand" },
   { key: "category", label: "Category" },
+  { key: "subcategory", label: "Subcategory" },
   { key: "quality", label: "Quality" },
   { key: "status", label: "Status" },
   { key: "value", label: "Value", numeric: true },
@@ -163,6 +165,8 @@ function compareOn(a: Item, b: Item, key: SortKey, dir: 1 | -1): number {
       return (a.brand || "").localeCompare(b.brand || "") * dir;
     case "category":
       return a.category.localeCompare(b.category) * dir;
+    case "subcategory":
+      return (a.subcategory || "").localeCompare(b.subcategory || "") * dir;
     case "quality":
       return (a.quality || "").localeCompare(b.quality || "") * dir;
     case "status": {
@@ -231,6 +235,7 @@ export function filterItems(items: readonly Item[], filters: InventoryFilters): 
       item.name.toLowerCase().includes(query) ||
       (item.brand && item.brand.toLowerCase().includes(query)) ||
       item.category.toLowerCase().includes(query) ||
+      (item.subcategory && item.subcategory.toLowerCase().includes(query)) ||
       (item.quality && item.quality.toLowerCase().includes(query)) ||
       item.location.toLowerCase().includes(query) ||
       item.description.toLowerCase().includes(query)
