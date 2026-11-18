@@ -1,6 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 import fs from "node:fs";
 import path from "node:path";
+import { today } from "./dates.ts";
 
 export const DATA_DIR = process.env.DECLUTTER_DATA_DIR
   ? path.resolve(process.env.DECLUTTER_DATA_DIR)
@@ -137,9 +138,13 @@ function adoptOrphans(d: DatabaseSync): void {
   const orphanItems = d.prepare("SELECT COUNT(*) c FROM items WHERE owner_id IS NULL").get() as {
     c: number;
   };
-  if (orphanItems.c === 0) return;
+  const orphanWishlist = d.prepare("SELECT COUNT(*) c FROM wishlist_items WHERE owner_id IS NULL").get() as {
+    c: number;
+  };
+  if (orphanItems.c === 0 && orphanWishlist.c === 0) return;
   const id = ensureBootstrapUser(d);
-  d.prepare("UPDATE items SET owner_id = ? WHERE owner_id IS NULL").run(id);
+  if (orphanItems.c > 0) d.prepare("UPDATE items SET owner_id = ? WHERE owner_id IS NULL").run(id);
+  if (orphanWishlist.c > 0) d.prepare("UPDATE wishlist_items SET owner_id = ? WHERE owner_id IS NULL").run(id);
 }
 
 export function getDb(): DatabaseSync {
@@ -289,6 +294,7 @@ export function claimBootstrapData(newUserId: number): void {
   const boot = d.prepare("SELECT id FROM users WHERE is_bootstrap = 1").all() as { id: number }[];
   for (const b of boot) {
     d.prepare("UPDATE items SET owner_id = ? WHERE owner_id = ?").run(newUserId, b.id);
+    d.prepare("UPDATE wishlist_items SET owner_id = ? WHERE owner_id = ?").run(newUserId, b.id);
     d.prepare("DELETE FROM users WHERE id = ?").run(b.id);
   }
 }
@@ -503,4 +509,148 @@ export function listDisposals(ownerId: number): Disposal[] {
     channel: String(r.channel ?? ""),
     notes: String(r.notes ?? ""),
   }));
+}
+
+/* ---------------------------------------------------------------- wishlist */
+
+export interface WishlistItem {
+  id: number;
+  ownerId: number;
+  name: string;
+  category: string;
+  price: number | null;
+  url: string;
+  notes: string;
+  priority: "high" | "medium" | "low";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WishlistInput {
+  name: string;
+  category?: string;
+  price?: number | null;
+  url?: string;
+  notes?: string;
+  priority?: "high" | "medium" | "low";
+}
+
+function toWishlistItem(row: Record<string, unknown>): WishlistItem {
+  return {
+    id: Number(row.id),
+    ownerId: Number(row.owner_id),
+    name: String(row.name),
+    category: String(row.category ?? "misc"),
+    price: row.price === null || row.price === undefined ? null : Number(row.price),
+    url: String(row.url ?? ""),
+    notes: String(row.notes ?? ""),
+    priority: (String(row.priority ?? "medium") as "high" | "medium" | "low") || "medium",
+    createdAt: String(row.created_at),
+    updatedAt: String(row.updated_at),
+  };
+}
+
+export function listWishlist(ownerId: number): WishlistItem[] {
+  const rows = getDb()
+    .prepare("SELECT * FROM wishlist_items WHERE owner_id = ? ORDER BY created_at DESC, id DESC")
+    .all(ownerId) as Record<string, unknown>[];
+  return rows.map(toWishlistItem);
+}
+
+export function getWishlistItem(ownerId: number, id: number): WishlistItem | null {
+  const row = getDb()
+    .prepare("SELECT * FROM wishlist_items WHERE id = ? AND owner_id = ?")
+    .get(id, ownerId) as Record<string, unknown> | undefined;
+  return row ? toWishlistItem(row) : null;
+}
+
+export function createWishlistItem(ownerId: number, input: WishlistInput): WishlistItem {
+  const res = getDb()
+    .prepare(
+      `INSERT INTO wishlist_items (owner_id, name, category, price, url, notes, priority)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
+    )
+    .run(
+      ownerId,
+      input.name.trim(),
+      (input.category ?? "misc").trim() || "misc",
+      input.price === null || input.price === undefined ? null : Number(input.price),
+      (input.url ?? "").trim(),
+      (input.notes ?? "").trim(),
+      input.priority ?? "medium"
+    );
+  return getWishlistItem(ownerId, Number(res.lastInsertRowid))!;
+}
+
+export function updateWishlistItem(
+  ownerId: number,
+  id: number,
+  input: Partial<WishlistInput>
+): WishlistItem | null {
+  const existing = getWishlistItem(ownerId, id);
+  if (!existing) return null;
+
+  const merged = {
+    name: input.name !== undefined ? input.name.trim() : existing.name,
+    category: input.category !== undefined ? input.category.trim() || "misc" : existing.category,
+    price: input.price !== undefined ? (input.price === null ? null : Number(input.price)) : existing.price,
+    url: input.url !== undefined ? input.url.trim() : existing.url,
+    notes: input.notes !== undefined ? input.notes.trim() : existing.notes,
+    priority: input.priority !== undefined ? input.priority : existing.priority,
+  };
+
+  getDb()
+    .prepare(
+      `UPDATE wishlist_items
+       SET name = ?, category = ?, price = ?, url = ?, notes = ?, priority = ?, updated_at = datetime('now')
+       WHERE id = ? AND owner_id = ?`
+    )
+    .run(
+      merged.name,
+      merged.category,
+      merged.price,
+      merged.url,
+      merged.notes,
+      merged.priority,
+      id,
+      ownerId
+    );
+
+  return getWishlistItem(ownerId, id);
+}
+
+export function deleteWishlistItem(ownerId: number, id: number): boolean {
+  const res = getDb()
+    .prepare("DELETE FROM wishlist_items WHERE id = ? AND owner_id = ?")
+    .run(id, ownerId);
+  return Number(res.changes) > 0;
+}
+
+export function convertWishlistItemToInventory(
+  ownerId: number,
+  id: number,
+  purchasePrice?: number | null
+): Item | null {
+  const wish = getWishlistItem(ownerId, id);
+  if (!wish) return null;
+
+  const finalPrice = purchasePrice !== undefined ? purchasePrice : wish.price;
+
+  const newItem = createItem(ownerId, {
+    name: wish.name,
+    category: wish.category,
+    description: wish.notes,
+    location: "",
+    purchaseDate: today(),
+    purchasePrice: finalPrice,
+    currentValue: finalPrice,
+    status: "owned",
+    lastUsedAt: null,
+    useFrequency: "unknown",
+    photoPath: null,
+    priority: "auto",
+  });
+
+  deleteWishlistItem(ownerId, id);
+  return newItem;
 }

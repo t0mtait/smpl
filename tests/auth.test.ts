@@ -115,6 +115,39 @@ const d = db.getDb();
 
   check("cross-account delete is denied", db.deleteItem(bob.id, aItem.id) === false);
   check("the item survived the cross-account delete", db.getItem(alice.id, aItem.id) !== null);
+
+  // Wishlist items are account-scoped.
+  const aWish = db.createWishlistItem(alice.id, {
+    name: "Alice's dream teapot",
+    category: "kitchen",
+    price: 45,
+    notes: "Wait 30 days",
+    priority: "high",
+  });
+  const bWish = db.createWishlistItem(bob.id, {
+    name: "Bob's espresso machine",
+    category: "kitchen",
+    price: 500,
+    priority: "medium",
+  });
+
+  check("wishlist items are scoped to owner", db.listWishlist(alice.id).length === 1);
+  check("owner sees their wishlist item", db.listWishlist(alice.id)[0].name === "Alice's dream teapot");
+  check("cross-account getWishlistItem denied", db.getWishlistItem(bob.id, aWish.id) === null);
+  check(
+    "cross-account updateWishlistItem denied",
+    db.updateWishlistItem(bob.id, aWish.id, { name: "hijacked" }) === null
+  );
+  check("cross-account deleteWishlistItem denied", db.deleteWishlistItem(bob.id, aWish.id) === false);
+
+  // Converting wishlist item to inventory creates owned item and removes wishlist item.
+  const converted = db.convertWishlistItemToInventory(alice.id, aWish.id, 40);
+  check("converted item returned", converted !== null);
+  check("converted item is in inventory", db.getItem(alice.id, converted!.id)?.name === "Alice's dream teapot");
+  check("converted item has updated price", db.getItem(alice.id, converted!.id)?.purchasePrice === 40);
+  check("converted item removed from wishlist", db.getWishlistItem(alice.id, aWish.id) === null);
+  check("alice wishlist is now empty", db.listWishlist(alice.id).length === 0);
+  db.deleteItem(alice.id, converted!.id);
 }
 
 /* --------------------------------------------------- bootstrap claiming */
@@ -130,6 +163,11 @@ const d = db.getDb();
   d.prepare("UPDATE users SET is_bootstrap = 1 WHERE id = ?").run(legacy.id);
   // Everything that existed before accounts lands on the bootstrap holder.
   d.prepare("UPDATE items SET owner_id = ? WHERE owner_id IN (?, ?)").run(
+    legacy.id,
+    alice.id,
+    bob.id
+  );
+  d.prepare("UPDATE wishlist_items SET owner_id = ? WHERE owner_id IN (?, ?)").run(
     legacy.id,
     alice.id,
     bob.id
@@ -157,6 +195,7 @@ const d = db.getDb();
     .prepare("SELECT COUNT(*) c FROM users WHERE id = ?")
     .get(String(legacy.id)) as { c: number };
   check("the bootstrap account is retired after claiming", remaining.c === 0, remaining.c);
+  check("claimed wishlist items move too", db.listWishlist(claimant.id).length === 1);
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

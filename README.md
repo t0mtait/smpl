@@ -61,9 +61,14 @@ stay accurate. Restore puts one back to owned.
 sales earnings by month for the last 12 months, value by category, and the
 full disposal breakdown.
 
+**Wishlist** — pause before you purchase. Track items you are considering buying,
+their target prices, URLs, and priority. The 30-day cooldown helps separate
+passing impulses from genuine utility, with one-click conversion to owned inventory
+when you do acquire them.
+
 ## Accounts
 
-Everything — items, photos, disposals, stats, recommendations — belongs
+Everything — items, photos, disposals, stats, recommendations, wishlist — belongs
 to an account. Two people can use the same server without seeing each other's
 inventory.
 
@@ -108,7 +113,7 @@ Caddy-terminated HTTPS still gets a `Secure` cookie:
 
 ```
 app/
-  (app)/           account-gated pages (dashboard, items, suggestions)
+  (app)/           account-gated pages (dashboard, items, suggestions, wishlist)
   auth/            login and registration
   api/
     auth/          login, register, session (login/register/logout)
@@ -116,6 +121,7 @@ app/
     photos/        owner-scoped photo serving
     stats/         aggregates
     suggestions/   scored candidates
+    wishlist/      list, create, update, delete, convert to inventory
   fonts.ts        self-hosted Inter + Instrument Serif via next/font/local
 components/
   icons.tsx       inline SVG icon set (no icon-font dependency)
@@ -181,6 +187,9 @@ pages redirect to `/auth/login`. Records owned by another account return `404`.
 | GET | `/api/photos/:name` | serve a photo (owner only) |
 | GET | `/api/stats` | all aggregate stats |
 | GET | `/api/suggestions?min=N` | scored candidates |
+| GET/POST | `/api/wishlist` | list / create wishlist candidates |
+| GET/PATCH/DELETE | `/api/wishlist/:id` | read / update / delete wishlist item |
+| POST | `/api/wishlist/:id/convert` | move wishlist item to owned inventory |
 
 ## Tests
 

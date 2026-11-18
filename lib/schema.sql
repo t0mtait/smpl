@@ -68,3 +68,18 @@ CREATE TABLE IF NOT EXISTS disposals (
 
 CREATE INDEX IF NOT EXISTS idx_disposals_item ON disposals(item_id);
 CREATE INDEX IF NOT EXISTS idx_disposals_at   ON disposals(disposed_at);
+
+CREATE TABLE IF NOT EXISTS wishlist_items (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  owner_id    INTEGER REFERENCES users(id),
+  name        TEXT    NOT NULL,
+  category    TEXT    NOT NULL DEFAULT 'misc',
+  price       REAL,
+  url         TEXT    NOT NULL DEFAULT '',
+  notes       TEXT    NOT NULL DEFAULT '',
+  priority    TEXT    NOT NULL DEFAULT 'medium',
+  created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_wishlist_owner ON wishlist_items(owner_id);

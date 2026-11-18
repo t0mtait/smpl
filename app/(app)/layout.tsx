@@ -5,6 +5,7 @@ import { SignOutIconButton } from "@/components/SignOutIconButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   IconBox,
+  IconHeart,
   IconHouse,
   IconPlus,
   IconSparkles,
@@ -18,6 +19,7 @@ export const dynamic = "force-dynamic";
 const NAV = [
   { href: "/", label: "Dashboard", icon: <IconHouse width={17} height={17} /> },
   { href: "/items", label: "Inventory", icon: <IconBox width={17} height={17} /> },
+  { href: "/wishlist", label: "Wishlist", icon: <IconHeart width={17} height={17} /> },
   { href: "/suggestions", label: "Get Rid Of", icon: <IconSparkles width={17} height={17} /> },
 ];
 

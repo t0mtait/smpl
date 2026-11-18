@@ -5,6 +5,15 @@ import { sansFont, sansFontExt, displayFont, displayFontExt } from "./fonts";
 export const metadata: Metadata = {
   title: "smpl.",
   description: "liv_smply",
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png" },
+    ],
+  },
 };
 
 /**
