@@ -24,6 +24,46 @@ export function formatDate(value: string | null | undefined): string {
   return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
 }
 
+/**
+ * Format a calendar date or quarter string as "QN YYYY" (e.g. "Q3 2024").
+ * Returns an em dash for missing values.
+ */
+export function formatQuarter(value: string | null | undefined): string {
+  if (!value) return "—";
+  const trimmed = value.trim();
+  if (!trimmed) return "—";
+
+  // Check for already in "QN YYYY"
+  const qy = /^Q([1-4])\s*(\d{4})$/i.exec(trimmed);
+  if (qy) return `Q${qy[1]} ${qy[2]}`;
+
+  // Check for "YYYY QN" or "YYYY-QN"
+  const yq = /^(\d{4})[-\s]*Q([1-4])$/i.exec(trimmed);
+  if (yq) return `Q${yq[2]} ${yq[1]}`;
+
+  // Check for ISO date "YYYY-MM-DD" or "YYYY-MM"
+  const iso = /^(\d{4})-(\d{2})(?:-\d{2})?/.exec(trimmed);
+  if (iso) {
+    const year = iso[1];
+    const month = parseInt(iso[2], 10);
+    if (month >= 1 && month <= 12) {
+      const q = Math.ceil(month / 3);
+      return `Q${q} ${year}`;
+    }
+  }
+
+  // Fallback to Date object parsing
+  const d = new Date(trimmed.includes("T") ? trimmed : `${trimmed}T00:00:00`);
+  if (!Number.isNaN(d.getTime())) {
+    const year = d.getFullYear();
+    const month = d.getMonth() + 1;
+    const q = Math.ceil(month / 3);
+    return `Q${q} ${year}`;
+  }
+
+  return trimmed;
+}
+
 export function relativeDays(days: number | null): string {
   if (days === null) return "—";
   if (days <= 0) return "today";

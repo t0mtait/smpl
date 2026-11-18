@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getItem, listDisposals, listItems } from "@/lib/db";
 import { scoreItem, findDuplicateItemIds } from "@/lib/scoring";
-import { formatDate, formatMoney, FREQUENCY_LABELS, getItemStatusInfo, STATUS_LABELS } from "@/lib/format";
+import { formatDate, formatMoney, formatQuarter, FREQUENCY_LABELS, getItemStatusInfo, STATUS_LABELS } from "@/lib/format";
 import { requireUser } from "@/lib/auth";
 import { ScoreRing } from "@/components/ui";
 import { IconArrowLeft, IconPencil } from "@/components/icons";
@@ -27,8 +27,8 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
     { label: "Location", value: item.location || "—" },
     { label: "Paid", value: <span className="tabular">{formatMoney(item.purchasePrice)}</span> },
     { label: "Worth today", value: <span className="tabular">{formatMoney(item.currentValue)}</span> },
-    { label: "Date acquired", value: formatDate(item.purchaseDate) },
-    { label: "Date offloaded", value: formatDate(item.offloadedDate) },
+    { label: "Date acquired", value: formatQuarter(item.purchaseDate) },
+    { label: "Date offloaded", value: formatQuarter(item.offloadedDate) },
     { label: "Frequency", value: FREQUENCY_LABELS[item.useFrequency] ?? item.useFrequency },
   ];
 

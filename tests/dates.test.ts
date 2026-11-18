@@ -13,7 +13,7 @@
  */
 import { toDateOnly, today, parseDateOnly, daysFromNow, daysSinceDate } from "../lib/dates.ts";
 import { daysSince } from "../lib/scoring.ts";
-import { formatDate } from "../lib/format.ts";
+import { formatDate, formatQuarter } from "../lib/format.ts";
 
 let passed = 0;
 let failed = 0;
@@ -97,6 +97,20 @@ function eq(name: string, actual: unknown, expected: unknown) {
   eq("formatDate renders the local calendar day", formatDate(today()).length > 0, true);
   eq("formatDate handles a null date", formatDate(null), "—");
   eq("formatDate handles an empty string", formatDate(""), "—");
+}
+
+/* ------------------------------------------------------- formatQuarter */
+
+{
+  eq("formatQuarter handles null", formatQuarter(null), "—");
+  eq("formatQuarter handles empty string", formatQuarter(""), "—");
+  eq("formatQuarter Q1 from ISO", formatQuarter("2024-01-15"), "Q1 2024");
+  eq("formatQuarter Q2 from ISO", formatQuarter("2024-04-01"), "Q2 2024");
+  eq("formatQuarter Q3 from ISO", formatQuarter("2024-07-01"), "Q3 2024");
+  eq("formatQuarter Q4 from ISO", formatQuarter("2024-10-01"), "Q4 2024");
+  eq("formatQuarter handles YYYY QN", formatQuarter("2024 Q3"), "Q3 2024");
+  eq("formatQuarter handles QN YYYY", formatQuarter("Q3 2024"), "Q3 2024");
+  eq("formatQuarter handles YYYY-QN", formatQuarter("2026-Q1"), "Q1 2026");
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

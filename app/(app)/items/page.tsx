@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type { Item } from "@/lib/db";
-import { formatDate, formatMoney, getItemStatusInfo } from "@/lib/format";
+import { formatDate, formatMoney, formatQuarter, getItemStatusInfo } from "@/lib/format";
 import { IconBox, IconPlus, IconSearch } from "@/components/icons";
 import {
   DEFAULT_SORT,
@@ -244,10 +244,10 @@ function InventoryInner() {
                         {formatMoney(item.currentValue)}
                       </td>
                       <td className="tabular px-4 py-3 text-right text-[13px] text-muted">
-                        {formatDate(item.purchaseDate)}
+                        {formatQuarter(item.purchaseDate)}
                       </td>
                       <td className="tabular px-4 py-3 text-right text-[13px] text-muted">
-                        {formatDate(item.offloadedDate)}
+                        {formatQuarter(item.offloadedDate)}
                       </td>
                     </tr>
                   );
