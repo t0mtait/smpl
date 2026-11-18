@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS users (
   email         TEXT    NOT NULL UNIQUE,
   name          TEXT    NOT NULL DEFAULT '',
   password_hash TEXT    NOT NULL DEFAULT '',
+  avatar_path   TEXT,
   -- A bootstrap account holds data that predates accounts. It has no
   -- password, cannot log in, and is claimed by the first real registration.
   is_bootstrap  INTEGER NOT NULL DEFAULT 0,

@@ -3,6 +3,7 @@ import { NavLinks } from "@/components/NavLinks";
 import { SignOutButton } from "@/components/SignOutButton";
 import { SignOutIconButton } from "@/components/SignOutIconButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { UserAvatar } from "@/components/UserAvatar";
 import {
   IconBox,
   IconFlame,
@@ -19,8 +20,8 @@ export const dynamic = "force-dynamic";
 const NAV = [
   { href: "/", label: "Dashboard", icon: <IconHouse width={17} height={17} /> },
   { href: "/items", label: "Inventory", icon: <IconBox width={17} height={17} /> },
-  { href: "/wishlist", label: "Wishlist", icon: <IconHeart width={17} height={17} /> },
   { href: "/purgatory", label: "Purgatory", icon: <IconFlame width={17} height={17} /> },
+  { href: "/wishlist", label: "Wishlist", icon: <IconHeart width={17} height={17} /> },
 ];
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -59,10 +60,19 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
 
         <div className="border-t border-line p-3">
-          <div className="mb-1 px-3 py-2">
-            <div className="truncate text-[13px] font-semibold text-ink">{accountName}</div>
-            <div className="truncate text-[11px] text-muted">{user.email}</div>
-          </div>
+          <Link
+            href="/account"
+            className="group mb-2 flex items-center gap-3 rounded-xl p-2 transition-colors hover:bg-paper"
+            title="Account options"
+          >
+            <UserAvatar name={accountName} email={user.email} avatarPath={user.avatarPath} size={36} />
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-[13px] font-semibold text-ink group-hover:text-accent">
+                {accountName}
+              </div>
+              <div className="truncate text-[11px] text-muted">{user.email}</div>
+            </div>
+          </Link>
           <ThemeToggle />
           <SignOutButton />
         </div>
@@ -77,7 +87,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <span className="display text-[17px] leading-none tracking-[-0.01em]">smpl.</span>
         </Link>
         <div className="flex items-center gap-2">
-          <span className="max-w-[9rem] truncate text-[12px] text-muted">{accountName}</span>
+          <Link
+            href="/account"
+            className="flex items-center gap-2 rounded-lg p-1 transition-colors hover:bg-paper"
+            title="Account options"
+          >
+            <UserAvatar name={accountName} email={user.email} avatarPath={user.avatarPath} size={28} />
+            <span className="max-w-[7rem] truncate text-[12px] text-muted">{accountName}</span>
+          </Link>
           <ThemeToggle variant="icon" />
           <SignOutIconButton />
           <Link href="/items/new" className="btn-primary px-3 py-1.5 text-[13px]">

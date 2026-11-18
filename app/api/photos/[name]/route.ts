@@ -26,9 +26,10 @@ export async function GET(_req: Request, { params }: Ctx) {
   // basename() defeats any path traversal attempt in the URL.
   const safe = path.basename(name);
   // The filename alone is not authorization — confirm the signed-in account
-  // owns the item this photo belongs to.
-  const item = getItemByPhotoPath(user.id, safe);
-  if (!item) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  // owns the item this photo belongs to, or is the user's avatar.
+  const isAvatar = user.avatarPath === safe || safe.startsWith(`u${user.id}-avatar-`);
+  const item = isAvatar ? null : getItemByPhotoPath(user.id, safe);
+  if (!isAvatar && !item) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const ext = safe.split(".").pop()?.toLowerCase() ?? "";
   const file = path.join(UPLOAD_DIR, safe);
   if (!fs.existsSync(file)) {

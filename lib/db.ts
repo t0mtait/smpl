@@ -166,6 +166,7 @@ export function getDb(): DatabaseSync {
   // Pre-account databases need the owner columns added before anything else.
   ensureColumn(db, "items", "owner_id", "owner_id INTEGER REFERENCES users(id)");
   ensureColumn(db, "items", "offloaded_date", "offloaded_date TEXT");
+  ensureColumn(db, "users", "avatar_path", "avatar_path TEXT");
   // Money columns must allow NULL ("never recorded") rather than 0 ("free").
   migrateMoneyColumns(db);
   db.exec("CREATE INDEX IF NOT EXISTS idx_items_owner ON items(owner_id);");
@@ -241,6 +242,7 @@ export interface User {
   id: number;
   email: string;
   name: string;
+  avatarPath?: string | null;
   createdAt: string;
 }
 
@@ -273,8 +275,46 @@ function toUser(row: Record<string, unknown>): User {
     id: Number(row.id),
     email: String(row.email),
     name: String(row.name ?? ""),
+    avatarPath: (row.avatar_path as string | null) ?? null,
     createdAt: String(row.created_at),
   };
+}
+
+export function updateUserProfile(
+  id: number,
+  fields: { name?: string; email?: string; passwordHash?: string; avatarPath?: string | null }
+): User | null {
+  const existing = getUserById(id);
+  if (!existing) return null;
+
+  const sets: string[] = [];
+  const args: (string | number | null)[] = [];
+
+  if (typeof fields.name === "string") {
+    sets.push("name = ?");
+    args.push(fields.name.trim());
+  }
+  if (typeof fields.email === "string" && fields.email.trim()) {
+    sets.push("email = ?");
+    args.push(fields.email.trim().toLowerCase());
+  }
+  if (typeof fields.passwordHash === "string" && fields.passwordHash) {
+    sets.push("password_hash = ?");
+    args.push(fields.passwordHash);
+  }
+  if (fields.avatarPath !== undefined) {
+    sets.push("avatar_path = ?");
+    args.push(fields.avatarPath);
+  }
+
+  if (sets.length === 0) return existing;
+
+  args.push(id);
+  getDb()
+    .prepare(`UPDATE users SET ${sets.join(", ")} WHERE id = ?`)
+    .run(...args);
+
+  return getUserById(id);
 }
 
 /** How many real (non-bootstrap) accounts exist. */
