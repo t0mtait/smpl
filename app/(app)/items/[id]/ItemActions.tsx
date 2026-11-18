@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { Disposition, Item } from "@/lib/db";
 import { formatDate, formatMoney, STATUS_LABELS, STATUS_STYLES } from "@/lib/format";
+import { StatusTag } from "@/components/ui";
 import { today } from "@/lib/dates";
 import {
   IconArchive,
@@ -86,9 +87,7 @@ export default function ItemActions({ item }: { item: Item }) {
       <section className="card p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <span className={`pill ${STATUS_STYLES[item.status]}`}>
-              {STATUS_LABELS[item.status]} {formatDate(item.lastUsedAt)}
-            </span>
+            <StatusTag status={{ label: STATUS_LABELS[item.status] ?? item.status, style: STATUS_STYLES[item.status] }} />
             <p className="mt-2 text-[13px] text-muted">
               Restoring returns this item to “owned” and removes the disposal record.
             </p>

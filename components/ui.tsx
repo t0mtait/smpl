@@ -336,3 +336,22 @@ export function SectionHeading({
     </div>
   );
 }
+
+/* ------------------------------------------------------------------
+   Status tag — a tag-shaped badge with an eyelet hole for item statuses.
+   ------------------------------------------------------------------ */
+
+export function StatusTag({
+  status,
+  className = "",
+}: {
+  status: { key?: string; label: string; style: string };
+  className?: string;
+}) {
+  return (
+    <span className={`status-tag ${status.style} ${className}`} title={status.label}>
+      <span className="status-tag-eyelet" aria-hidden="true" />
+      <span>{status.label}</span>
+    </span>
+  );
+}

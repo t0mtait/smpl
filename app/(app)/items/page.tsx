@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type { Item } from "@/lib/db";
 import { formatDate, formatMoney, formatQuarter, getItemStatusInfo } from "@/lib/format";
+import { StatusTag } from "@/components/ui";
 import { IconBox, IconPlus, IconSearch } from "@/components/icons";
 import {
   DEFAULT_SORT,
@@ -236,9 +237,7 @@ function InventoryInner() {
                       </th>
                       <td className="px-4 py-3 text-[13px] capitalize text-ink-soft">{item.category}</td>
                       <td className="px-4 py-3">
-                        <span className={`pill ${statusInfo.style}`}>
-                          {statusInfo.label}
-                        </span>
+                        <StatusTag status={statusInfo} />
                       </td>
                       <td className="tabular px-4 py-3 text-right text-[13px] font-medium text-ink">
                         {formatMoney(item.currentValue)}

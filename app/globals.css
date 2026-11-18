@@ -277,6 +277,29 @@
     @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide;
   }
 
+  /* Tag-shaped status badge: pointed left end with an eyelet hole */
+  .status-tag {
+    @apply inline-flex items-center text-[11px] font-semibold tracking-wide whitespace-nowrap;
+    height: 22px;
+    padding-left: 11px;
+    padding-right: 8px;
+    border-radius: 0 4px 4px 0;
+    clip-path: polygon(7px 0%, 100% 0%, 100% 100%, 7px 100%, 0% 50%);
+    position: relative;
+  }
+
+  .status-tag-eyelet {
+    display: inline-block;
+    width: 4px;
+    height: 4px;
+    border-radius: 9999px;
+    border: 1px solid currentColor;
+    opacity: 0.75;
+    margin-left: -4px;
+    margin-right: 5px;
+    flex-shrink: 0;
+  }
+
   /* A hairline rule with a little air around it — the editorial
      separator used between panels and list sections. */
   .rule {

@@ -4,7 +4,7 @@ import { getItem, listDisposals, listItems } from "@/lib/db";
 import { scoreItem, findDuplicateItemIds } from "@/lib/scoring";
 import { formatDate, formatMoney, formatQuarter, FREQUENCY_LABELS, getItemStatusInfo, STATUS_LABELS } from "@/lib/format";
 import { requireUser } from "@/lib/auth";
-import { ScoreRing } from "@/components/ui";
+import { ScoreRing, StatusTag } from "@/components/ui";
 import { IconArrowLeft, IconPencil } from "@/components/icons";
 import ItemActions from "./ItemActions";
 
@@ -84,7 +84,7 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
           <header className="animate-rise">
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="display text-4xl leading-[1.1]">{item.name}</h1>
-              <span className={`pill ${statusInfo.style}`}>{statusInfo.label}</span>
+              <StatusTag status={statusInfo} />
             </div>
             {item.description ? (
               <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-muted">

@@ -87,10 +87,10 @@ export const STATUS_LABELS: Record<string, string> = {
 };
 
 export const STATUS_STYLES: Record<string, string> = {
-  heavy_use: "bg-moss-soft text-moss",
-  occasional_use: "bg-info-soft text-info",
-  rare_use: "bg-clay-soft text-clay",
-  listed: "bg-purple-soft text-purple",
+  heavy_use: "bg-accent-soft text-accent",
+  occasional_use: "bg-warn-soft text-warn",
+  rare_use: "bg-danger-soft text-danger",
+  listed: "bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300",
   owned: "bg-wash text-ink-soft",
   sold: "bg-accent-soft text-accent",
   donated: "bg-info-soft text-info",
