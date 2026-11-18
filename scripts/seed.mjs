@@ -60,7 +60,7 @@ function resolveOwnerId() {
 const ownerId = resolveOwnerId();
 
 if (!keepExisting) {
-  db.exec("DELETE FROM disposals; DELETE FROM items; DELETE FROM alerts;");
+  db.exec("DELETE FROM disposals; DELETE FROM items;");
 }
 
 // Local calendar dates, matching how the app reads them back.
@@ -175,13 +175,6 @@ for (const [name, disposition, age, amount, value, channel, notes] of disposals)
   setStatus.run(disposition, id, ownerId);
 }
 
-const alert = db.prepare(
-  "INSERT INTO alerts (owner_id, label, cadence_days, next_due) VALUES (?, ?, ?, ?)"
-);
-alert.run(ownerId, "Review the garage shelves", 30, daysAgo(2));
-alert.run(ownerId, "Reconsider the winter gear", 90, daysAgo(1));
-alert.run(ownerId, "One-in, one-out check on purchases", 14, daysAgo(10));
-
 const counts = {
   items: db.prepare("SELECT COUNT(*) c FROM items WHERE owner_id = ?").get(ownerId).c,
   disposals: db
@@ -189,7 +182,6 @@ const counts = {
       "SELECT COUNT(*) c FROM disposals d JOIN items i ON i.id = d.item_id WHERE i.owner_id = ?"
     )
     .get(ownerId).c,
-  alerts: db.prepare("SELECT COUNT(*) c FROM alerts WHERE owner_id = ?").get(ownerId).c,
   sales: db
     .prepare(
       "SELECT COALESCE(SUM(d.amount),0) s FROM disposals d JOIN items i ON i.id = d.item_id WHERE d.disposition='sold' AND i.owner_id = ?"
@@ -198,6 +190,6 @@ const counts = {
 };
 
 const ownerLabel = emailArg ? emailArg.trim().toLowerCase() : "the bootstrap account (first registration claims it)";
-console.log(`Seeded ${counts.items} items, ${counts.disposals} disposals, ${counts.alerts} alerts for ${ownerLabel}.`);
+console.log(`Seeded ${counts.items} items, ${counts.disposals} disposals for ${ownerLabel}.`);
 console.log(`Lifetime sales earnings: $${counts.sales}`);
 db.close();

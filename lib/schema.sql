@@ -1,8 +1,8 @@
--- Schema for the declutter app.
+-- Schema for the smpl. app.
 -- Single source of truth: lib/db.ts reads this at runtime, scripts/seed.mjs too.
 --
 -- Every row that belongs to a person is owned by exactly one account:
--- items.owner_id and alerts.owner_id point at users.id. Disposals hang off an
+-- items.owner_id points at users.id. Disposals hang off an
 -- item, so they inherit the owner through that join and carry no owner column
 -- of their own (one source of truth, no drift).
 
@@ -68,13 +68,3 @@ CREATE TABLE IF NOT EXISTS disposals (
 
 CREATE INDEX IF NOT EXISTS idx_disposals_item ON disposals(item_id);
 CREATE INDEX IF NOT EXISTS idx_disposals_at   ON disposals(disposed_at);
-
-CREATE TABLE IF NOT EXISTS alerts (
-  id           INTEGER PRIMARY KEY AUTOINCREMENT,
-  owner_id     INTEGER REFERENCES users(id),
-  label        TEXT    NOT NULL,
-  cadence_days INTEGER NOT NULL DEFAULT 30,
-  next_due     TEXT    NOT NULL,
-  active       INTEGER NOT NULL DEFAULT 1,
-  created_at   TEXT    NOT NULL DEFAULT (datetime('now'))
-);

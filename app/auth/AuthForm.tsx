@@ -52,7 +52,7 @@ function AuthFormInner({ mode }: Props) {
     <div className="w-full max-w-sm">
       <div className="mb-8 text-center">
         <span className="display mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-brand text-[24px] leading-none text-brand-fg">
-          D
+          S
         </span>
         <h1 className="display mt-4 text-3xl">
           {isRegister ? "Create your account" : "Welcome back"}

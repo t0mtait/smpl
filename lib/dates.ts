@@ -2,7 +2,7 @@
  * Calendar-date helpers.
  *
  * The app stores dates as plain "YYYY-MM-DD" strings — a purchase date, a
- * sale date, an alert due date. Those are *calendar* dates, not instants:
+ * sale date. Those are *calendar* dates, not instants:
  * "I sold this on the 13th" means the 13th where the person is, not the
  * 13th in Greenwich.
  *

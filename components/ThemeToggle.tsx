@@ -23,7 +23,7 @@ import { useEffect, useState } from "react";
 
 type Theme = "light" | "dark";
 
-const STORAGE_KEY = "declutter-theme";
+const STORAGE_KEY = "smpl-theme";
 
 /** The theme currently applied to the document. */
 function readTheme(): Theme {

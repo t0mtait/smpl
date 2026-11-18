@@ -3,8 +3,8 @@ import "./globals.css";
 import { sansFont, sansFontExt, displayFont, displayFontExt } from "./fonts";
 
 export const metadata: Metadata = {
-  title: "Declutter",
-  description: "Track every possession. Know what to get rid of.",
+  title: "smpl.",
+  description: "liv_smply",
 };
 
 /**
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
 const THEME_SCRIPT = `
 (function () {
   try {
-    var stored = localStorage.getItem('declutter-theme');
+    var stored = localStorage.getItem('smpl-theme') || localStorage.getItem('declutter-theme');
     var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     var theme = stored === 'dark' || stored === 'light' ? stored : (prefersDark ? 'dark' : 'light');
     document.documentElement.classList.toggle('dark', theme === 'dark');

@@ -69,7 +69,6 @@ export async function applyImport(ownerId, items, options = {}) {
         "SELECT COUNT(*) c FROM disposals d JOIN items i ON i.id = d.item_id WHERE i.owner_id = ?"
       )
       .get(ownerId).c,
-    alerts: db.prepare("SELECT COUNT(*) c FROM alerts WHERE owner_id = ?").get(ownerId).c,
   };
 
   if (dryRun) return { before, after: before, removedPhotos: [] };
@@ -145,7 +144,6 @@ export async function applyImport(ownerId, items, options = {}) {
         "SELECT COUNT(*) c FROM disposals d JOIN items i ON i.id = d.item_id WHERE i.owner_id = ?"
       )
       .get(ownerId).c,
-    alerts: db.prepare("SELECT COUNT(*) c FROM alerts WHERE owner_id = ?").get(ownerId).c,
     sales: db
       .prepare(
         "SELECT COALESCE(SUM(d.amount),0) s FROM disposals d JOIN items i ON i.id = d.item_id " +
@@ -290,7 +288,6 @@ async function main() {
   console.log("Imported");
   console.log(`  ${"items".padEnd(30)} ${after.items}`);
   console.log(`  ${"disposals".padEnd(30)} ${after.disposals}`);
-  console.log(`  ${"alerts left untouched".padEnd(30)} ${after.alerts}`);
   console.log(`  ${"lifetime sales earnings".padEnd(30)} $${after.sales.toFixed(2)}`);
   console.log(`  ${"total paid".padEnd(30)} $${after.spent.toFixed(2)}`);
   console.log(`  ${"owned value".padEnd(30)} $${after.ownedValue.toFixed(2)}`);

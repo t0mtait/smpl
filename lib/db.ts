@@ -1,7 +1,6 @@
 import { DatabaseSync } from "node:sqlite";
 import fs from "node:fs";
 import path from "node:path";
-import { daysFromNow } from "./dates.ts";
 
 export const DATA_DIR = process.env.DECLUTTER_DATA_DIR
   ? path.resolve(process.env.DECLUTTER_DATA_DIR)
@@ -133,18 +132,14 @@ function ensureBootstrapUser(d: DatabaseSync): number {
   return Number(res.lastInsertRowid);
 }
 
-/** Adopt any ownerless rows (and ownerless alerts) onto the bootstrap account. */
+/** Adopt any ownerless rows onto the bootstrap account. */
 function adoptOrphans(d: DatabaseSync): void {
   const orphanItems = d.prepare("SELECT COUNT(*) c FROM items WHERE owner_id IS NULL").get() as {
     c: number;
   };
-  const orphanAlerts = d.prepare("SELECT COUNT(*) c FROM alerts WHERE owner_id IS NULL").get() as {
-    c: number;
-  };
-  if (orphanItems.c === 0 && orphanAlerts.c === 0) return;
+  if (orphanItems.c === 0) return;
   const id = ensureBootstrapUser(d);
-  if (orphanItems.c > 0) d.prepare("UPDATE items SET owner_id = ? WHERE owner_id IS NULL").run(id);
-  if (orphanAlerts.c > 0) d.prepare("UPDATE alerts SET owner_id = ? WHERE owner_id IS NULL").run(id);
+  d.prepare("UPDATE items SET owner_id = ? WHERE owner_id IS NULL").run(id);
 }
 
 export function getDb(): DatabaseSync {
@@ -166,11 +161,9 @@ export function getDb(): DatabaseSync {
   // Pre-account databases need the owner columns added before anything else.
   ensureColumn(db, "items", "owner_id", "owner_id INTEGER REFERENCES users(id)");
   ensureColumn(db, "items", "offloaded_date", "offloaded_date TEXT");
-  ensureColumn(db, "alerts", "owner_id", "owner_id INTEGER REFERENCES users(id)");
   // Money columns must allow NULL ("never recorded") rather than 0 ("free").
   migrateMoneyColumns(db);
   db.exec("CREATE INDEX IF NOT EXISTS idx_items_owner ON items(owner_id);");
-  db.exec("CREATE INDEX IF NOT EXISTS idx_alerts_owner ON alerts(owner_id);");
   adoptOrphans(db);
   return db;
 }
@@ -239,14 +232,6 @@ export interface Disposal {
   notes: string;
 }
 
-export interface Alert {
-  id: number;
-  label: string;
-  cadenceDays: number;
-  nextDue: string;
-  active: boolean;
-}
-
 export interface User {
   id: number;
   email: string;
@@ -304,7 +289,6 @@ export function claimBootstrapData(newUserId: number): void {
   const boot = d.prepare("SELECT id FROM users WHERE is_bootstrap = 1").all() as { id: number }[];
   for (const b of boot) {
     d.prepare("UPDATE items SET owner_id = ? WHERE owner_id = ?").run(newUserId, b.id);
-    d.prepare("UPDATE alerts SET owner_id = ? WHERE owner_id = ?").run(newUserId, b.id);
     d.prepare("DELETE FROM users WHERE id = ?").run(b.id);
   }
 }
@@ -519,59 +503,4 @@ export function listDisposals(ownerId: number): Disposal[] {
     channel: String(r.channel ?? ""),
     notes: String(r.notes ?? ""),
   }));
-}
-
-/* ----------------------------------------------------------------- alerts */
-
-export function listAlerts(ownerId: number): Alert[] {
-  const rows = getDb()
-    .prepare("SELECT * FROM alerts WHERE owner_id = ? ORDER BY next_due ASC")
-    .all(ownerId) as Record<string, unknown>[];
-  return rows.map((r) => ({
-    id: Number(r.id),
-    label: String(r.label),
-    cadenceDays: Number(r.cadence_days),
-    nextDue: String(r.next_due),
-    active: Number(r.active) === 1,
-  }));
-}
-
-export function createAlert(ownerId: number, label: string, cadenceDays: number): Alert {
-  // A local calendar date, not a UTC one: "due in 30 days" means 30 days
-  // from today where the user is.
-  const nextDue = daysFromNow(cadenceDays);
-  const res = getDb()
-    .prepare(
-      "INSERT INTO alerts (owner_id, label, cadence_days, next_due) VALUES (?, ?, ?, ?)"
-    )
-    .run(ownerId, label, cadenceDays, nextDue);
-  const row = getDb()
-    .prepare("SELECT * FROM alerts WHERE id = ? AND owner_id = ?")
-    .get(Number(res.lastInsertRowid), ownerId) as Record<string, unknown>;
-  return {
-    id: Number(row.id),
-    label: String(row.label),
-    cadenceDays: Number(row.cadence_days),
-    nextDue: String(row.next_due),
-    active: Number(row.active) === 1,
-  };
-}
-
-/** Roll an alert's due date forward by its cadence. */
-export function snoozeAlert(ownerId: number, id: number): void {
-  getDb()
-    .prepare(
-      "UPDATE alerts SET next_due = date(next_due, '+' || cadence_days || ' days') WHERE id = ? AND owner_id = ?"
-    )
-    .run(id, ownerId);
-}
-
-export function toggleAlert(ownerId: number, id: number, active: boolean): void {
-  getDb()
-    .prepare("UPDATE alerts SET active = ? WHERE id = ? AND owner_id = ?")
-    .run(active ? 1 : 0, id, ownerId);
-}
-
-export function deleteAlert(ownerId: number, id: number): void {
-  getDb().prepare("DELETE FROM alerts WHERE id = ? AND owner_id = ?").run(id, ownerId);
 }

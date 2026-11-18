@@ -1,4 +1,4 @@
-# Declutter
+# smpl.
 
 Track every possession you own, get a nudge about what to get rid of, and keep
 a running record of what you sold, donated, and threw away.
@@ -61,12 +61,9 @@ stay accurate. Restore puts one back to owned.
 sales earnings by month for the last 12 months, value by category, and the
 full disposal breakdown.
 
-**Alerts** — recurring declutter prompts on a cadence you choose ("review the
-garage shelves" every 30 days). Overdue alerts surface on their own page.
-
 ## Accounts
 
-Everything — items, photos, disposals, stats, recommendations, alerts — belongs
+Everything — items, photos, disposals, stats, recommendations — belongs
 to an account. Two people can use the same server without seeing each other's
 inventory.
 
@@ -111,7 +108,7 @@ Caddy-terminated HTTPS still gets a `Secure` cookie:
 
 ```
 app/
-  (app)/           account-gated pages (dashboard, items, suggestions, alerts)
+  (app)/           account-gated pages (dashboard, items, suggestions)
   auth/            login and registration
   api/
     auth/          login, register, session (login/register/logout)
@@ -119,7 +116,6 @@ app/
     photos/        owner-scoped photo serving
     stats/         aggregates
     suggestions/   scored candidates
-    alerts/        recurring prompts
   fonts.ts        self-hosted Inter + Instrument Serif via next/font/local
 components/
   icons.tsx       inline SVG icon set (no icon-font dependency)
@@ -185,7 +181,6 @@ pages redirect to `/auth/login`. Records owned by another account return `404`.
 | GET | `/api/photos/:name` | serve a photo (owner only) |
 | GET | `/api/stats` | all aggregate stats |
 | GET | `/api/suggestions?min=N` | scored candidates |
-| GET/POST/PATCH/DELETE | `/api/alerts` | recurring declutter prompts |
 
 ## Tests
 
@@ -220,7 +215,7 @@ node scripts/import-stuffdb.mjs --xlsx ~/Downloads/StuffDB.xlsx --email mail@tom
 The importer replaces the target account's inventory with every row in the
 workbook — including rows hidden behind a saved AutoFilter, which is where the
 sale history usually lives. It is destructive for that account only: other
-accounts' items, alerts, and photos are untouched.
+accounts' items and photos are untouched.
 
 What it guarantees:
 

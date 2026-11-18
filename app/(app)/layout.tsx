@@ -4,7 +4,6 @@ import { SignOutButton } from "@/components/SignOutButton";
 import { SignOutIconButton } from "@/components/SignOutIconButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import {
-  IconBell,
   IconBox,
   IconHouse,
   IconPlus,
@@ -20,7 +19,6 @@ const NAV = [
   { href: "/", label: "Dashboard", icon: <IconHouse width={17} height={17} /> },
   { href: "/items", label: "Inventory", icon: <IconBox width={17} height={17} /> },
   { href: "/suggestions", label: "Get Rid Of", icon: <IconSparkles width={17} height={17} /> },
-  { href: "/alerts", label: "Alerts", icon: <IconBell width={17} height={17} /> },
 ];
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -35,12 +33,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <aside className="hidden w-64 shrink-0 border-r border-line bg-shell lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col">
         <div className="flex items-center gap-3 px-6 pb-6 pt-7">
           <span className="display flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-[19px] leading-none text-brand-fg">
-            D
+            S
           </span>
           <div>
-            <div className="display text-[19px] leading-none tracking-[-0.01em]">Declutter</div>
+            <div className="display text-[19px] leading-none tracking-[-0.01em]">smpl.</div>
             <div className="mt-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
-              less, but better
+              liv_smply
             </div>
           </div>
         </div>
@@ -72,9 +70,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-shell/90 px-4 py-3 backdrop-blur lg:hidden">
         <Link href="/" className="flex items-center gap-2">
           <span className="display flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-[17px] leading-none text-brand-fg">
-            D
+            S
           </span>
-          <span className="display text-[17px] leading-none tracking-[-0.01em]">Declutter</span>
+          <span className="display text-[17px] leading-none tracking-[-0.01em]">smpl.</span>
         </Link>
         <div className="flex items-center gap-2">
           <span className="max-w-[9rem] truncate text-[12px] text-muted">{accountName}</span>

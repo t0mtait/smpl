@@ -297,7 +297,7 @@ if (fs.existsSync(REAL_XLSX)) {
   const owner = createUser("owner@example.com", "Owner", "x");
   const other = createUser("other@example.com", "Other", "x");
 
-  // The account's old inventory: two items, one already sold, one alert.
+  // The account's old inventory: two items, one already sold.
   const oldItem = createItem(owner.id, {
     name: "Old thing",
     category: "misc",
@@ -327,11 +327,6 @@ if (fs.existsSync(REAL_XLSX)) {
     photoPath: null,
     priority: "auto",
   });
-  db.prepare("INSERT INTO alerts (owner_id, label, cadence_days, next_due) VALUES (?, ?, 30, ?)").run(
-    owner.id,
-    "Keep an eye out",
-    "2026-12-01"
-  );
 
   // Another account that must not be touched.
   createItem(other.id, {
@@ -365,7 +360,6 @@ if (fs.existsSync(REAL_XLSX)) {
   eq("the old disposal is counted first", before.disposals, 1);
   eq("the new items are in place", after.items, 3);
   eq("the new disposals are in place", after.disposals, 2);
-  eq("the alert survives the import", after.alerts, 1);
 
   const newItems = listItems(owner.id);
   check(

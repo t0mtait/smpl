@@ -115,12 +115,6 @@ const d = db.getDb();
 
   check("cross-account delete is denied", db.deleteItem(bob.id, aItem.id) === false);
   check("the item survived the cross-account delete", db.getItem(alice.id, aItem.id) !== null);
-
-  // Alerts are account-scoped too.
-  db.createAlert(alice.id, "Alice review", 30);
-  db.createAlert(bob.id, "Bob review", 30);
-  check("alerts are scoped to the owner", db.listAlerts(alice.id).length === 1);
-  check("alert labels belong to the right account", db.listAlerts(alice.id)[0].label === "Alice review");
 }
 
 /* --------------------------------------------------- bootstrap claiming */
@@ -136,11 +130,6 @@ const d = db.getDb();
   d.prepare("UPDATE users SET is_bootstrap = 1 WHERE id = ?").run(legacy.id);
   // Everything that existed before accounts lands on the bootstrap holder.
   d.prepare("UPDATE items SET owner_id = ? WHERE owner_id IN (?, ?)").run(
-    legacy.id,
-    alice.id,
-    bob.id
-  );
-  d.prepare("UPDATE alerts SET owner_id = ? WHERE owner_id IN (?, ?)").run(
     legacy.id,
     alice.id,
     bob.id
@@ -168,7 +157,6 @@ const d = db.getDb();
     .prepare("SELECT COUNT(*) c FROM users WHERE id = ?")
     .get(String(legacy.id)) as { c: number };
   check("the bootstrap account is retired after claiming", remaining.c === 0, remaining.c);
-  check("claimed alerts move too", db.listAlerts(claimant.id).length === 2);
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);
