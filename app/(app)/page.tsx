@@ -178,7 +178,7 @@ export default async function DashboardPage() {
         <div className="mb-5 flex items-baseline justify-between gap-3">
           <div>
             <h2 className="display text-xl">Offloaded items</h2>
-            <p className="mt-0.5 text-[13px] text-muted">Items sold for return or gotten rid of with no return</p>
+            <p className="mt-0.5 text-[13px] text-muted">Items sold for return or offloaded with no return</p>
           </div>
           <span className="text-xs text-muted">{goneCount} total offloaded</span>
         </div>
@@ -207,7 +207,7 @@ export default async function DashboardPage() {
               <IconRecycle width={20} height={20} />
             </span>
             <div className="min-w-0">
-              <p className="text-[13px] font-medium text-ink">No return (gotten rid of)</p>
+              <p className="text-[13px] font-medium text-ink">No return</p>
               <p className="tabular text-3xl font-semibold leading-tight text-ink">{noReturnCount}</p>
               <p className="tabular mt-0.5 text-xs text-muted">
                 Donated, disposed, or $0 return
