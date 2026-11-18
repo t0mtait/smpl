@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getItem, listDisposals, listItems } from "@/lib/db";
 import { scoreItem, findDuplicateItemIds } from "@/lib/scoring";
-import { formatDate, formatMoney, formatQuarter, FREQUENCY_LABELS, getItemStatusInfo, STATUS_LABELS } from "@/lib/format";
+import { formatDate, formatMoney, formatQuarter, formatCategory, FREQUENCY_LABELS, getItemStatusInfo, STATUS_LABELS } from "@/lib/format";
 import { requireUser } from "@/lib/auth";
 import { ScoreRing, StatusTag } from "@/components/ui";
 import { IconArrowLeft, IconPencil } from "@/components/icons";
@@ -23,7 +23,9 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
   const statusInfo = getItemStatusInfo(item);
 
   const facts: { label: string; value: React.ReactNode }[] = [
-    { label: "Category", value: <span className="capitalize">{item.category}</span> },
+    { label: "Brand", value: item.brand || "—" },
+    { label: "Category", value: formatCategory(item.category) },
+    { label: "Quality", value: item.quality || "—" },
     { label: "Location", value: item.location || "—" },
     { label: "Paid", value: <span className="tabular">{formatMoney(item.purchasePrice)}</span> },
     { label: "Worth today", value: <span className="tabular">{formatMoney(item.currentValue)}</span> },

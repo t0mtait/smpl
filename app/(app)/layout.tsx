@@ -5,6 +5,7 @@ import { SignOutIconButton } from "@/components/SignOutIconButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { UserAvatar } from "@/components/UserAvatar";
 import {
+  IconArchive,
   IconBox,
   IconFlame,
   IconHeart,
@@ -21,6 +22,7 @@ const NAV = [
   { href: "/", label: "Dashboard", icon: <IconHouse width={17} height={17} /> },
   { href: "/items", label: "Inventory", icon: <IconBox width={17} height={17} /> },
   { href: "/purgatory", label: "Purgatory", icon: <IconFlame width={17} height={17} /> },
+  { href: "/offloaded", label: "Offloaded", icon: <IconArchive width={17} height={17} /> },
   { href: "/wishlist", label: "Wishlist", icon: <IconHeart width={17} height={17} /> },
 ];
 
@@ -106,7 +108,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
       {/* ---------------- Main ---------------- */}
       <main className="min-w-0 flex-1">
-        <div className="mx-auto max-w-5xl px-4 py-8 pb-24 sm:px-6 lg:px-10 lg:py-12">{children}</div>
+        <div className="mx-auto max-w-[1400px] px-4 py-8 pb-24 sm:px-6 lg:px-10 lg:py-12">{children}</div>
       </main>
 
       {/* ---------------- Mobile bottom nav ---------------- */}

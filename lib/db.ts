@@ -166,23 +166,68 @@ export function getDb(): DatabaseSync {
   // Pre-account databases need the owner columns added before anything else.
   ensureColumn(db, "items", "owner_id", "owner_id INTEGER REFERENCES users(id)");
   ensureColumn(db, "items", "offloaded_date", "offloaded_date TEXT");
+  ensureColumn(db, "items", "brand", "brand TEXT NOT NULL DEFAULT ''");
+  ensureColumn(db, "items", "quality", "quality TEXT NOT NULL DEFAULT ''");
   ensureColumn(db, "users", "avatar_path", "avatar_path TEXT");
   // Money columns must allow NULL ("never recorded") rather than 0 ("free").
   migrateMoneyColumns(db);
   db.exec("CREATE INDEX IF NOT EXISTS idx_items_owner ON items(owner_id);");
   adoptOrphans(db);
+  backfillBrandAndQuality(db);
   return db;
+}
+
+function extractTag(desc: string, tag: string): string {
+  const m = new RegExp(`(?:^|·\\s*)${tag}:\\s*([^·]+)`).exec(desc);
+  return m ? m[1].trim() : "";
+}
+
+function backfillBrandAndQuality(d: DatabaseSync): void {
+  try {
+    const rows = d
+      .prepare(
+        "SELECT id, description FROM items WHERE (brand IS NULL OR brand = '') AND description LIKE '%Brand:%'"
+      )
+      .all() as { id: number; description: string }[];
+    for (const r of rows) {
+      const b = extractTag(r.description, "Brand");
+      if (b) d.prepare("UPDATE items SET brand = ? WHERE id = ?").run(b, r.id);
+    }
+    const qRows = d
+      .prepare(
+        "SELECT id, description FROM items WHERE (quality IS NULL OR quality = '') AND description LIKE '%Quality:%'"
+      )
+      .all() as { id: number; description: string }[];
+    for (const r of qRows) {
+      const q = extractTag(r.description, "Quality");
+      if (q) d.prepare("UPDATE items SET quality = ? WHERE id = ?").run(q, r.id);
+    }
+  } catch {
+    /* ignore backfill errors */
+  }
 }
 
 /** Rows come back as plain objects with snake_case keys; map them to camelCase. */
 function toItem(row: Record<string, unknown>): Item {
+  const desc = String(row.description ?? "");
+  const brand =
+    row.brand != null && String(row.brand).trim()
+      ? String(row.brand).trim()
+      : extractTag(desc, "Brand");
+  const quality =
+    row.quality != null && String(row.quality).trim()
+      ? String(row.quality).trim()
+      : extractTag(desc, "Quality");
+
   return {
     id: Number(row.id),
     ownerId: Number(row.owner_id),
     name: String(row.name),
+    brand,
     category: String(row.category),
-    description: String(row.description),
-    location: String(row.location),
+    quality,
+    description: desc,
+    location: String(row.location ?? ""),
     purchaseDate: (row.purchase_date as string) ?? null,
     offloadedDate: (row.offloaded_date as string) ?? null,
     purchasePrice: row.purchase_price == null ? null : Number(row.purchase_price),
@@ -212,7 +257,9 @@ export interface Item {
   id: number;
   ownerId: number;
   name: string;
+  brand: string;
   category: string;
+  quality: string;
   description: string;
   location: string;
   purchaseDate: string | null;
@@ -396,7 +443,9 @@ export function getItemByPhotoPath(ownerId: number, photoPath: string): Item | n
 
 export interface ItemInput {
   name: string;
+  brand?: string;
   category: string;
+  quality?: string;
   description: string;
   location: string;
   purchaseDate: string | null;
@@ -413,14 +462,16 @@ export interface ItemInput {
 export function createItem(ownerId: number, input: ItemInput): Item {
   const res = getDb()
     .prepare(
-      `INSERT INTO items (owner_id, name, category, description, location, purchase_date, offloaded_date,
+      `INSERT INTO items (owner_id, name, brand, category, quality, description, location, purchase_date, offloaded_date,
                           purchase_price, current_value, status, last_used_at, use_frequency, photo_path, priority)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       ownerId,
       input.name,
+      input.brand ?? "",
       input.category,
+      input.quality ?? "",
       input.description,
       input.location,
       input.purchaseDate,
@@ -441,7 +492,9 @@ export function updateItem(ownerId: number, id: number, input: Partial<ItemInput
   if (!existing) return null;
   const merged: ItemInput = {
     name: input.name ?? existing.name,
+    brand: input.brand !== undefined ? input.brand : existing.brand,
     category: input.category ?? existing.category,
+    quality: input.quality !== undefined ? input.quality : existing.quality,
     description: input.description ?? existing.description,
     location: input.location ?? existing.location,
     purchaseDate: input.purchaseDate !== undefined ? input.purchaseDate : existing.purchaseDate,
@@ -458,14 +511,16 @@ export function updateItem(ownerId: number, id: number, input: Partial<ItemInput
   };
   getDb()
     .prepare(
-      `UPDATE items SET name = ?, category = ?, description = ?, location = ?, purchase_date = ?, offloaded_date = ?,
+      `UPDATE items SET name = ?, brand = ?, category = ?, quality = ?, description = ?, location = ?, purchase_date = ?, offloaded_date = ?,
               purchase_price = ?, current_value = ?, status = ?, last_used_at = ?, use_frequency = ?,
               photo_path = ?, priority = ?, updated_at = datetime('now')
        WHERE id = ? AND owner_id = ?`
     )
     .run(
       merged.name,
+      merged.brand ?? "",
       merged.category,
+      merged.quality ?? "",
       merged.description,
       merged.location,
       merged.purchaseDate,

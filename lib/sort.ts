@@ -21,7 +21,7 @@
 import type { Item, ItemStatus } from "./db.ts";
 import { daysSince } from "./scoring.ts";
 
-export type SortKey = "name" | "category" | "status" | "value" | "acquired" | "offloaded" | "idle" | "added";
+export type SortKey = "name" | "brand" | "category" | "quality" | "status" | "value" | "acquired" | "offloaded" | "idle" | "added";
 export type SortDirection = "asc" | "desc";
 
 export interface SortState {
@@ -73,7 +73,9 @@ const STATUS_ORDER: Record<string, number> = {
  */
 const DEFAULT_DIRECTION: Record<SortKey, SortDirection> = {
   name: "asc",
+  brand: "asc",
   category: "asc",
+  quality: "asc",
   status: "asc",
   value: "desc",
   acquired: "desc",
@@ -90,11 +92,13 @@ const DEFAULT_DIRECTION: Record<SortKey, SortDirection> = {
  */
 export const SORT_COLUMNS: { key: SortKey; label: string; numeric?: boolean }[] = [
   { key: "name", label: "Item" },
+  { key: "brand", label: "Brand" },
   { key: "category", label: "Category" },
+  { key: "quality", label: "Quality" },
   { key: "status", label: "Status" },
   { key: "value", label: "Value", numeric: true },
-  { key: "acquired", label: "Date acquired", numeric: true },
-  { key: "offloaded", label: "Date offloaded", numeric: true },
+  { key: "acquired", label: "Acquired", numeric: true },
+  { key: "offloaded", label: "Offloaded", numeric: true },
 ];
 
 /** The sort the table starts in. */
@@ -155,8 +159,12 @@ function compareOn(a: Item, b: Item, key: SortKey, dir: 1 | -1): number {
   switch (key) {
     case "name":
       return a.name.localeCompare(b.name) * dir;
+    case "brand":
+      return (a.brand || "").localeCompare(b.brand || "") * dir;
     case "category":
       return a.category.localeCompare(b.category) * dir;
+    case "quality":
+      return (a.quality || "").localeCompare(b.quality || "") * dir;
     case "status": {
       const rankA = STATUS_ORDER[itemStatusRankKey(a)] ?? 4;
       const rankB = STATUS_ORDER[itemStatusRankKey(b)] ?? 4;
@@ -221,7 +229,9 @@ export function filterItems(items: readonly Item[], filters: InventoryFilters): 
     if (!query) return true;
     return (
       item.name.toLowerCase().includes(query) ||
+      (item.brand && item.brand.toLowerCase().includes(query)) ||
       item.category.toLowerCase().includes(query) ||
+      (item.quality && item.quality.toLowerCase().includes(query)) ||
       item.location.toLowerCase().includes(query) ||
       item.description.toLowerCase().includes(query)
     );

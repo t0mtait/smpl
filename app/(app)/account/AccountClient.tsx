@@ -8,6 +8,7 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SignOutButton } from "@/components/SignOutButton";
 import {
+  IconArchive,
   IconArrowLeft,
   IconCamera,
   IconCheck,
@@ -382,6 +383,84 @@ export default function AccountClient({ initialUser, stats }: AccountClientProps
             {passwordBusy ? "Updating…" : "Update password"}
           </button>
         </form>
+      </section>
+
+      {/* Export Data Card */}
+      <section className="card p-6">
+        <h2 className="display text-lg">Export data</h2>
+        <p className="mt-1 text-[13px] text-muted">
+          Download your smpl. data as CSV spreadsheets anytime.
+        </p>
+
+        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <a
+            href="/api/export?type=inventory"
+            download
+            className="flex flex-col rounded-xl border border-line bg-paper p-4 transition hover:border-line-strong hover:shadow-lift"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[13px] font-semibold text-ink">Inventory CSV</span>
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent-soft text-accent">
+                <IconBox width={15} height={15} />
+              </span>
+            </div>
+            <p className="mt-1 text-[12px] text-muted">All active owned items</p>
+            <span className="mt-3 text-[12px] font-medium text-accent hover:underline">
+              Download CSV ↓
+            </span>
+          </a>
+
+          <a
+            href="/api/export?type=purgatory"
+            download
+            className="flex flex-col rounded-xl border border-line bg-paper p-4 transition hover:border-line-strong hover:shadow-lift"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[13px] font-semibold text-ink">Purgatory CSV</span>
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-clay-soft text-clay">
+                <IconFlame width={15} height={15} />
+              </span>
+            </div>
+            <p className="mt-1 text-[12px] text-muted">Items staged for offload</p>
+            <span className="mt-3 text-[12px] font-medium text-clay hover:underline">
+              Download CSV ↓
+            </span>
+          </a>
+
+          <a
+            href="/api/export?type=wishlist"
+            download
+            className="flex flex-col rounded-xl border border-line bg-paper p-4 transition hover:border-line-strong hover:shadow-lift"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[13px] font-semibold text-ink">Wishlist CSV</span>
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-warn-soft text-warn">
+                <IconHeart width={15} height={15} />
+              </span>
+            </div>
+            <p className="mt-1 text-[12px] text-muted">Aspirational purchases</p>
+            <span className="mt-3 text-[12px] font-medium text-warn hover:underline">
+              Download CSV ↓
+            </span>
+          </a>
+
+          <a
+            href="/api/export?type=offloaded"
+            download
+            className="flex flex-col rounded-xl border border-line bg-paper p-4 transition hover:border-line-strong hover:shadow-lift"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[13px] font-semibold text-ink">Offloaded CSV</span>
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-wash text-ink-soft">
+                <IconArchive width={15} height={15} />
+              </span>
+            </div>
+            <p className="mt-1 text-[12px] text-muted">Disposed, sold & donated</p>
+            <span className="mt-3 text-[12px] font-medium text-ink hover:underline">
+              Download CSV ↓
+            </span>
+          </a>
+        </div>
       </section>
 
       {/* Account Overview Stats */}

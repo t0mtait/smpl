@@ -47,7 +47,9 @@ function parseInput(body: Record<string, unknown>): ItemInput {
 
   return {
     name: str(body.name) || "Untitled item",
+    brand: str(body.brand),
     category: str(body.category) || "uncategorized",
+    quality: str(body.quality),
     description: str(body.description),
     location: str(body.location),
     purchaseDate: typeof body.purchaseDate === "string" && body.purchaseDate ? body.purchaseDate : null,

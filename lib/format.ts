@@ -158,3 +158,13 @@ export const CATEGORIES = [
   "misc",
   "uncategorized",
 ];
+
+/** Capitalize the first letter of each word in a category string. */
+export function formatCategory(category: string | null | undefined): string {
+  if (!category) return "Uncategorized";
+  return category
+    .trim()
+    .split(/\s+/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+}

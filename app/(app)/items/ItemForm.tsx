@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Item, Priority, UseFrequency } from "@/lib/db";
-import { CATEGORIES, FREQUENCY_LABELS } from "@/lib/format";
+import { CATEGORIES, FREQUENCY_LABELS, formatCategory } from "@/lib/format";
 
 interface Props {
   item?: Item | null;
@@ -17,7 +17,9 @@ export default function ItemForm({ item }: Props) {
 
   const [form, setForm] = useState({
     name: item?.name ?? "",
+    brand: item?.brand ?? "",
     category: item?.category ?? "uncategorized",
+    quality: item?.quality ?? "",
     description: item?.description ?? "",
     location: item?.location ?? "",
     purchaseDate: item?.purchaseDate ?? "",
@@ -43,7 +45,9 @@ export default function ItemForm({ item }: Props) {
     setError(null);
     const payload = {
       name: form.name,
+      brand: form.brand,
       category: form.category,
+      quality: form.quality,
       description: form.description,
       location: form.location,
       purchaseDate: form.purchaseDate || null,
@@ -99,16 +103,40 @@ export default function ItemForm({ item }: Props) {
             />
           </div>
           <div>
+            <label className="label" htmlFor="brand">
+              Brand
+            </label>
+            <input
+              id="brand"
+              className="input"
+              value={form.brand}
+              onChange={set("brand")}
+              placeholder="e.g. Lodge, Apple, Sony"
+            />
+          </div>
+          <div>
             <label className="label" htmlFor="category">
               Category
             </label>
             <select id="category" className="input" value={form.category} onChange={set("category")}>
               {CATEGORIES.map((c) => (
                 <option key={c} value={c}>
-                  {c}
+                  {formatCategory(c)}
                 </option>
               ))}
             </select>
+          </div>
+          <div>
+            <label className="label" htmlFor="quality">
+              Quality
+            </label>
+            <input
+              id="quality"
+              className="input"
+              value={form.quality}
+              onChange={set("quality")}
+              placeholder="e.g. High, Medium, Budget"
+            />
           </div>
           <div>
             <label className="label" htmlFor="location">

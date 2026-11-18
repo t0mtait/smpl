@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type { Item } from "@/lib/db";
-import { formatDate, formatMoney, formatQuarter, getItemStatusInfo } from "@/lib/format";
+import { formatCategory, formatDate, formatMoney, formatQuarter, getItemStatusInfo } from "@/lib/format";
 import { StatusTag } from "@/components/ui";
 import { IconBox, IconFlame, IconPlus, IconSearch, IconX } from "@/components/icons";
 import {
@@ -85,7 +85,9 @@ function InventoryInner() {
           <p className="mt-2 text-[15px] text-muted">
             {items === null
               ? "Loading…"
-              : `${filtered.length} of ${items.length} item${items.length === 1 ? "" : "s"}`}
+              : filtered.length === items.length
+                ? `${items.length} item${items.length === 1 ? "" : "s"}`
+                : `${filtered.length} of ${items.length} item${items.length === 1 ? "" : "s"}`}
           </p>
         </div>
         <Link href="/items/new" className="btn-primary">
@@ -108,7 +110,7 @@ function InventoryInner() {
               <input
                 id="q"
                 className="input pl-9"
-                placeholder="name, category, location…"
+                placeholder="name, brand, category, quality…"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
               />
@@ -150,7 +152,7 @@ function InventoryInner() {
               <option value="all">All</option>
               {categories.map((c) => (
                 <option key={c} value={c}>
-                  {c}
+                  {formatCategory(c)}
                 </option>
               ))}
             </select>
@@ -194,7 +196,7 @@ function InventoryInner() {
       {sorted.length > 0 ? (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] border-collapse text-left">
+            <table className="w-full min-w-[1020px] border-collapse text-left">
               <caption className="sr-only">
                 Your inventory: {sorted.length} item{sorted.length === 1 ? "" : "s"}. Choose a column
                 heading to sort by that column.
@@ -259,7 +261,9 @@ function InventoryInner() {
                           ) : null}
                         </Link>
                       </th>
-                      <td className="px-4 py-3 text-[13px] capitalize text-ink-soft">{item.category}</td>
+                      <td className="px-4 py-3 text-[13px] text-ink-soft">{item.brand || "—"}</td>
+                      <td className="px-4 py-3 text-[13px] text-ink-soft">{formatCategory(item.category)}</td>
+                      <td className="px-4 py-3 text-[13px] text-ink-soft">{item.quality || "—"}</td>
                       <td className="px-4 py-3">
                         <StatusTag status={statusInfo} />
                       </td>
@@ -287,7 +291,7 @@ function InventoryInner() {
                           <Link
                             href="/purgatory"
                             title="In Purgatory"
-                            className="inline-flex items-center gap-1 rounded-md bg-clay-soft px-2 py-1 text-[11px] font-medium text-clay hover:opacity-80"
+                            className="inline-flex items-center gap-1 rounded-md bg-clay-soft px-2.5 py-1 text-[11px] font-medium text-clay hover:opacity-80"
                           >
                             <IconFlame width={12} height={12} />
                             Purgatory

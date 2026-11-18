@@ -154,18 +154,30 @@ export function BarRow({
    Sparkline / earnings chart
    ------------------------------------------------------------------ */
 
+function formatMonthLabel(m: string): string {
+  const parts = m.split("-");
+  if (parts.length === 2) {
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const idx = parseInt(parts[1], 10) - 1;
+    if (idx >= 0 && idx < 12) {
+      return monthNames[idx];
+    }
+  }
+  return m;
+}
+
 export function EarningsChart({ data }: { data: { month: string; amount: number }[] }) {
   if (!data.length) {
     return (
-      <div className="flex h-40 items-center justify-center text-sm text-muted">
+      <div className="flex h-48 items-center justify-center text-sm text-muted">
         No sales yet — the chart fills in as things find new homes.
       </div>
     );
   }
 
   const w = 640;
-  const h = 180;
-  const pad = { top: 16, right: 8, bottom: 26, left: 46 };
+  const h = 240;
+  const pad = { top: 20, right: 12, bottom: 28, left: 52 };
   const max = Math.max(...data.map((d) => d.amount), 1);
   const innerW = w - pad.left - pad.right;
   const innerH = h - pad.top - pad.bottom;
@@ -179,7 +191,7 @@ export function EarningsChart({ data }: { data: { month: string; amount: number 
     pad.top + innerH
   ).toFixed(1)} Z`;
 
-  const ticks = [0, 0.5, 1].map((f) => Math.round(max * f));
+  const ticks = [0, 0.33, 0.66, 1].map((f) => Math.round(max * f));
 
   return (
     <div className="w-full overflow-hidden">
@@ -221,7 +233,7 @@ export function EarningsChart({ data }: { data: { month: string; amount: number 
           d={line}
           fill="none"
           className="stroke-accent"
-          strokeWidth="2"
+          strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
@@ -231,7 +243,7 @@ export function EarningsChart({ data }: { data: { month: string; amount: number 
             <circle
               cx={x(i)}
               cy={y(d.amount)}
-              r="3.5"
+              r="4"
               className="fill-card stroke-accent"
               strokeWidth="2"
             />
@@ -239,10 +251,10 @@ export function EarningsChart({ data }: { data: { month: string; amount: number 
               x={x(i)}
               y={h - 8}
               textAnchor="middle"
-              fontSize="10"
+              fontSize="11"
               className="fill-chart-ink"
             >
-              {d.month}
+              {formatMonthLabel(d.month)}
             </text>
           </g>
         ))}

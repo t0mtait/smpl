@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getStats } from "@/lib/stats";
 import { listDisposals, listItems } from "@/lib/db";
-import { formatMoney, formatQuarter } from "@/lib/format";
+import { formatCategory, formatMoney, formatQuarter } from "@/lib/format";
 import { requireUser } from "@/lib/auth";
 import { BarRow, EarningsChart, StatTile } from "@/components/ui";
 import {
@@ -83,15 +83,19 @@ export default async function DashboardPage() {
 
       {/* ---------------- Charts ---------------- */}
       <div className="grid gap-5 lg:grid-cols-5">
-        <section className="card p-6 lg:col-span-3">
-          <div className="mb-1 flex items-baseline justify-between gap-3">
-            <h2 className="display text-xl">Sales earnings</h2>
-            <span className="text-xs text-muted">last 12 months</span>
+        <section className="card flex flex-col justify-between p-6 lg:col-span-3">
+          <div>
+            <div className="mb-1 flex items-baseline justify-between gap-3">
+              <h2 className="display text-xl">Sales earnings</h2>
+              <span className="text-xs text-muted">last 12 months</span>
+            </div>
+            <p className="mb-4 text-[13px] text-muted">
+              {formatMoney(stats.lifetimeSalesEarnings)} earned all-time
+            </p>
           </div>
-          <p className="mb-4 text-[13px] text-muted">
-            {formatMoney(stats.lifetimeSalesEarnings)} earned all-time
-          </p>
-          <EarningsChart data={stats.earningsByMonth} />
+          <div className="mt-auto pt-4">
+            <EarningsChart data={stats.earningsByMonth} />
+          </div>
         </section>
 
         <section className="card p-6 lg:col-span-2">
@@ -107,7 +111,7 @@ export default async function DashboardPage() {
               {stats.byCategory.slice(0, 7).map((cat, i) => (
                 <BarRow
                   key={cat.category}
-                  label={cat.category}
+                  label={formatCategory(cat.category)}
                   value={cat.value}
                   max={maxCatValue}
                   suffix={` · ${cat.count}`}
