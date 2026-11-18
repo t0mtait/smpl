@@ -4,7 +4,7 @@ import { IconArrowLeft, IconSearch } from "@/components/icons";
 export default function NotFound() {
   return (
     <div className="flex flex-col items-center justify-center px-6 py-24 text-center">
-      <span className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-paper text-ink-400">
+      <span className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-paper text-ink-faint">
         <IconSearch width={22} height={22} />
       </span>
       <p className="eyebrow">404</p>

@@ -165,6 +165,7 @@ export function getDb(): DatabaseSync {
   db.exec(readSchema());
   // Pre-account databases need the owner columns added before anything else.
   ensureColumn(db, "items", "owner_id", "owner_id INTEGER REFERENCES users(id)");
+  ensureColumn(db, "items", "offloaded_date", "offloaded_date TEXT");
   ensureColumn(db, "alerts", "owner_id", "owner_id INTEGER REFERENCES users(id)");
   // Money columns must allow NULL ("never recorded") rather than 0 ("free").
   migrateMoneyColumns(db);
@@ -184,6 +185,7 @@ function toItem(row: Record<string, unknown>): Item {
     description: String(row.description),
     location: String(row.location),
     purchaseDate: (row.purchase_date as string) ?? null,
+    offloadedDate: (row.offloaded_date as string) ?? null,
     purchasePrice: row.purchase_price == null ? null : Number(row.purchase_price),
     currentValue: row.current_value == null ? null : Number(row.current_value),
     status: String(row.status) as ItemStatus,
@@ -215,6 +217,7 @@ export interface Item {
   description: string;
   location: string;
   purchaseDate: string | null;
+  offloadedDate?: string | null;
   purchasePrice: number | null;
   currentValue: number | null;
   status: ItemStatus;
@@ -367,6 +370,7 @@ export interface ItemInput {
   description: string;
   location: string;
   purchaseDate: string | null;
+  offloadedDate?: string | null;
   purchasePrice: number | null;
   currentValue: number | null;
   status: ItemStatus;
@@ -379,9 +383,9 @@ export interface ItemInput {
 export function createItem(ownerId: number, input: ItemInput): Item {
   const res = getDb()
     .prepare(
-      `INSERT INTO items (owner_id, name, category, description, location, purchase_date, purchase_price,
-                          current_value, status, last_used_at, use_frequency, photo_path, priority)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO items (owner_id, name, category, description, location, purchase_date, offloaded_date,
+                          purchase_price, current_value, status, last_used_at, use_frequency, photo_path, priority)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       ownerId,
@@ -390,6 +394,7 @@ export function createItem(ownerId: number, input: ItemInput): Item {
       input.description,
       input.location,
       input.purchaseDate,
+      input.offloadedDate ?? null,
       input.purchasePrice,
       input.currentValue,
       input.status,
@@ -410,6 +415,8 @@ export function updateItem(ownerId: number, id: number, input: Partial<ItemInput
     description: input.description ?? existing.description,
     location: input.location ?? existing.location,
     purchaseDate: input.purchaseDate !== undefined ? input.purchaseDate : existing.purchaseDate,
+    offloadedDate:
+      input.offloadedDate !== undefined ? input.offloadedDate : existing.offloadedDate,
     purchasePrice:
       input.purchasePrice !== undefined ? input.purchasePrice : existing.purchasePrice,
     currentValue: input.currentValue !== undefined ? input.currentValue : existing.currentValue,
@@ -421,7 +428,7 @@ export function updateItem(ownerId: number, id: number, input: Partial<ItemInput
   };
   getDb()
     .prepare(
-      `UPDATE items SET name = ?, category = ?, description = ?, location = ?, purchase_date = ?,
+      `UPDATE items SET name = ?, category = ?, description = ?, location = ?, purchase_date = ?, offloaded_date = ?,
               purchase_price = ?, current_value = ?, status = ?, last_used_at = ?, use_frequency = ?,
               photo_path = ?, priority = ?, updated_at = datetime('now')
        WHERE id = ? AND owner_id = ?`
@@ -432,6 +439,7 @@ export function updateItem(ownerId: number, id: number, input: Partial<ItemInput
       merged.description,
       merged.location,
       merged.purchaseDate,
+      merged.offloadedDate ?? null,
       merged.purchasePrice,
       merged.currentValue,
       merged.status,

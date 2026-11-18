@@ -39,6 +39,9 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if (body.purchaseDate === null || typeof body.purchaseDate === "string") {
     patch.purchaseDate = body.purchaseDate || null;
   }
+  if (body.offloadedDate === null || typeof body.offloadedDate === "string") {
+    patch.offloadedDate = body.offloadedDate || null;
+  }
   if (body.lastUsedAt === null || typeof body.lastUsedAt === "string") {
     patch.lastUsedAt = body.lastUsedAt || null;
   }

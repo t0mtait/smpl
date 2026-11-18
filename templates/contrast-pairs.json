@@ -1,0 +1,31 @@
+{
+  "_comment": "Pairs only — the colour values come from the CSS. Run: node scripts/contrast-check-css.mjs app/globals.css templates/contrast-pairs.json",
+  "pairs": [
+    { "fg": "ink", "bg": "paper", "min": 7, "label": "body text on page" },
+    { "fg": "ink", "bg": "card", "min": 7, "label": "body text on card" },
+    { "fg": "ink", "bg": "shell", "min": 7, "label": "body text on shell" },
+    { "fg": "ink", "bg": "wash", "min": 7, "label": "body text on wash" },
+    { "fg": "ink-soft", "bg": "paper", "min": 4.5, "label": "secondary text on page" },
+    { "fg": "ink-soft", "bg": "card", "min": 4.5, "label": "secondary text on card" },
+    { "fg": "ink-soft", "bg": "wash", "min": 4.5, "label": "secondary text on wash" },
+    { "fg": "muted", "bg": "paper", "min": 4.5, "label": "muted text on page" },
+    { "fg": "muted", "bg": "card", "min": 4.5, "label": "muted text on card" },
+    { "fg": "muted", "bg": "wash", "min": 4.5, "label": "muted text on wash" },
+    { "fg": "ink-faint", "bg": "card", "min": 3, "label": "icon on card (non-text)" },
+    { "fg": "ink-faint", "bg": "paper", "min": 3, "label": "icon on page (non-text)" },
+    { "fg": "brand-fg", "bg": "brand", "min": 4.5, "label": "text on brand block" },
+    { "fg": "accent-fg", "bg": "accent-solid", "min": 4.5, "label": "text on accent button" },
+    { "fg": "clay-fg", "bg": "clay-solid", "min": 4.5, "label": "text on clay button" },
+    { "fg": "danger", "bg": "danger-soft", "min": 4.5, "label": "danger text on danger surface" },
+    { "fg": "warn", "bg": "warn-soft", "min": 4.5, "label": "warn text on warn surface" },
+    { "fg": "info", "bg": "info-soft", "min": 4.5, "label": "info text on info surface" },
+    { "fg": "accent", "bg": "paper", "min": 4.5, "label": "accent text on page" },
+    { "fg": "accent", "bg": "card", "min": 4.5, "label": "accent text on card" },
+    { "fg": "accent", "bg": "accent-soft", "min": 4.5, "label": "accent text on accent surface" },
+    { "fg": "clay", "bg": "paper", "min": 4.5, "label": "clay text on page" },
+    { "fg": "clay", "bg": "card", "min": 4.5, "label": "clay text on card" },
+    { "fg": "clay", "bg": "clay-soft", "min": 4.5, "label": "clay text on clay surface" },
+    { "fg": "chart-ink", "bg": "card", "min": 4.5, "label": "chart label on card" },
+    { "fg": "chart-ink", "bg": "paper", "min": 4.5, "label": "chart label on page" }
+  ]
+}

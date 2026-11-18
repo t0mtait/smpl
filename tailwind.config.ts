@@ -1,52 +1,78 @@
 import type { Config } from "tailwindcss";
 
+/**
+ * Every colour in the app is a CSS custom property, not a literal.
+ *
+ * The variables are declared in app/globals.css as plain "R G B" triplets
+ * so Tailwind's opacity modifiers (`bg-shell/90`, `ring-accent/10`) keep
+ * working. The light values live on `:root`; the dark values live on
+ * `.dark`, which the theme toggle puts on <html>.
+ *
+ * That means a component never says `dark:bg-something`. It says
+ * `bg-card` or `text-muted` once, and the palette underneath it changes.
+ */
+const v = (token: string) => `rgb(var(--c-${token}) / <alpha-value>)`;
+
 const config: Config = {
+  darkMode: "class",
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./lib/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        // Warm paper neutrals — the whole app sits on these.
-        paper: "#f6f4ef",
-        card: "#ffffff",
-        shell: "#fbfaf7",
-        line: "#e4e0d8",
-        "line-soft": "#eeebe4",
-        muted: "#726f65",
-        ink: {
-          50: "#f6f6f4",
-          100: "#e9e9e4",
-          200: "#d5d5cd",
-          300: "#b3b3a8",
-          400: "#8d8d80",
-          500: "#6f6f63",
-          600: "#585850",
-          700: "#474740",
-          800: "#3b3b36",
-          900: "#33332f",
-          950: "#1b1b19",
-          DEFAULT: "#22211d",
-        },
-        moss: {
-          50: "#f0f5ee",
-          100: "#dce9d8",
-          200: "#bcd4b6",
-          300: "#8fb98a",
-          400: "#6fa168",
-          500: "#578150",
-          600: "#466640",
-          700: "#3a5235",
-          DEFAULT: "#466640",
-        },
-        clay: {
-          50: "#fbf0ea",
-          100: "#f5ded0",
-          200: "#e9bda4",
-          300: "#d99a7a",
-          400: "#c67f5c",
-          500: "#9a5b3f",
-          600: "#8c5039",
-          DEFAULT: "#9a5b3f",
-        },
+        /* Surfaces — the warm paper neutrals the whole app sits on. */
+        paper: v("paper"),
+        card: v("card"),
+        shell: v("shell"),
+        wash: v("wash"),
+        line: v("line"),
+        "line-soft": v("line-soft"),
+        "line-strong": v("line-strong"),
+
+        /* Content */
+        ink: v("ink"),
+        "ink-soft": v("ink-soft"),
+        "ink-faint": v("ink-faint"),
+        muted: v("muted"),
+
+        /* Brand — the inverted block used for the mark, the primary
+           button and the active navigation item. */
+        brand: v("brand"),
+        "brand-fg": v("brand-fg"),
+        "brand-hover": v("brand-hover"),
+        /* The moss tick that sits on top of a brand block. */
+        "brand-mark": v("brand-mark"),
+
+        /* Moss — the accent that says "kept" and "recommended". */
+        accent: v("accent"),
+        "accent-soft": v("accent-soft"),
+        "accent-solid": v("accent-solid"),
+        "accent-fg": v("accent-fg"),
+        "accent-hover": v("accent-hover"),
+        /* The moss tone used for data marks — bars, dots, chart series. */
+        "accent-mark": v("accent-mark"),
+
+        /* Terracotta — the warm signal used for disposals and warnings. */
+        clay: v("clay"),
+        "clay-soft": v("clay-soft"),
+        "clay-solid": v("clay-solid"),
+        "clay-fg": v("clay-fg"),
+        "clay-hover": v("clay-hover"),
+        "clay-mark": v("clay-mark"),
+        "clay-line": v("clay-line"),
+
+        /* Status colours */
+        info: v("info"),
+        "info-soft": v("info-soft"),
+        warn: v("warn"),
+        "warn-soft": v("warn-soft"),
+        "warn-mark": v("warn-mark"),
+        danger: v("danger"),
+        "danger-soft": v("danger-soft"),
+        "danger-line": v("danger-line"),
+        "danger-line-strong": v("danger-line-strong"),
+
+        /* Data ink */
+        "chart-ink": v("chart-ink"),
       },
       fontFamily: {
         // The latin and latin-ext files are separate @font-face families;
@@ -68,8 +94,8 @@ const config: Config = {
         ],
       },
       boxShadow: {
-        card: "0 1px 2px rgba(34, 33, 29, 0.04), 0 1px 1px rgba(34, 33, 29, 0.03)",
-        lift: "0 4px 16px rgba(34, 33, 29, 0.07), 0 1px 2px rgba(34, 33, 29, 0.04)",
+        card: "0 1px 2px rgb(var(--c-shadow) / 0.04), 0 1px 1px rgb(var(--c-shadow) / 0.03)",
+        lift: "0 4px 16px rgb(var(--c-shadow) / 0.07), 0 1px 2px rgb(var(--c-shadow) / 0.04)",
       },
       keyframes: {
         rise: {

@@ -23,11 +23,11 @@ function Section({
   ring: "high" | "mid" | "low";
 }) {
   const toneStyles = {
-    clay: "bg-clay-50 text-clay-600",
-    amber: "bg-amber-50 text-amber-700",
-    moss: "bg-moss-50 text-moss-600",
+    clay: "bg-clay-soft text-clay",
+    amber: "bg-warn-soft text-warn",
+    moss: "bg-accent-soft text-accent",
   };
-  const dot = { clay: "bg-clay-500", amber: "bg-amber-500", moss: "bg-moss-500" };
+  const dot = { clay: "bg-clay-mark", amber: "bg-warn-mark", moss: "bg-accent-mark" };
 
   return (
     <section className="card overflow-hidden">
@@ -63,7 +63,7 @@ function Section({
                 <ScoreRing score={s.score} size={48} stroke={4.5} />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                    <span className="truncate font-medium text-ink group-hover:text-moss-600">
+                    <span className="truncate font-medium text-ink group-hover:text-accent">
                       {s.item.name}
                     </span>
                     <span className="text-[12px] capitalize text-muted">
@@ -86,7 +86,7 @@ function Section({
                       ))}
                     </ul>
                   ) : (
-                    <p className="mt-1.5 flex items-center gap-1.5 text-[13px] text-moss-600">
+                    <p className="mt-1.5 flex items-center gap-1.5 text-[13px] text-accent">
                       <IconCheck width={14} height={14} />
                       In use and worth keeping
                     </p>
@@ -134,9 +134,9 @@ export default async function SuggestionsPage() {
           nudge, not a verdict — you decide.
         </p>
         {strong.length > 0 ? (
-          <div className="mt-5 inline-flex items-center gap-2.5 rounded-xl border border-clay-200 bg-clay-50 px-4 py-2.5">
-            <IconSparkles width={16} height={16} className="text-clay-500" />
-            <span className="text-sm text-clay-600">
+          <div className="mt-5 inline-flex items-center gap-2.5 rounded-xl border border-clay-line bg-clay-soft px-4 py-2.5">
+            <IconSparkles width={16} height={16} className="text-clay" />
+            <span className="text-sm text-clay">
               <span className="font-semibold">{formatMoney(reclaimable)}</span> sitting in{" "}
               {strong.length} candidate{strong.length === 1 ? "" : "s"}
             </span>
@@ -147,7 +147,7 @@ export default async function SuggestionsPage() {
       {scored.length === 0 ? (
         <div className="card">
           <div className="flex flex-col items-center px-6 py-16 text-center">
-            <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-paper text-ink-400">
+            <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-paper text-ink-faint">
               <IconSparkles width={22} height={22} />
             </span>
             <h2 className="display text-xl">Nothing to score yet</h2>

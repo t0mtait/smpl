@@ -35,20 +35,48 @@ export function relativeDays(days: number | null): string {
 }
 
 export const STATUS_LABELS: Record<string, string> = {
+  heavy_use: "Heavy Use",
+  occasional_use: "Occasional Use",
+  rare_use: "Rare Use",
+  listed: "Listed",
   owned: "Owned",
   sold: "Sold",
   donated: "Donated",
-  disposed: "Disposed",
+  disposed: "Thrown Out",
   closed: "Closed",
 };
 
 export const STATUS_STYLES: Record<string, string> = {
-  owned: "bg-ink-100 text-ink-700",
-  sold: "bg-moss-50 text-moss-600",
-  donated: "bg-sky-50 text-sky-700",
-  disposed: "bg-clay-50 text-clay-600",
-  closed: "bg-ink-100 text-ink-600",
+  heavy_use: "bg-moss-soft text-moss",
+  occasional_use: "bg-info-soft text-info",
+  rare_use: "bg-clay-soft text-clay",
+  listed: "bg-purple-soft text-purple",
+  owned: "bg-wash text-ink-soft",
+  sold: "bg-accent-soft text-accent",
+  donated: "bg-info-soft text-info",
+  disposed: "bg-clay-soft text-clay",
+  closed: "bg-wash text-muted",
 };
+
+export function getItemStatusInfo(item: {
+  status: string;
+  useFrequency?: string;
+  priority?: string;
+  currentValue?: number | null;
+}): { key: string; label: string; style: string } {
+  let key = item.status;
+  if (item.status === "owned") {
+    if (item.useFrequency === "daily") key = "heavy_use";
+    else if (item.useFrequency === "monthly") key = "occasional_use";
+    else if (item.useFrequency === "rare") key = "rare_use";
+    else if (item.priority === "get_rid") key = "listed";
+  }
+  return {
+    key,
+    label: STATUS_LABELS[key] ?? key,
+    style: STATUS_STYLES[key] ?? STATUS_STYLES.owned,
+  };
+}
 
 /**
  * Terminal states: the item is no longer in the inventory. "closed" means it
@@ -57,11 +85,11 @@ export const STATUS_STYLES: Record<string, string> = {
 export const TERMINAL_STATUSES = ["sold", "donated", "disposed", "closed"] as const;
 
 export const FREQUENCY_LABELS: Record<string, string> = {
-  daily: "Daily",
+  daily: "Heavy Use",
+  monthly: "Occasional Use",
+  rare: "Rare Use",
   weekly: "Weekly",
-  monthly: "Monthly",
   seasonal: "Seasonal",
-  rare: "Rarely",
   never: "Never used",
   unknown: "Unknown",
 };

@@ -51,7 +51,7 @@ function AuthFormInner({ mode }: Props) {
   return (
     <div className="w-full max-w-sm">
       <div className="mb-8 text-center">
-        <span className="display mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-ink text-[24px] leading-none text-paper">
+        <span className="display mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-brand text-[24px] leading-none text-brand-fg">
           D
         </span>
         <h1 className="display mt-4 text-3xl">
@@ -66,7 +66,7 @@ function AuthFormInner({ mode }: Props) {
 
       <form onSubmit={submit} className="card space-y-4 p-6">
         {error ? (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          <div className="rounded-lg border border-danger-line bg-danger-soft p-3 text-sm text-danger">
             {error}
           </div>
         ) : null}
@@ -130,14 +130,14 @@ function AuthFormInner({ mode }: Props) {
         {isRegister ? (
           <>
             Already have an account?{" "}
-            <Link href="/auth/login" className="font-medium text-ink hover:text-moss-600">
+            <Link href="/auth/login" className="font-medium text-ink hover:text-accent">
               Sign in
             </Link>
           </>
         ) : (
           <>
             No account yet?{" "}
-            <Link href="/auth/register" className="font-medium text-ink hover:text-moss-600">
+            <Link href="/auth/register" className="font-medium text-ink hover:text-accent">
               Create one
             </Link>
           </>

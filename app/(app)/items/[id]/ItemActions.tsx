@@ -117,7 +117,7 @@ export default function ItemActions({ item }: { item: Item }) {
       {open ? (
         <form onSubmit={submit} className="space-y-5 p-6">
           {error ? (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            <div className="rounded-lg border border-danger-line bg-danger-soft p-3 text-sm text-danger">
               {error}
             </div>
           ) : null}
@@ -133,8 +133,8 @@ export default function ItemActions({ item }: { item: Item }) {
                   aria-pressed={disposition === o.value}
                   className={`btn border ${
                     disposition === o.value
-                      ? "border-ink bg-ink text-paper"
-                      : "border-line bg-card text-ink-600 hover:border-ink-300"
+                      ? "border-brand bg-brand text-brand-fg"
+                      : "border-line bg-card text-ink-soft hover:border-line-strong"
                   }`}
                 >
                   {o.icon}

@@ -1,10 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Item, Priority, UseFrequency } from "@/lib/db";
 import { CATEGORIES, FREQUENCY_LABELS } from "@/lib/format";
-import { IconCamera } from "@/components/icons";
 
 interface Props {
   item?: Item | null;
@@ -12,13 +11,8 @@ interface Props {
 
 export default function ItemForm({ item }: Props) {
   const router = useRouter();
-  const fileRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [photoPath, setPhotoPath] = useState<string | null>(item?.photoPath ?? null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(
-    item?.photoPath ? `/api/photos/${item.photoPath}` : null
-  );
   const [priority, setPriority] = useState<Priority>(item?.priority ?? "auto");
 
   const [form, setForm] = useState({
@@ -27,31 +21,21 @@ export default function ItemForm({ item }: Props) {
     description: item?.description ?? "",
     location: item?.location ?? "",
     purchaseDate: item?.purchaseDate ?? "",
+    offloadedDate: item?.offloadedDate ?? "",
     // An empty money field means "never recorded" — it must not become $0.
-    purchasePrice: item?.purchasePrice === null || item?.purchasePrice === undefined ? "" : String(item.purchasePrice),
-    currentValue: item?.currentValue === null || item?.currentValue === undefined ? "" : String(item.currentValue),
-    lastUsedAt: item?.lastUsedAt ?? "",
+    purchasePrice:
+      item?.purchasePrice === null || item?.purchasePrice === undefined
+        ? ""
+        : String(item.purchasePrice),
+    currentValue:
+      item?.currentValue === null || item?.currentValue === undefined
+        ? ""
+        : String(item.currentValue),
     useFrequency: item?.useFrequency ?? "unknown",
   });
 
   const set = (key: keyof typeof form) => (e: { target: { value: string } }) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
-
-  const handleFile = async (file: File | undefined) => {
-    if (!file || !item) return;
-    setError(null);
-    const fd = new FormData();
-    fd.append("photo", file);
-    const res = await fetch(`/api/items/${item.id}/photo`, { method: "POST", body: fd });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setError(data.error ?? "Photo upload failed");
-      return;
-    }
-    const data = await res.json();
-    setPhotoPath(data.photoPath);
-    setPhotoPreview(URL.createObjectURL(file));
-  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,12 +47,13 @@ export default function ItemForm({ item }: Props) {
       description: form.description,
       location: form.location,
       purchaseDate: form.purchaseDate || null,
+      offloadedDate: form.offloadedDate || null,
       purchasePrice: form.purchasePrice.trim() === "" ? null : Number(form.purchasePrice),
       currentValue: form.currentValue.trim() === "" ? null : Number(form.currentValue),
-      lastUsedAt: form.lastUsedAt || null,
+      lastUsedAt: null,
       useFrequency: form.useFrequency,
       priority,
-      photoPath,
+      photoPath: null,
     };
     try {
       const res = await fetch(item ? `/api/items/${item.id}` : "/api/items", {
@@ -94,7 +79,7 @@ export default function ItemForm({ item }: Props) {
   return (
     <form onSubmit={submit} className="space-y-5">
       {error ? (
-        <div className="card border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
+        <div className="card border-danger-line bg-danger-soft p-4 text-sm text-danger">{error}</div>
       ) : null}
 
       <section className="card p-6">
@@ -154,11 +139,11 @@ export default function ItemForm({ item }: Props) {
       </section>
 
       <section className="card p-6">
-        <h2 className="display text-lg">Money</h2>
-        <div className="mt-5 grid gap-4 sm:grid-cols-3">
+        <h2 className="display text-lg">Money & Dates</h2>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <label className="label" htmlFor="purchaseDate">
-              Purchase date
+              Date acquired
             </label>
             <input
               id="purchaseDate"
@@ -166,6 +151,18 @@ export default function ItemForm({ item }: Props) {
               className="input"
               value={form.purchaseDate ?? ""}
               onChange={set("purchaseDate")}
+            />
+          </div>
+          <div>
+            <label className="label" htmlFor="offloadedDate">
+              Date offloaded
+            </label>
+            <input
+              id="offloadedDate"
+              type="date"
+              className="input"
+              value={form.offloadedDate ?? ""}
+              onChange={set("offloadedDate")}
             />
           </div>
           <div>
@@ -205,19 +202,7 @@ export default function ItemForm({ item }: Props) {
 
       <section className="card p-6">
         <h2 className="display text-lg">Usage</h2>
-        <div className="mt-5 grid gap-4 sm:grid-cols-3">
-          <div>
-            <label className="label" htmlFor="lastUsedAt">
-              Last used
-            </label>
-            <input
-              id="lastUsedAt"
-              type="date"
-              className="input"
-              value={form.lastUsedAt ?? ""}
-              onChange={set("lastUsedAt")}
-            />
-          </div>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <div>
             <label className="label" htmlFor="useFrequency">
               How often
@@ -249,44 +234,6 @@ export default function ItemForm({ item }: Props) {
               <option value="keep">Keep it</option>
               <option value="get_rid">Get rid of it</option>
             </select>
-          </div>
-        </div>
-      </section>
-
-      <section className="card p-6">
-        <h2 className="display text-lg">Photo</h2>
-        <div className="mt-5 flex flex-wrap items-center gap-4">
-          <div className="h-28 w-28 overflow-hidden rounded-xl border border-line bg-paper">
-            {photoPreview ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={photoPreview} alt="Item preview" className="h-full w-full object-cover" />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center text-ink-400">
-                <IconCamera width={22} height={22} />
-              </div>
-            )}
-          </div>
-          <div className="flex flex-col gap-2">
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => handleFile(e.target.files?.[0])}
-            />
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={() => fileRef.current?.click()}
-              disabled={!item}
-              title={item ? undefined : "Save the item first, then add a photo"}
-            >
-              <IconCamera width={15} height={15} />
-              {photoPreview ? "Replace photo" : "Upload photo"}
-            </button>
-            {!item ? (
-              <span className="text-xs text-muted">Save the item first to attach a photo.</span>
-            ) : null}
           </div>
         </div>
       </section>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { NavLinks } from "@/components/NavLinks";
 import { SignOutButton } from "@/components/SignOutButton";
 import { SignOutIconButton } from "@/components/SignOutIconButton";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   IconBell,
   IconBox,
@@ -33,7 +34,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       {/* ---------------- Sidebar (desktop) ---------------- */}
       <aside className="hidden w-64 shrink-0 border-r border-line bg-shell lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col">
         <div className="flex items-center gap-3 px-6 pb-6 pt-7">
-          <span className="display flex h-9 w-9 items-center justify-center rounded-xl bg-ink text-[19px] leading-none text-paper">
+          <span className="display flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-[19px] leading-none text-brand-fg">
             D
           </span>
           <div>
@@ -62,6 +63,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <div className="truncate text-[13px] font-semibold text-ink">{accountName}</div>
             <div className="truncate text-[11px] text-muted">{user.email}</div>
           </div>
+          <ThemeToggle />
           <SignOutButton />
         </div>
       </aside>
@@ -69,13 +71,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       {/* ---------------- Mobile top bar ---------------- */}
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-shell/90 px-4 py-3 backdrop-blur lg:hidden">
         <Link href="/" className="flex items-center gap-2">
-          <span className="display flex h-8 w-8 items-center justify-center rounded-lg bg-ink text-[17px] leading-none text-paper">
+          <span className="display flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-[17px] leading-none text-brand-fg">
             D
           </span>
           <span className="display text-[17px] leading-none tracking-[-0.01em]">Declutter</span>
         </Link>
         <div className="flex items-center gap-2">
           <span className="max-w-[9rem] truncate text-[12px] text-muted">{accountName}</span>
+          <ThemeToggle variant="icon" />
           <SignOutIconButton />
           <Link href="/items/new" className="btn-primary px-3 py-1.5 text-[13px]">
             <IconPlus width={15} height={15} />

@@ -18,11 +18,11 @@ import {
 export const dynamic = "force-dynamic";
 
 const DISPOSITION_META: Record<string, { icon: React.ReactNode; tone: string; label: string }> = {
-  sold: { icon: <IconCash width={16} height={16} />, tone: "bg-moss-50 text-moss-600", label: "Sold" },
-  donated: { icon: <IconHeart width={16} height={16} />, tone: "bg-sky-50 text-sky-600", label: "Donated" },
-  disposed: { icon: <IconRecycle width={16} height={16} />, tone: "bg-clay-50 text-clay-500", label: "Disposed" },
+  sold: { icon: <IconCash width={16} height={16} />, tone: "bg-accent-soft text-accent", label: "Sold" },
+  donated: { icon: <IconHeart width={16} height={16} />, tone: "bg-info-soft text-info", label: "Donated" },
+  disposed: { icon: <IconRecycle width={16} height={16} />, tone: "bg-clay-soft text-clay", label: "Disposed" },
   // Gone, but with no recorded outcome — a different thing from being sold.
-  closed: { icon: <IconTag width={16} height={16} />, tone: "bg-ink-100 text-ink-600", label: "Closed" },
+  closed: { icon: <IconTag width={16} height={16} />, tone: "bg-wash text-ink-soft", label: "Closed" },
 };
 
 export default async function DashboardPage() {
@@ -170,7 +170,7 @@ export default async function DashboardPage() {
                 >
                   <ScoreRing score={s.score} size={46} stroke={4.5} />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium text-ink group-hover:text-moss-600">
+                    <p className="truncate font-medium text-ink group-hover:text-accent">
                       {s.item.name}
                     </p>
                     <p className="mt-0.5 truncate text-[13px] text-muted">
@@ -201,7 +201,7 @@ export default async function DashboardPage() {
               <Link
                 key={d.disposition}
                 href={`/items?status=${d.disposition}`}
-                className="group flex items-center gap-4 rounded-xl border border-line p-4 transition-all hover:border-ink-300 hover:shadow-lift"
+                className="group flex items-center gap-4 rounded-xl border border-line p-4 transition-all hover:border-line-strong hover:shadow-lift"
               >
                 <span
                   className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${meta.tone}`}
@@ -212,7 +212,7 @@ export default async function DashboardPage() {
                   <p className="text-[13px] font-medium text-ink">{meta.label}</p>
                   <p className="tabular text-2xl font-semibold leading-tight text-ink">{d.count}</p>
                   {d.disposition === "sold" ? (
-                    <p className="tabular text-xs text-moss-600">
+                    <p className="tabular text-xs text-accent">
                       {d.amount === null ? "proceeds not recorded" : `${formatMoney(d.amount)} earned`}
                     </p>
                   ) : d.amount !== null && d.amount > 0 ? (

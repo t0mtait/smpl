@@ -23,9 +23,9 @@ export function SignOutButton() {
       type="button"
       onClick={signOut}
       disabled={busy}
-      className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-ink-600 transition-colors hover:bg-paper hover:text-ink disabled:opacity-50"
+      className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-ink-soft transition-colors hover:bg-paper hover:text-ink disabled:opacity-50"
     >
-      <span className="text-ink-500">
+      <span className="text-muted">
         <svg
           width="17"
           height="17"

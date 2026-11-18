@@ -154,16 +154,16 @@ export default function AlertsClient() {
       </form>
 
       {error ? (
-        <div className="card border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
+        <div className="card border-danger-line bg-danger-soft p-4 text-sm text-danger">{error}</div>
       ) : null}
 
       <section className="card overflow-hidden">
         <div className="flex items-center gap-3 border-b border-line px-6 py-4">
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-clay-50 text-clay-500">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-clay-soft text-clay">
             <IconBell width={15} height={15} />
           </span>
           <h2 className="display text-lg">Due now</h2>
-          <span className="pill bg-clay-50 text-clay-600 ml-auto">{due.length}</span>
+          <span className="pill bg-clay-soft text-clay ml-auto">{due.length}</span>
         </div>
         {due.length === 0 ? (
           <p className="px-6 py-10 text-center text-sm text-muted">Nothing due. Enjoy the quiet.</p>

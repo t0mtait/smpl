@@ -3,26 +3,147 @@
 @tailwind utilities;
 
 /* ------------------------------------------------------------------
-   Type — the @font-face rules are emitted by next/font/local in
-   app/fonts.ts, which fingerprints the files and preloads them.
+   Tokens
 
-   Fraunces (display) and Instrument Sans (body) each ship in two
-   subsets. The browser falls through the stack one character at a
-   time, so the latin file leads and the latin-ext file covers the
-   characters it lacks.
+   Every colour in the app resolves through one of these variables.
+   The light values live on :root; the dark values live on .dark, which
+   the theme toggle puts on <html> before the first paint.
+
+   The values are space-separated RGB triplets rather than hex, because
+   Tailwind's opacity modifiers (`bg-shell/90`, `ring-accent/10`) need
+   to compose an alpha onto a variable colour. A variable holding
+   "#14140f" cannot be alpha-composed, so `bg-shell/90` would silently
+   degrade to fully opaque.
+
+   The roles are named for their purpose, not their hue:
+
+     paper / card / shell / wash   the surface ladder
+     line / line-soft / line-strong the border ladder
+     ink / ink-soft / ink-faint / muted   the content ladder
+     brand / brand-fg / brand-hover / brand-mark   the inverted block
+     accent*   moss — "kept", "recommended", the go colour
+     clay*     terracotta — disposals, warnings
+     info / warn / danger*   status families
+     chart-ink   data ink for charts and marks
    ------------------------------------------------------------------ */
 
 @layer base {
   :root {
-    --paper: #f6f4ef;
-    --card: #ffffff;
-    --line: #e4e0d8;
-    --line-soft: #eeebe4;
-    --muted: #6e6b61;
-    --ink: #22211d;
+    /* Warm paper neutrals — the whole app sits on these. */
+    --c-paper: 246 244 239;
+    --c-card: 255 255 255;
+    --c-shell: 251 250 247;
+    --c-wash: 239 237 231;
 
-    /* Sidebar and mobile chrome sit a shade cooler than the page. */
-    --shell: #fbfaf7;
+    --c-line: 228 224 216;
+    --c-line-soft: 238 235 228;
+    --c-line-strong: 206 201 188;
+
+    --c-ink: 34 33 29;
+    --c-ink-soft: 71 71 64;
+    --c-ink-faint: 141 141 128;
+    --c-muted: 106 103 94;
+
+    /* The inverted block: the mark, the primary button, the active
+       nav item. It flips to a light block in dark mode, so the text
+       on it flips with it. */
+    --c-brand: 34 33 29;
+    --c-brand-fg: 246 244 239;
+    --c-brand-hover: 58 56 51;
+    --c-brand-mark: 143 185 138;
+
+    /* Moss — kept, recommended, go. */
+    --c-accent: 77 107 70;
+    --c-accent-soft: 234 241 230;
+    --c-accent-solid: 63 92 57;
+    --c-accent-fg: 255 255 255;
+    --c-accent-hover: 51 80 45;
+    --c-accent-mark: 111 154 99;
+
+    /* Terracotta — disposed, warning, gone. */
+    --c-clay: 154 91 63;
+    --c-clay-soft: 251 240 234;
+    --c-clay-solid: 140 80 57;
+    --c-clay-fg: 255 255 255;
+    --c-clay-hover: 122 70 50;
+    --c-clay-mark: 198 127 92;
+    --c-clay-line: 233 189 164;
+
+    --c-info: 3 105 161;
+    --c-info-soft: 239 247 252;
+
+    --c-warn: 125 101 16;
+    --c-warn-soft: 251 243 221;
+    --c-warn-mark: 184 129 31;
+
+    --c-danger: 185 28 28;
+    --c-danger-soft: 253 242 241;
+    --c-danger-line: 242 201 198;
+    --c-danger-line-strong: 227 165 161;
+
+    --c-chart-ink: 111 110 102;
+
+    /* Shadow ink. Black in dark mode, warm ink in light mode, so the
+       lift reads as depth rather than as a grey smear. */
+    --c-shadow: 34 33 29;
+
+    /* Native form controls (date pickers, select popups, scrollbars)
+       follow the OS scheme unless we tell them otherwise. */
+    color-scheme: light;
+  }
+
+  .dark {
+    --c-paper: 26 25 23;
+    --c-card: 35 34 32;
+    --c-shell: 31 30 27;
+    --c-wash: 44 43 39;
+
+    --c-line: 61 60 54;
+    --c-line-soft: 46 45 41;
+    --c-line-strong: 78 76 69;
+
+    --c-ink: 236 234 227;
+    --c-ink-soft: 201 198 188;
+    --c-ink-faint: 125 122 112;
+    --c-muted: 156 153 142;
+
+    --c-brand: 236 235 228;
+    --c-brand-fg: 28 27 24;
+    --c-brand-hover: 251 250 245;
+    --c-brand-mark: 74 107 66;
+
+    --c-accent: 169 199 159;
+    --c-accent-soft: 33 43 30;
+    --c-accent-solid: 79 122 69;
+    --c-accent-fg: 255 255 255;
+    --c-accent-hover: 91 138 79;
+    --c-accent-mark: 143 187 132;
+
+    --c-clay: 224 161 132;
+    --c-clay-soft: 44 33 28;
+    --c-clay-solid: 165 96 63;
+    --c-clay-fg: 255 255 255;
+    --c-clay-hover: 176 106 71;
+    --c-clay-mark: 208 147 117;
+    --c-clay-line: 74 47 36;
+
+    --c-info: 124 195 232;
+    --c-info-soft: 22 38 47;
+
+    --c-warn: 217 188 114;
+    --c-warn-soft: 44 37 19;
+    --c-warn-mark: 217 166 63;
+
+    --c-danger: 242 145 137;
+    --c-danger-soft: 46 25 23;
+    --c-danger-line: 77 39 36;
+    --c-danger-line-strong: 109 53 49;
+
+    --c-chart-ink: 168 164 154;
+
+    --c-shadow: 0 0 0;
+
+    color-scheme: dark;
   }
 
   html {
@@ -36,12 +157,14 @@
     font-family: var(--font-sans), var(--font-sans-ext), ui-sans-serif, system-ui,
       -apple-system, "Segoe UI", sans-serif;
     font-feature-settings: "ss01";
-    background-color: var(--paper);
-    /* A very faint wash keeps the paper from reading as flat grey. */
+    background-color: rgb(var(--c-paper));
+    /* A very faint wash keeps the paper from reading as flat grey. The
+       card colour is near-white in light mode and slightly lifted in
+       dark mode, so the glow works in both. */
     background-image: radial-gradient(
       120% 80% at 50% -10%,
-      rgba(255, 255, 255, 0.9) 0%,
-      rgba(255, 255, 255, 0) 60%
+      rgb(var(--c-card) / 0.85) 0%,
+      rgb(var(--c-card) / 0) 60%
     );
     background-attachment: fixed;
   }
@@ -54,13 +177,13 @@
   }
 
   ::selection {
-    background: #22211d;
-    color: #f6f4ef;
+    background: rgb(var(--c-brand));
+    color: rgb(var(--c-brand-fg));
   }
 
   /* Focus rings that don't scream. */
   :focus-visible {
-    outline: 2px solid #4f6f47;
+    outline: 2px solid rgb(var(--c-accent));
     outline-offset: 2px;
     border-radius: 4px;
   }
@@ -68,20 +191,20 @@
   /* The scrollbar should belong to the paper, not the OS. */
   * {
     scrollbar-width: thin;
-    scrollbar-color: #d6d2c8 transparent;
+    scrollbar-color: rgb(var(--c-line-strong)) transparent;
   }
   *::-webkit-scrollbar {
     width: 10px;
     height: 10px;
   }
   *::-webkit-scrollbar-thumb {
-    background-color: #d6d2c8;
+    background-color: rgb(var(--c-line-strong));
     border-radius: 999px;
     border: 3px solid transparent;
     background-clip: content-box;
   }
   *::-webkit-scrollbar-thumb:hover {
-    background-color: #bfb9ac;
+    background-color: rgb(var(--c-muted));
   }
 }
 
@@ -104,18 +227,18 @@
   .card {
     @apply rounded-2xl border border-line bg-card;
     box-shadow:
-      0 1px 2px rgba(34, 33, 29, 0.04),
-      0 1px 1px rgba(34, 33, 29, 0.03);
+      0 1px 2px rgb(var(--c-shadow) / 0.04),
+      0 1px 1px rgb(var(--c-shadow) / 0.03);
   }
 
   .card-hover {
     @apply transition-all duration-200;
   }
   .card-hover:hover {
-    @apply border-ink-300;
+    @apply border-line-strong;
     box-shadow:
-      0 4px 16px rgba(34, 33, 29, 0.07),
-      0 1px 2px rgba(34, 33, 29, 0.04);
+      0 4px 16px rgb(var(--c-shadow) / 0.07),
+      0 1px 2px rgb(var(--c-shadow) / 0.04);
     transform: translateY(-1px);
   }
 
@@ -124,26 +247,26 @@
   }
 
   .btn-primary {
-    @apply btn bg-ink text-paper hover:bg-ink-700 active:scale-[0.98];
+    @apply btn bg-brand text-brand-fg hover:bg-brand-hover active:scale-[0.98];
   }
   .btn-secondary {
-    @apply btn border border-line bg-card text-ink-700 hover:border-ink-300 hover:bg-paper active:scale-[0.98];
+    @apply btn border border-line bg-card text-ink-soft hover:border-line-strong hover:bg-paper active:scale-[0.98];
   }
   .btn-moss {
-    @apply btn bg-moss-600 text-white hover:bg-moss-700 active:scale-[0.98];
+    @apply btn bg-accent-solid text-accent-fg hover:bg-accent-hover active:scale-[0.98];
   }
   .btn-clay {
-    @apply btn bg-clay-500 text-white hover:bg-clay-600 active:scale-[0.98];
+    @apply btn bg-clay-solid text-clay-fg hover:bg-clay-hover active:scale-[0.98];
   }
   .btn-danger {
-    @apply btn border border-red-200 bg-card text-red-700 hover:border-red-300 hover:bg-red-50 active:scale-[0.98];
+    @apply btn border border-danger-line bg-card text-danger hover:border-danger-line-strong hover:bg-danger-soft active:scale-[0.98];
   }
   .btn-ghost {
-    @apply btn text-ink-600 hover:bg-paper hover:text-ink;
+    @apply btn text-ink-soft hover:bg-paper hover:text-ink;
   }
 
   .input {
-    @apply w-full rounded-lg border border-line bg-card px-3 py-2 text-sm text-ink placeholder:text-ink-400/70 focus:border-moss-500 focus:outline-none focus:ring-4 focus:ring-moss-500/10;
+    @apply w-full rounded-lg border border-line bg-card px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-accent-solid focus:outline-none focus:ring-4 focus:ring-accent-solid/10;
   }
 
   .label {
@@ -163,8 +286,12 @@
   /* The placeholder shown where a photo would be: a soft inset well so
      an un-photographed item still looks deliberate rather than broken. */
   .photo-empty {
-    @apply flex h-full w-full items-center justify-center bg-paper text-ink-300;
-    background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.6), rgba(0, 0, 0, 0.015));
+    @apply flex h-full w-full items-center justify-center bg-paper text-ink-faint;
+    background-image: linear-gradient(
+      135deg,
+      rgb(var(--c-card) / 0.6),
+      rgb(var(--c-shadow) / 0.015)
+    );
   }
 
   /* A section heading inside a card: the serif title with a rule that

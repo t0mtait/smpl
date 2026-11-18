@@ -88,6 +88,7 @@ export interface MappedItem {
   description: string;
   location: string;
   purchaseDate: string | null;
+  offloadedDate: string | null;
   purchasePrice: number | null;
   currentValue: number | null;
   status: MappedStatus;
@@ -272,7 +273,7 @@ export function money(row: SourceRow, key: string): number | null {
 export function buildDescription(
   row: SourceRow,
   sourceStatus: string,
-  options: { paidKnown: boolean; cadenceInferred: boolean; noUsageRecord: boolean; valueUnknown: boolean }
+  options: { paidKnown: boolean; cadenceInferred?: boolean; noUsageRecord?: boolean; valueUnknown: boolean }
 ): string {
   const parts: string[] = [];
   const brand = text(row, "Brand");
@@ -354,17 +355,12 @@ export function mapRows(rows: SourceRow[], sheetName: string | null, now: Date =
     const isOwned = status === "owned";
 
     const frequency: MappedFrequency = STATUS_TO_FREQUENCY[sourceStatus] ?? "unknown";
-    const window = FREQUENCY_WINDOW_DAYS[frequency];
-    const cadenceInferred = isOwned && window !== undefined;
-    const noUsageRecord = isOwned && window === undefined;
-
-    const lastUsedAt = cadenceInferred
-      ? isoDate(new Date(now.getTime() - window * DAY))
-      : null;
+    const lastUsedAt: string | null = null;
 
     const paid = money(row, "Paid ALL-IN");
     const received = money(row, "Received");
     const acquisition = quarterStart(text(row, "Acquisition"));
+    const offloadedDate = quarterEnd(text(row, "EOL"));
 
     // The purchase date comes from a quarter, so it can never be a day in
     // the future — but a quarter that starts after today would be.
@@ -383,8 +379,6 @@ export function mapRows(rows: SourceRow[], sheetName: string | null, now: Date =
 
     const description = buildDescription(row, sourceStatus, {
       paidKnown: paid !== null,
-      cadenceInferred,
-      noUsageRecord,
       valueUnknown: isOwned && currentValue === null,
     });
 
@@ -392,7 +386,7 @@ export function mapRows(rows: SourceRow[], sheetName: string | null, now: Date =
       ? null
       : {
           disposition: status as MappedDisposal["disposition"],
-          disposedAt: exportedAt,
+          disposedAt: offloadedDate ?? exportedAt,
           amount: status === "sold" ? received : null,
           channel: "",
           notes: buildDisposalNotes(sourceStatus, received),
@@ -404,6 +398,7 @@ export function mapRows(rows: SourceRow[], sheetName: string | null, now: Date =
       description,
       location: "",
       purchaseDate,
+      offloadedDate,
       purchasePrice: paid,
       currentValue,
       status,

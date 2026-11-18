@@ -8,6 +8,7 @@
  *   tests/auth.test.ts     — password hashing, sessions, ownership isolation
  *   tests/money.test.ts    — null-vs-zero money, and the "closed" terminal state
  *   tests/dates.test.ts    — calendar dates stay calendar dates across timezones
+ *   tests/sort.test.ts     — the inventory table's sort and filter helpers
  *   tests/import.test.mjs  — the workbook -> app mapping and the import write
  *
  * The suites that touch a database run against a throwaway database in a
@@ -38,12 +39,14 @@ const tsc = spawnSync(
     "tests/auth.test.ts",
     "tests/money.test.ts",
     "tests/dates.test.ts",
+    "tests/sort.test.ts",
     "lib/scoring.ts",
     "lib/db.ts",
     "lib/password.ts",
     "lib/stats.ts",
     "lib/format.ts",
     "lib/dates.ts",
+    "lib/sort.ts",
     "--outDir",
     OUT,
     "--module",
@@ -87,6 +90,7 @@ runSuite("scoring", [path.join(OUT, "tests", "scoring.test.js")]);
 runSuite("auth", [path.join(OUT, "tests", "auth.test.js")]);
 runSuite("money", [path.join(OUT, "tests", "money.test.js")]);
 runSuite("dates", [path.join(OUT, "tests", "dates.test.js")]);
+runSuite("sort", [path.join(OUT, "tests", "sort.test.js")]);
 runSuite("import", [path.join(ROOT, "tests", "import.test.mjs")]);
 
 fs.rmSync(OUT, { recursive: true, force: true });

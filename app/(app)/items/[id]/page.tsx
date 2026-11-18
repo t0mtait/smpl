@@ -2,10 +2,9 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getItem, listDisposals, listItems } from "@/lib/db";
 import { scoreItem, findDuplicateItemIds } from "@/lib/scoring";
-import { formatDate, formatMoney, FREQUENCY_LABELS, relativeDays, STATUS_LABELS, STATUS_STYLES } from "@/lib/format";
-import { daysSince } from "@/lib/scoring";
+import { formatDate, formatMoney, FREQUENCY_LABELS, getItemStatusInfo, STATUS_LABELS } from "@/lib/format";
 import { requireUser } from "@/lib/auth";
-import { ItemPhoto, ScoreRing } from "@/components/ui";
+import { ScoreRing } from "@/components/ui";
 import { IconArrowLeft, IconPencil } from "@/components/icons";
 import ItemActions from "./ItemActions";
 
@@ -21,16 +20,16 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
   // Duplicate detection needs the whole owned set, not just this item.
   const owned = listItems(user.id).filter((i) => i.status === "owned");
   const scored = scoreItem(item, findDuplicateItemIds(owned));
+  const statusInfo = getItemStatusInfo(item);
 
   const facts: { label: string; value: React.ReactNode }[] = [
     { label: "Category", value: <span className="capitalize">{item.category}</span> },
     { label: "Location", value: item.location || "—" },
     { label: "Paid", value: <span className="tabular">{formatMoney(item.purchasePrice)}</span> },
     { label: "Worth today", value: <span className="tabular">{formatMoney(item.currentValue)}</span> },
-    { label: "Acquired", value: formatDate(item.purchaseDate) },
-    { label: "Last used", value: formatDate(item.lastUsedAt) },
+    { label: "Date acquired", value: formatDate(item.purchaseDate) },
+    { label: "Date offloaded", value: formatDate(item.offloadedDate) },
     { label: "Frequency", value: FREQUENCY_LABELS[item.useFrequency] ?? item.useFrequency },
-    { label: "Idle", value: relativeDays(daysSince(item.lastUsedAt ?? item.purchaseDate)) },
   ];
 
   return (
@@ -46,15 +45,6 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
       <div className="grid gap-6 lg:grid-cols-[300px_1fr] lg:gap-8">
         {/* ---------------- Left rail ---------------- */}
         <div className="space-y-4">
-          <div className="overflow-hidden rounded-2xl border border-line bg-card">
-            <div className="aspect-square w-full">
-              <ItemPhoto
-                src={item.photoPath ? `/api/photos/${item.photoPath}` : null}
-                alt={item.name}
-              />
-            </div>
-          </div>
-
           {item.status === "owned" ? (
             <div className="card p-5">
               <div className="flex items-start gap-4">
@@ -77,9 +67,9 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
                       key={`${r.label}-${i}`}
                       className="flex items-start justify-between gap-3 text-[13px]"
                     >
-                      <span className="text-ink-700">{r.label}</span>
+                      <span className="text-ink-soft">{r.label}</span>
                       {r.weight > 0 ? (
-                        <span className="tabular shrink-0 font-medium text-clay-500">+{r.weight}</span>
+                        <span className="tabular shrink-0 font-medium text-clay">+{r.weight}</span>
                       ) : null}
                     </li>
                   ))}
@@ -94,7 +84,7 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
           <header className="animate-rise">
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="display text-4xl leading-[1.1]">{item.name}</h1>
-              <span className={`pill ${STATUS_STYLES[item.status]}`}>{STATUS_LABELS[item.status]}</span>
+              <span className={`pill ${statusInfo.style}`}>{statusInfo.label}</span>
             </div>
             {item.description ? (
               <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-muted">

@@ -19,18 +19,29 @@ export function ScoreRing({
   const c = 2 * Math.PI * r;
   const pct = Math.max(0, Math.min(100, score));
   const offset = c * (1 - pct / 100);
-  const tone = pct >= 70 ? "#9a5b3f" : pct >= 40 ? "#8a7013" : "#466640";
+  // The tone follows the score: high reads as clay (get rid of it),
+  // middling as warn, low as moss (keep it). These are token classes, not
+  // baked-in hexes, so the ring follows the palette in both modes — the
+  // old literals were light-mode-only and vanished on a dark background.
+  const tone = pct >= 70 ? "stroke-clay" : pct >= 40 ? "stroke-warn" : "stroke-accent";
 
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90" aria-hidden="true">
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#eceae4" strokeWidth={stroke} />
         <circle
           cx={size / 2}
           cy={size / 2}
           r={r}
           fill="none"
-          stroke={tone}
+          strokeWidth={stroke}
+          className="stroke-line"
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          className={tone}
           strokeWidth={stroke}
           strokeLinecap="round"
           strokeDasharray={c}
@@ -66,9 +77,9 @@ export function StatTile({
   href?: string;
 }) {
   const tones = {
-    neutral: "bg-paper text-ink-500",
-    moss: "bg-moss-50 text-moss-600",
-    clay: "bg-clay-50 text-clay-500",
+    neutral: "bg-paper text-muted",
+    moss: "bg-accent-soft text-accent",
+    clay: "bg-clay-soft text-clay",
   };
 
   const inner = (
@@ -115,21 +126,21 @@ export function BarRow({
 }) {
   const pct = max > 0 ? Math.round((value / max) * 100) : 0;
   const tones = {
-    moss: "bg-moss-500",
-    clay: "bg-clay-400",
-    ink: "bg-ink-400",
+    moss: "bg-accent-mark",
+    clay: "bg-clay-mark",
+    ink: "bg-chart-ink",
   };
 
   return (
     <div className="group">
       <div className="flex items-baseline justify-between gap-3 text-[13px]">
-        <span className="truncate text-ink-700">{label}</span>
+        <span className="truncate text-ink-soft">{label}</span>
         <span className="tabular shrink-0 font-medium text-ink">
           {value}
           {suffix ? <span className="ml-0.5 text-muted">{suffix}</span> : null}
         </span>
       </div>
-      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-ink-100">
+      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-wash">
         <div
           className={`h-full rounded-full ${tones[tone]} transition-all duration-500`}
           style={{ width: `${Math.max(pct, value > 0 ? 3 : 0)}%` }}
@@ -174,9 +185,12 @@ export function EarningsChart({ data }: { data: { month: string; amount: number 
     <div className="w-full overflow-hidden">
       <svg viewBox={`0 0 ${w} ${h}`} className="w-full" role="img" aria-label="Earnings by month">
         <defs>
-          <linearGradient id="earnFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#466640" stopOpacity="0.22" />
-            <stop offset="100%" stopColor="#466640" stopOpacity="0.02" />
+          {/* The stops inherit `color` from this element, so `currentColor`
+              resolves to the accent token and the gradient follows the
+              palette in both modes. */}
+          <linearGradient id="earnFill" x1="0" y1="0" x2="0" y2="1" className="text-accent">
+            <stop offset="0%" stopColor="currentColor" stopOpacity="0.22" />
+            <stop offset="100%" stopColor="currentColor" stopOpacity="0.02" />
           </linearGradient>
         </defs>
 
@@ -187,27 +201,46 @@ export function EarningsChart({ data }: { data: { month: string; amount: number 
               x2={w - pad.right}
               y1={y(t)}
               y2={y(t)}
-              stroke="#eceae4"
+              className="stroke-line"
               strokeWidth="1"
             />
-            <text x={pad.left - 8} y={y(t) + 4} textAnchor="end" fontSize="10" fill="#726f65" className="tabular">
+            <text
+              x={pad.left - 8}
+              y={y(t) + 4}
+              textAnchor="end"
+              fontSize="10"
+              className="tabular fill-chart-ink"
+            >
               ${t}
             </text>
           </g>
         ))}
 
         <path d={area} fill="url(#earnFill)" />
-        <path d={line} fill="none" stroke="#466640" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path
+          d={line}
+          fill="none"
+          className="stroke-accent"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
 
         {data.map((d, i) => (
           <g key={i}>
-            <circle cx={x(i)} cy={y(d.amount)} r="3.5" fill="#fff" stroke="#466640" strokeWidth="2" />
+            <circle
+              cx={x(i)}
+              cy={y(d.amount)}
+              r="3.5"
+              className="fill-card stroke-accent"
+              strokeWidth="2"
+            />
             <text
               x={x(i)}
               y={h - 8}
               textAnchor="middle"
               fontSize="10"
-              fill="#726f65"
+              className="fill-chart-ink"
             >
               {d.month}
             </text>
@@ -236,7 +269,7 @@ export function EmptyState({
   return (
     <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
       {icon ? (
-        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-paper text-ink-400">
+        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-paper text-ink-faint">
           {icon}
         </div>
       ) : null}

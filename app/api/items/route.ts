@@ -51,6 +51,7 @@ function parseInput(body: Record<string, unknown>): ItemInput {
     description: str(body.description),
     location: str(body.location),
     purchaseDate: typeof body.purchaseDate === "string" && body.purchaseDate ? body.purchaseDate : null,
+    offloadedDate: typeof body.offloadedDate === "string" && body.offloadedDate ? body.offloadedDate : null,
     purchasePrice: money(body.purchasePrice),
     currentValue: money(body.currentValue),
     status,

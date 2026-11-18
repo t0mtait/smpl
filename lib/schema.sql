@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS items (
   description     TEXT    NOT NULL DEFAULT '',
   location        TEXT    NOT NULL DEFAULT '',
   purchase_date   TEXT,
+  offloaded_date  TEXT,
   -- Money is nullable on purpose: NULL means "we don't know", 0 means
   -- "genuinely free". A 0 default would be a claim we cannot back up.
   purchase_price  REAL,

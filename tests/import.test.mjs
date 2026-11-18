@@ -135,17 +135,15 @@ function row(overrides = {}) {
   );
 
   eq("Heavy Use is daily", items[0].useFrequency, "daily");
-  eq("Heavy Use was used recently", items[0].lastUsedAt, "2026-11-08");
-  check("the inferred date is disclosed", items[0].description.includes("Last used inferred from cadence"));
+  eq("Heavy Use has no fake last-used date", items[0].lastUsedAt, null);
 
   eq("Occasional Use is monthly", items[1].useFrequency, "monthly");
-  eq("Occasional Use was used a while back", items[1].lastUsedAt, "2026-09-12");
+  eq("Occasional Use has no fake last-used date", items[1].lastUsedAt, null);
 
   eq("Rare Use is rare", items[2].useFrequency, "rare");
 
   eq("a row with no cadence has no frequency", items[3].useFrequency, "unknown");
   eq("a row with no cadence has no last-used date", items[3].lastUsedAt, null);
-  check("the missing usage record is disclosed", items[3].description.includes("No usage record in source"));
 }
 
 /* ------------------------------------------------------ source fields */
@@ -179,6 +177,7 @@ function row(overrides = {}) {
   check("the end of life is preserved", d.includes("Expected end of life: 2026-06-30"), d);
   check("the notes are preserved", d.includes("Note: Gift from mum"), d);
   eq("the purchase date is the quarter start", items[0].purchaseDate, "2024-07-01");
+  eq("the offloaded date is the quarter end", items[0].offloadedDate, "2026-06-30");
 }
 
 /* ---------------------------------------------------------- categories */

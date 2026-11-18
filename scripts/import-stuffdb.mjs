@@ -98,6 +98,7 @@ export async function applyImport(ownerId, items, options = {}) {
         description: item.description,
         location: item.location,
         purchaseDate: item.purchaseDate,
+        offloadedDate: item.offloadedDate,
         purchasePrice: item.purchasePrice,
         currentValue: item.currentValue,
         status: item.status,
