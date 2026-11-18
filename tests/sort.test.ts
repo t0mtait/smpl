@@ -21,6 +21,7 @@ import {
   SORT_COLUMNS,
   filterItems,
   idleDays,
+  itemStatusRankKey,
   sortItems,
   toggleSort,
   type SortKey,
@@ -304,6 +305,12 @@ function names(items: Item[]): string[] {
   eqList("a query that matches nothing returns nothing",
     filterItems(items, { query: "helicopter", status: "all", category: "all" }),
     []);
+
+  const purgItem = item({ id: 10, name: "Purgatory Item", status: "purgatory" });
+  eq("purgatory status rank key", itemStatusRankKey(purgItem), "purgatory");
+  eqList("purgatory filter",
+    names(filterItems([purgItem, item({ id: 11, name: "Other" })], { query: "", status: "purgatory", category: "all" })),
+    ["Purgatory Item"]);
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

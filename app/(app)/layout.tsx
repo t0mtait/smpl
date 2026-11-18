@@ -5,10 +5,10 @@ import { SignOutIconButton } from "@/components/SignOutIconButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   IconBox,
+  IconFlame,
   IconHeart,
   IconHouse,
   IconPlus,
-  IconSparkles,
 } from "@/components/icons";
 import { requireUser } from "@/lib/auth";
 
@@ -20,7 +20,7 @@ const NAV = [
   { href: "/", label: "Dashboard", icon: <IconHouse width={17} height={17} /> },
   { href: "/items", label: "Inventory", icon: <IconBox width={17} height={17} /> },
   { href: "/wishlist", label: "Wishlist", icon: <IconHeart width={17} height={17} /> },
-  { href: "/suggestions", label: "Get Rid Of", icon: <IconSparkles width={17} height={17} /> },
+  { href: "/purgatory", label: "Purgatory", icon: <IconFlame width={17} height={17} /> },
 ];
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {

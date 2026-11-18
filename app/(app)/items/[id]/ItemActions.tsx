@@ -10,11 +10,13 @@ import { today } from "@/lib/dates";
 import {
   IconArchive,
   IconCash,
+  IconFlame,
   IconHeart,
   IconPencil,
   IconRecycle,
   IconTrash,
   IconUndo,
+  IconX,
 } from "@/components/icons";
 
 const CHANNELS = ["eBay", "Facebook Marketplace", "Craigslist", "Poshmark", "OfferUp", "Buy Nothing", "Other"];
@@ -82,6 +84,42 @@ export default function ItemActions({ item }: { item: Item }) {
     router.push("/items");
   };
 
+  const moveToPurgatory = async () => {
+    setBusy(true);
+    await fetch(`/api/items/${item.id}/purgatory`, { method: "POST" });
+    router.refresh();
+  };
+
+  if (item.status === "purgatory") {
+    return (
+      <section className="card p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="flex h-6 w-6 items-center justify-center rounded-md bg-clay-soft text-clay">
+                <IconFlame width={15} height={15} />
+              </span>
+              <StatusTag status={{ label: "Purgatory", style: STATUS_STYLES.purgatory }} />
+            </div>
+            <p className="mt-2 text-[13px] text-muted">
+              Staged in Purgatory to get rid of. You can restore it to inventory or offload it.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button className="btn-secondary" onClick={restore} disabled={busy}>
+              <IconUndo width={15} height={15} />
+              Restore to inventory
+            </button>
+            <Link href="/purgatory" className="btn-clay">
+              <IconFlame width={15} height={15} />
+              Offload in Purgatory
+            </Link>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   if (item.status !== "owned") {
     return (
       <section className="card p-6">
@@ -104,13 +142,19 @@ export default function ItemActions({ item }: { item: Item }) {
   return (
     <section className="card overflow-hidden">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-6 py-4">
-        <h2 className="display text-lg">Get rid of it</h2>
-        {!open ? (
-          <button className="btn-clay" onClick={() => setOpen(true)}>
-            <IconRecycle width={15} height={15} />
-            Mark as sold / donated / disposed / closed
+        <h2 className="display text-lg">Offload or Stage</h2>
+        <div className="flex items-center gap-2">
+          <button className="btn-secondary" onClick={moveToPurgatory} disabled={busy}>
+            <IconX width={15} height={15} />
+            Move to Purgatory
           </button>
-        ) : null}
+          {!open ? (
+            <button className="btn-clay" onClick={() => setOpen(true)}>
+              <IconRecycle width={15} height={15} />
+              Offload now
+            </button>
+          ) : null}
+        </div>
       </div>
 
       {open ? (

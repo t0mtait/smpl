@@ -43,6 +43,7 @@ export function itemStatusRankKey(item: Item): string {
   if (item.status === "donated") return "donated";
   if (item.status === "disposed") return "disposed";
   if (item.status === "closed") return "closed";
+  if (item.status === "purgatory") return "purgatory";
   if (item.priority === "get_rid" && item.currentValue) return "listed";
   if (item.useFrequency === "daily") return "heavy_use";
   if (item.useFrequency === "monthly") return "occasional_use";
@@ -58,12 +59,13 @@ const STATUS_ORDER: Record<string, number> = {
   heavy_use: 0,
   occasional_use: 1,
   rare_use: 2,
-  listed: 3,
-  owned: 4,
-  sold: 5,
-  donated: 6,
-  disposed: 7,
-  closed: 8,
+  purgatory: 3,
+  listed: 4,
+  owned: 5,
+  sold: 6,
+  donated: 7,
+  disposed: 8,
+  closed: 9,
 };
 
 /**

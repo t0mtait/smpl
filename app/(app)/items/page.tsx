@@ -6,7 +6,7 @@ import Link from "next/link";
 import type { Item } from "@/lib/db";
 import { formatDate, formatMoney, formatQuarter, getItemStatusInfo } from "@/lib/format";
 import { StatusTag } from "@/components/ui";
-import { IconBox, IconPlus, IconSearch } from "@/components/icons";
+import { IconBox, IconFlame, IconPlus, IconSearch, IconX } from "@/components/icons";
 import {
   DEFAULT_SORT,
   SORT_COLUMNS,
@@ -58,6 +58,23 @@ function InventoryInner() {
   const sorted = useMemo(() => sortItems(filtered, sort), [filtered, sort]);
 
   const onSort = (key: SortKey) => setSort((current) => toggleSort(current, key));
+
+  const moveToPurgatory = async (id: number) => {
+    try {
+      const res = await fetch(`/api/items/${id}/purgatory`, { method: "POST" });
+      if (res.ok) {
+        setItems((prev) =>
+          prev
+            ? prev.map((item) =>
+                item.id === id ? { ...item, status: "purgatory" } : item
+              )
+            : null
+        );
+      }
+    } catch {
+      setError("Failed to move item to Purgatory.");
+    }
+  };
 
   return (
     <div className="space-y-7">
@@ -111,6 +128,7 @@ function InventoryInner() {
               <option value="heavy_use">Heavy Use</option>
               <option value="occasional_use">Occasional Use</option>
               <option value="rare_use">Rare Use</option>
+              <option value="purgatory">Purgatory</option>
               <option value="listed">Listed</option>
               <option value="owned">Owned</option>
               <option value="sold">Sold</option>
@@ -212,6 +230,12 @@ function InventoryInner() {
                       </th>
                     );
                   })}
+                  <th
+                    scope="col"
+                    className="whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-[0.12em] text-muted"
+                  >
+                    Purgatory
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -247,6 +271,28 @@ function InventoryInner() {
                       </td>
                       <td className="tabular px-4 py-3 text-right text-[13px] text-muted">
                         {formatQuarter(item.offloadedDate)}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {item.status === "owned" ? (
+                          <button
+                            type="button"
+                            onClick={() => moveToPurgatory(item.id)}
+                            title="Move to Purgatory"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-danger-soft hover:text-danger"
+                          >
+                            <IconX width={16} height={16} />
+                            <span className="sr-only">Move to Purgatory</span>
+                          </button>
+                        ) : item.status === "purgatory" ? (
+                          <Link
+                            href="/purgatory"
+                            title="In Purgatory"
+                            className="inline-flex items-center gap-1 rounded-md bg-clay-soft px-2 py-1 text-[11px] font-medium text-clay hover:opacity-80"
+                          >
+                            <IconFlame width={12} height={12} />
+                            Purgatory
+                          </Link>
+                        ) : null}
                       </td>
                     </tr>
                   );

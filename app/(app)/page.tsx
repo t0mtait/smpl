@@ -1,37 +1,37 @@
 import Link from "next/link";
 import { getStats } from "@/lib/stats";
-import { scoreAll } from "@/lib/scoring";
-import { listItems } from "@/lib/db";
-import { formatMoney, relativeDays } from "@/lib/format";
+import { listDisposals, listItems } from "@/lib/db";
+import { formatMoney, formatQuarter } from "@/lib/format";
 import { requireUser } from "@/lib/auth";
-import { BarRow, EarningsChart, ItemPhoto, ScoreRing, StatTile } from "@/components/ui";
+import { BarRow, EarningsChart, StatTile } from "@/components/ui";
 import {
   IconBox,
   IconCash,
-  IconHeart,
+  IconFlame,
   IconLeaf,
   IconRecycle,
-  IconSparkles,
-  IconTag,
 } from "@/components/icons";
 
 export const dynamic = "force-dynamic";
 
-const DISPOSITION_META: Record<string, { icon: React.ReactNode; tone: string; label: string }> = {
-  sold: { icon: <IconCash width={16} height={16} />, tone: "bg-accent-soft text-accent", label: "Sold" },
-  donated: { icon: <IconHeart width={16} height={16} />, tone: "bg-info-soft text-info", label: "Donated" },
-  disposed: { icon: <IconRecycle width={16} height={16} />, tone: "bg-clay-soft text-clay", label: "Disposed" },
-  // Gone, but with no recorded outcome — a different thing from being sold.
-  closed: { icon: <IconTag width={16} height={16} />, tone: "bg-wash text-ink-soft", label: "Closed" },
-};
-
 export default async function DashboardPage() {
   const user = await requireUser();
   const stats = getStats(user.id);
-  const suggestions = scoreAll(listItems(user.id)).filter((s) => s.score > 0).slice(0, 5);
+  const allItems = listItems(user.id);
+  const purgatoryItems = allItems.filter((i) => i.status === "purgatory");
+  const purgatoryValue = purgatoryItems.reduce((sum, item) => sum + (item.currentValue ?? 0), 0);
+
   const maxCatValue = Math.max(1, ...stats.byCategory.map((c) => c.value));
   const goneCount =
     stats.soldItems + stats.donatedItems + stats.disposedItems + stats.closedItems;
+
+  const disposals = listDisposals(user.id);
+  const soldForReturn = disposals.filter(
+    (d) => d.disposition === "sold" && d.amount !== null && d.amount > 0
+  );
+  const soldForReturnCount = soldForReturn.length;
+  const soldForReturnTotal = soldForReturn.reduce((sum, d) => sum + (d.amount ?? 0), 0);
+  const noReturnCount = Math.max(0, goneCount - soldForReturnCount);
 
   return (
     <div className="space-y-10">
@@ -41,18 +41,6 @@ export default async function DashboardPage() {
         <h1 className="display mt-2 text-4xl leading-[1.1] tracking-[-0.02em] sm:text-5xl">
           Your stuff, at a glance.
         </h1>
-        <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-muted">
-          {stats.neverUsed > 0 ? (
-            <>
-              <span className="font-medium text-ink">
-                {stats.neverUsed} item{stats.neverUsed === 1 ? "" : "s"} never opened
-              </span>{" "}
-              · {stats.idleOver90Days} sitting untouched for 90+ days.
-            </>
-          ) : (
-            <>Everything you own has been touched at least once. Nice.</>
-          )}
-        </p>
       </header>
 
       {/* ---------------- Stat tiles ---------------- */}
@@ -68,8 +56,6 @@ export default async function DashboardPage() {
           label="Value owned"
           value={<span className="text-3xl font-semibold leading-none">{formatMoney(stats.totalValueOwned)}</span>}
           sub={
-            // The total covers only the items with a recorded value. Say so,
-            // rather than presenting a partial sum as the whole inventory.
             stats.ownedWithoutValue > 0
               ? `${stats.ownedItems - stats.ownedWithoutValue} of ${stats.ownedItems} items valued`
               : `avg ${formatMoney(stats.averageOwnedValue)} per item`
@@ -81,21 +67,14 @@ export default async function DashboardPage() {
         <StatTile
           label="Lifetime sales"
           value={<span className="text-3xl font-semibold leading-none">{formatMoney(stats.lifetimeSalesEarnings)}</span>}
-          sub={
-            // The total only covers sales with a recorded price, so say so
-            // when some are missing rather than implying it is everything.
-            stats.soldWithoutAmount > 0
-              ? `${stats.soldItems - stats.soldWithoutAmount} of ${stats.soldItems} sold, proceeds recorded`
-              : `${stats.soldItems} item${stats.soldItems === 1 ? "" : "s"} sold`
-          }
           icon={<IconCash width={15} height={15} />}
           tone="moss"
           href="/items?status=sold"
         />
         <StatTile
           label="Decluttered"
-          value={<span className="text-3xl font-semibold leading-none">{stats.declutterRate}%</span>}
-          sub={`${goneCount} item${goneCount === 1 ? "" : "s"} gone`}
+          value={<span className="text-3xl font-semibold leading-none">{goneCount}</span>}
+          sub="items offloaded"
           icon={<IconRecycle width={15} height={15} />}
           tone="clay"
           href="/items"
@@ -140,46 +119,52 @@ export default async function DashboardPage() {
         </section>
       </div>
 
-      {/* ---------------- Suggestions ---------------- */}
+      {/* ---------------- Purgatory summary ---------------- */}
       <section className="card overflow-hidden">
         <div className="flex items-center justify-between gap-3 border-b border-line px-6 py-5">
-          <div>
-            <h2 className="display text-xl">Strongest candidates</h2>
-            <p className="mt-0.5 text-[13px] text-muted">Highest-scoring things to get rid of</p>
+          <div className="flex items-center gap-3">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-clay-soft text-clay">
+              <IconFlame width={18} height={18} />
+            </span>
+            <div>
+              <h2 className="display text-xl">Purgatory summary</h2>
+              <p className="mt-0.5 text-[13px] text-muted">
+                {purgatoryItems.length} item{purgatoryItems.length === 1 ? "" : "s"} staged for offloading · {formatMoney(purgatoryValue)} estimated value
+              </p>
+            </div>
           </div>
           <Link
-            href="/suggestions"
-            className="btn-secondary shrink-0 text-[13px]"
+            href="/purgatory"
+            className="btn-clay shrink-0 text-[13px]"
           >
-            See all
-            <IconSparkles width={15} height={15} />
+            Open Purgatory
+            <IconFlame width={15} height={15} />
           </Link>
         </div>
 
-        {suggestions.length === 0 ? (
-          <p className="px-6 py-14 text-center text-sm text-muted">
-            Nothing flagged. Track some items and use them — the list fills itself in.
+        {purgatoryItems.length === 0 ? (
+          <p className="px-6 py-12 text-center text-sm text-muted">
+            No items in purgatory. Click the <strong>X</strong> icon on any inventory item to stage it for offloading.
           </p>
         ) : (
           <ul className="divide-y divide-line">
-            {suggestions.map((s) => (
-              <li key={s.item.id}>
+            {purgatoryItems.slice(0, 5).map((item) => (
+              <li key={item.id}>
                 <Link
-                  href={`/items/${s.item.id}`}
-                  className="group flex items-center gap-4 px-6 py-4 transition-colors hover:bg-paper"
+                  href={`/items/${item.id}`}
+                  className="group flex items-center justify-between px-6 py-4 transition-colors hover:bg-paper"
                 >
-                  <ScoreRing score={s.score} size={46} stroke={4.5} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium text-ink group-hover:text-accent">
-                      {s.item.name}
+                      {item.name}
                     </p>
-                    <p className="mt-0.5 truncate text-[13px] text-muted">
-                      {s.reasons.map((r) => r.label).join(" · ") || "—"}
+                    <p className="mt-0.5 truncate text-[13px] capitalize text-muted">
+                      {item.category} {item.location ? `· ${item.location}` : ""}
                     </p>
                   </div>
-                  <div className="hidden shrink-0 text-right sm:block">
-                    <p className="tabular text-sm font-medium text-ink">{formatMoney(s.item.currentValue)}</p>
-                    <p className="text-xs text-muted">last used {relativeDays(s.idleDays)}</p>
+                  <div className="shrink-0 text-right">
+                    <p className="tabular text-sm font-medium text-ink">{formatMoney(item.currentValue)}</p>
+                    <p className="text-xs text-muted">Acquired {formatQuarter(item.purchaseDate)}</p>
                   </div>
                 </Link>
               </li>
@@ -188,40 +173,47 @@ export default async function DashboardPage() {
         )}
       </section>
 
-      {/* ---------------- Disposal record ---------------- */}
+      {/* ---------------- Offloaded items (Disposal record) ---------------- */}
       <section className="card p-6">
         <div className="mb-5 flex items-baseline justify-between gap-3">
-          <h2 className="display text-xl">Lifetime disposal record</h2>
-          <span className="text-xs text-muted">everything that left</span>
+          <div>
+            <h2 className="display text-xl">Offloaded items</h2>
+            <p className="mt-0.5 text-[13px] text-muted">Items sold for return or gotten rid of with no return</p>
+          </div>
+          <span className="text-xs text-muted">{goneCount} total offloaded</span>
         </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {stats.disposalBreakdown.map((d) => {
-            const meta = DISPOSITION_META[d.disposition];
-            return (
-              <Link
-                key={d.disposition}
-                href={`/items?status=${d.disposition}`}
-                className="group flex items-center gap-4 rounded-xl border border-line p-4 transition-all hover:border-line-strong hover:shadow-lift"
-              >
-                <span
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${meta.tone}`}
-                >
-                  {meta.icon}
-                </span>
-                <div className="min-w-0">
-                  <p className="text-[13px] font-medium text-ink">{meta.label}</p>
-                  <p className="tabular text-2xl font-semibold leading-tight text-ink">{d.count}</p>
-                  {d.disposition === "sold" ? (
-                    <p className="tabular text-xs text-accent">
-                      {d.amount === null ? "proceeds not recorded" : `${formatMoney(d.amount)} earned`}
-                    </p>
-                  ) : d.amount !== null && d.amount > 0 ? (
-                    <p className="tabular text-xs text-muted">{formatMoney(d.amount)} value</p>
-                  ) : null}
-                </div>
-              </Link>
-            );
-          })}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Link
+            href="/items?status=sold"
+            className="group flex items-center gap-4 rounded-xl border border-line p-5 transition-all hover:border-line-strong hover:shadow-lift"
+          >
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
+              <IconCash width={20} height={20} />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[13px] font-medium text-ink">Sold for return</p>
+              <p className="tabular text-3xl font-semibold leading-tight text-ink">{soldForReturnCount}</p>
+              <p className="tabular mt-0.5 text-xs text-accent">
+                {formatMoney(soldForReturnTotal)} total proceeds
+              </p>
+            </div>
+          </Link>
+
+          <Link
+            href="/items"
+            className="group flex items-center gap-4 rounded-xl border border-line p-5 transition-all hover:border-line-strong hover:shadow-lift"
+          >
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-clay-soft text-clay">
+              <IconRecycle width={20} height={20} />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[13px] font-medium text-ink">No return (gotten rid of)</p>
+              <p className="tabular text-3xl font-semibold leading-tight text-ink">{noReturnCount}</p>
+              <p className="tabular mt-0.5 text-xs text-muted">
+                Donated, disposed, or $0 return
+              </p>
+            </div>
+          </Link>
         </div>
       </section>
     </div>

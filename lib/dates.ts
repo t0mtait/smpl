@@ -79,3 +79,34 @@ export function daysSinceDate(value: string | null | undefined, now: Date = new 
   const startOfDay = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
   return Math.round((startOfDay(now) - startOfDay(d)) / MS_PER_DAY);
 }
+
+/** Current calendar quarter, e.g. "Q4 2026". */
+export function currentQuarter(date: Date = new Date()): string {
+  const y = date.getFullYear();
+  const q = Math.ceil((date.getMonth() + 1) / 3);
+  return `Q${q} ${y}`;
+}
+
+/** Convert a quarter string like "Q4 2026" or "2026 Q4" to ISO date "2026-10-01". */
+export function quarterToIso(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  const m1 = /^Q([1-4])\s*(\d{4})$/i.exec(trimmed);
+  if (m1) {
+    const q = Number(m1[1]);
+    const y = Number(m1[2]);
+    const m = String((q - 1) * 3 + 1).padStart(2, "0");
+    return `${y}-${m}-01`;
+  }
+  const m2 = /^(\d{4})[-\s]*Q([1-4])$/i.exec(trimmed);
+  if (m2) {
+    const y = Number(m2[1]);
+    const q = Number(m2[2]);
+    const m = String((q - 1) * 3 + 1).padStart(2, "0");
+    return `${y}-${m}-01`;
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return trimmed;
+  }
+  return null;
+}

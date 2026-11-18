@@ -1,7 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 import fs from "node:fs";
 import path from "node:path";
-import { today } from "./dates.ts";
+import { today, quarterToIso } from "./dates.ts";
 
 export const DATA_DIR = process.env.DECLUTTER_DATA_DIR
   ? path.resolve(process.env.DECLUTTER_DATA_DIR)
@@ -202,7 +202,7 @@ function toItem(row: Record<string, unknown>): Item {
  * items that stopped being tracked without a sale, donation or disposal —
  * inventing one of those three would be a claim we cannot back up.
  */
-export type ItemStatus = "owned" | "sold" | "donated" | "disposed" | "closed";
+export type ItemStatus = "owned" | "sold" | "donated" | "disposed" | "closed" | "purgatory";
 export type Priority = "auto" | "keep" | "get_rid";
 export type Disposition = "sold" | "donated" | "disposed" | "closed";
 export type UseFrequency = "daily" | "weekly" | "monthly" | "seasonal" | "rare" | "never" | "unknown";
@@ -476,6 +476,49 @@ export function disposeItem(
   getDb()
     .prepare("UPDATE items SET status = ?, updated_at = datetime('now') WHERE id = ? AND owner_id = ?")
     .run(disposition, id, ownerId);
+  return getItem(ownerId, id);
+}
+
+/** Move an item into purgatory. */
+export function moveItemToPurgatory(ownerId: number, id: number): Item | null {
+  const existing = getItem(ownerId, id);
+  if (!existing) return null;
+  getDb()
+    .prepare("UPDATE items SET status = 'purgatory', updated_at = datetime('now') WHERE id = ? AND owner_id = ?")
+    .run(id, ownerId);
+  return getItem(ownerId, id);
+}
+
+/**
+ * Offload an item from purgatory or inventory with return amount ($) and quarter date.
+ * If amount > 0, disposition is 'sold'. If amount == 0, disposition is 'disposed'.
+ */
+export function offloadItem(
+  ownerId: number,
+  id: number,
+  amount: number,
+  dateStr: string,
+  notes: string = ""
+): Item | null {
+  const existing = getItem(ownerId, id);
+  if (!existing) return null;
+
+  const disposition: Disposition = amount > 0 ? "sold" : "disposed";
+  const isoDate = quarterToIso(dateStr) || today();
+
+  getDb()
+    .prepare(
+      `INSERT INTO disposals (item_id, disposition, disposed_at, amount, channel, notes)
+       VALUES (?, ?, ?, ?, ?, ?)`
+    )
+    .run(id, disposition, isoDate, amount, "", notes);
+
+  getDb()
+    .prepare(
+      `UPDATE items SET status = ?, offloaded_date = ?, updated_at = datetime('now') WHERE id = ? AND owner_id = ?`
+    )
+    .run(disposition, dateStr, id, ownerId);
+
   return getItem(ownerId, id);
 }
 

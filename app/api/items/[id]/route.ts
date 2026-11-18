@@ -55,7 +55,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
       if (Number.isFinite(n)) patch[key] = n;
     }
   }
-  const statuses: ItemStatus[] = ["owned", "sold", "donated", "disposed", "closed"];
+  const statuses: ItemStatus[] = ["owned", "sold", "donated", "disposed", "closed", "purgatory"];
   if (statuses.includes(body.status as ItemStatus)) patch.status = body.status;
   const freqs: UseFrequency[] = [
     "daily",
