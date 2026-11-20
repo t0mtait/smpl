@@ -389,3 +389,83 @@ export function CategoryTag({
     </span>
   );
 }
+
+/* ------------------------------------------------------------------
+   Quality icon — green arrow up (high/top), yellow - (medium),
+   red down (budget/low).
+   ------------------------------------------------------------------ */
+
+export function QualityIcon({ quality }: { quality?: string | null }) {
+  if (!quality || !quality.trim()) return <span className="text-muted">—</span>;
+  const q = quality.trim().toLowerCase();
+  if (q === "high" || q === "top") {
+    return (
+      <span
+        className="inline-flex items-center text-emerald-600 dark:text-emerald-400 font-medium"
+        title="High quality"
+      >
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M12 19V5M5 12l7-7 7 7" />
+        </svg>
+        <span className="sr-only">High</span>
+      </span>
+    );
+  }
+  if (q === "medium" || q === "med") {
+    return (
+      <span
+        className="inline-flex items-center text-amber-500 dark:text-amber-400 font-bold"
+        title="Medium quality"
+      >
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="3.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M5 12h14" />
+        </svg>
+        <span className="sr-only">Medium</span>
+      </span>
+    );
+  }
+  if (q === "low" || q === "budget") {
+    return (
+      <span
+        className="inline-flex items-center text-red-500 dark:text-red-400 font-medium"
+        title="Budget / Low quality"
+      >
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M12 5v14M5 12l7 7 7-7" />
+        </svg>
+        <span className="sr-only">Budget/Low</span>
+      </span>
+    );
+  }
+  return <span className="text-ink-soft text-[13px]">{quality}</span>;
+}

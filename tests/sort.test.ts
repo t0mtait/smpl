@@ -274,9 +274,9 @@ function names(items: Item[]): string[] {
 
 {
   const items = [
-    item({ id: 1, name: "Cast Iron Pan", category: "kitchen", location: "Lower cupboard", description: "Heavy" }),
-    item({ id: 2, name: "Hiking Boots", category: "clothing", location: "Hall closet", description: "Size 10" }),
-    item({ id: 3, name: "Old Lamp", category: "furniture", location: "Garage", description: "Broken switch", status: "disposed" }),
+    item({ id: 1, name: "Cast Iron Pan", brand: "Lodge", category: "kitchen", location: "Lower cupboard", description: "Heavy" }),
+    item({ id: 2, name: "Hiking Boots", brand: "Merrell", category: "clothing", location: "Hall closet", description: "Size 10" }),
+    item({ id: 3, name: "Old Lamp", brand: "", category: "furniture", location: "Garage", description: "Broken switch", status: "disposed" }),
   ];
 
   eqList("an empty query keeps everything",
@@ -291,36 +291,39 @@ function names(items: Item[]): string[] {
     names(filterItems(items, { query: "boots", status: "all", category: "all" })),
     ["Hiking Boots"]);
 
-  eqList("the query matches the category",
-    names(filterItems(items, { query: "kitchen", status: "all", category: "all" })),
+  eqList("the query matches the brand",
+    names(filterItems(items, { query: "lodge", status: "all", category: "all" })),
     ["Cast Iron Pan"]);
 
-  eqList("the query matches the subcategory",
-    names(filterItems([item({ name: "A", subcategory: "Coffee" }), item({ name: "B", subcategory: "Tea" })], { query: "coffee", status: "all", category: "all" })),
-    ["A"]);
+  eqList("the query does not match category (filtering is used for that)",
+    names(filterItems(items, { query: "kitchen", status: "all", category: "all" })),
+    []);
 
-  eqList("the query matches the location",
+  eqList("the query does not match location or description",
     names(filterItems(items, { query: "garage", status: "all", category: "all" })),
-    ["Old Lamp"]);
-
-  eqList("the query matches the description",
-    names(filterItems(items, { query: "broken", status: "all", category: "all" })),
-    ["Old Lamp"]);
+    []);
 
   eqList("the query is case-insensitive",
     names(filterItems(items, { query: "LAMP", status: "all", category: "all" })),
     ["Old Lamp"]);
 
-  eqList("the status filter narrows the list",
-    names(filterItems(items, { query: "", status: "disposed", category: "all" })),
+  eqList("the status filter narrows the list to offloaded",
+    names(filterItems(items, { query: "", status: "offloaded", category: "all" })),
     ["Old Lamp"]);
 
   eqList("the category filter narrows the list",
     names(filterItems(items, { query: "", status: "all", category: "clothing" })),
     ["Hiking Boots"]);
 
+  eqList("the subcategory filter narrows within a category",
+    names(filterItems([
+      item({ name: "A", category: "drink", subcategory: "Coffee" }),
+      item({ name: "B", category: "drink", subcategory: "Tea" }),
+    ], { query: "", status: "all", category: "drink", subcategory: "Coffee" })),
+    ["A"]);
+
   eqList("the filters combine",
-    names(filterItems(items, { query: "boots", status: "owned", category: "clothing" })),
+    names(filterItems(items, { query: "boots", status: "all", category: "clothing" })),
     ["Hiking Boots"]);
 
   eqList("a query that matches nothing returns nothing",

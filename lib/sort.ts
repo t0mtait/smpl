@@ -33,22 +33,32 @@ export interface InventoryFilters {
   query: string;
   status: string;
   category: string;
+  subcategory?: string;
 }
 
 /**
  * Return the status key used for sorting and filtering.
+ * Consolidated statuses: heavy_use, occasional_use, rare_use, purgatory, offloaded, offloaded_sold.
  */
 export function itemStatusRankKey(item: Item): string {
-  if (item.status === "sold") return "sold";
-  if (item.status === "donated") return "donated";
-  if (item.status === "disposed") return "disposed";
-  if (item.status === "closed") return "closed";
-  if (item.status === "purgatory") return "purgatory";
-  if (item.priority === "get_rid" && item.currentValue) return "listed";
-  if (item.useFrequency === "daily") return "heavy_use";
-  if (item.useFrequency === "monthly") return "occasional_use";
-  if (item.useFrequency === "rare") return "rare_use";
-  return "owned";
+  const statusStr = String(item.status);
+  if (statusStr === "purgatory") return "purgatory";
+  if (statusStr === "sold") return "sold";
+  if (statusStr === "donated") return "donated";
+  if (statusStr === "disposed") return "disposed";
+  if (statusStr === "closed") return "closed";
+  if (statusStr === "offloaded") return "offloaded";
+  if (Boolean(item.offloadedDate && statusStr !== "owned")) {
+    return (item.disposalAmount != null && item.disposalAmount > 0) ? "sold" : "offloaded";
+  }
+  const freq = item.useFrequency || "";
+  if (freq === "daily" || freq === "weekly" || statusStr === "heavy_use") {
+    return "heavy_use";
+  }
+  if (freq === "rare" || freq === "never" || statusStr === "rare_use") {
+    return "rare_use";
+  }
+  return "occasional_use";
 }
 
 /**
@@ -63,9 +73,11 @@ const STATUS_ORDER: Record<string, number> = {
   listed: 4,
   owned: 5,
   sold: 6,
+  offloaded_sold: 6,
   donated: 7,
   disposed: 8,
   closed: 9,
+  offloaded: 10,
 };
 
 /**
@@ -156,6 +168,15 @@ function compareTimestamp(a: string, b: string, dir: 1 | -1): number {
   return (a < b ? -1 : 1) * dir;
 }
 
+function qualityRank(q: string | null | undefined): number {
+  if (!q) return 0;
+  const s = q.trim().toLowerCase();
+  if (s === "high" || s === "top") return 3;
+  if (s === "medium" || s === "med") return 2;
+  if (s === "low" || s === "budget") return 1;
+  return 0;
+}
+
 /** Compare two items on one column, in the given direction. */
 function compareOn(a: Item, b: Item, key: SortKey, dir: 1 | -1): number {
   switch (key) {
@@ -167,8 +188,12 @@ function compareOn(a: Item, b: Item, key: SortKey, dir: 1 | -1): number {
       return a.category.localeCompare(b.category) * dir;
     case "subcategory":
       return (a.subcategory || "").localeCompare(b.subcategory || "") * dir;
-    case "quality":
+    case "quality": {
+      const qA = qualityRank(a.quality);
+      const qB = qualityRank(b.quality);
+      if (qA !== qB) return (qB - qA) * dir;
       return (a.quality || "").localeCompare(b.quality || "") * dir;
+    }
     case "status": {
       const rankA = STATUS_ORDER[itemStatusRankKey(a)] ?? 4;
       const rankB = STATUS_ORDER[itemStatusRankKey(b)] ?? 4;
@@ -207,7 +232,7 @@ export function sortItems(items: readonly Item[], sort: SortState): Item[] {
 }
 
 /**
- * Narrow a list of items by the search box and the two dropdowns.
+ * Narrow a list of items by search (name or brand only), category, subcategory, and status.
  */
 export function filterItems(items: readonly Item[], filters: InventoryFilters): Item[] {
   const query = filters.query.trim().toLowerCase();
@@ -215,30 +240,37 @@ export function filterItems(items: readonly Item[], filters: InventoryFilters): 
   return items.filter((item) => {
     if (filters.status !== "all") {
       const key = itemStatusRankKey(item);
-      if (filters.status === "heavy_use") {
-        if (key !== "heavy_use") return false;
-      } else if (filters.status === "occasional_use") {
-        if (key !== "occasional_use") return false;
-      } else if (filters.status === "rare_use") {
-        if (key !== "rare_use") return false;
-      } else if (filters.status === "listed") {
-        if (key !== "listed") return false;
-      } else if (filters.status === "owned") {
-        if (item.status !== "owned") return false;
-      } else if (item.status !== filters.status && key !== filters.status) {
+      const isOffloaded =
+        key === "offloaded" ||
+        key === "offloaded_sold" ||
+        key === "sold" ||
+        key === "donated" ||
+        key === "disposed" ||
+        key === "closed";
+
+      if (filters.status === "offloaded") {
+        if (!isOffloaded) return false;
+      } else if (filters.status === "offloaded_sold") {
+        if (key !== "offloaded_sold" && key !== "sold") return false;
+      } else if (filters.status === "offloaded_nosold") {
+        if (!isOffloaded || key === "offloaded_sold" || key === "sold") return false;
+      } else if (key !== filters.status) {
         return false;
       }
     }
     if (filters.category !== "all" && item.category !== filters.category) return false;
+    if (
+      filters.category !== "all" &&
+      filters.subcategory &&
+      filters.subcategory !== "all" &&
+      (item.subcategory || "").toLowerCase() !== filters.subcategory.toLowerCase()
+    ) {
+      return false;
+    }
     if (!query) return true;
     return (
       item.name.toLowerCase().includes(query) ||
-      (item.brand && item.brand.toLowerCase().includes(query)) ||
-      item.category.toLowerCase().includes(query) ||
-      (item.subcategory && item.subcategory.toLowerCase().includes(query)) ||
-      (item.quality && item.quality.toLowerCase().includes(query)) ||
-      item.location.toLowerCase().includes(query) ||
-      item.description.toLowerCase().includes(query)
+      Boolean(item.brand && item.brand.toLowerCase().includes(query))
     );
   });
 }

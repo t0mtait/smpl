@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { Item } from "@/lib/db";
-import { formatMoney, formatQuarter } from "@/lib/format";
+import { formatDate, formatMoney, formatQuarter } from "@/lib/format";
 import { currentQuarter } from "@/lib/dates";
 import { CategoryTag } from "@/components/ui";
 import { IconArrowLeft, IconBox, IconCheck, IconFlame, IconUndo } from "@/components/icons";
@@ -232,6 +232,7 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                   <th scope="col" className="px-4 py-3">Category</th>
                   <th scope="col" className="px-4 py-3 text-right">Value</th>
                   <th scope="col" className="px-4 py-3 text-right">Acquired</th>
+                  <th scope="col" className="px-4 py-3 text-right">Moved to Purgatory</th>
                   <th scope="col" className="px-4 py-3 text-right">Actions</th>
                 </tr>
               </thead>
@@ -262,6 +263,9 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                     </td>
                     <td className="tabular px-4 py-3 text-right text-[13px] text-muted">
                       {formatQuarter(item.purchaseDate)}
+                    </td>
+                    <td className="tabular px-4 py-3 text-right text-[13px] text-muted">
+                      {formatDate(item.purgatoryDate)}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-2">

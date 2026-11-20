@@ -64,6 +64,36 @@ export function formatQuarter(value: string | null | undefined): string {
   return trimmed;
 }
 
+/**
+ * Return conditional color styling for a year string / date.
+ * Different colors depending on the year (Q value doesn't matter).
+ */
+export function getYearStyle(value: string | null | undefined): string {
+  if (!value) return "";
+  const m = /(\d{4})/.exec(value);
+  if (!m) return "";
+  const year = parseInt(m[1], 10);
+  const styles: Record<number, string> = {
+    2026: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300",
+    2025: "bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300",
+    2024: "bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300",
+    2023: "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300",
+    2022: "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300",
+    2021: "bg-teal-100 text-teal-800 dark:bg-teal-950/60 dark:text-teal-300",
+    2020: "bg-orange-100 text-orange-800 dark:bg-orange-950/60 dark:text-orange-300",
+    2019: "bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300",
+    2018: "bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-950/60 dark:text-fuchsia-300",
+  };
+  if (styles[year]) return styles[year];
+  const palette = [
+    "bg-lime-100 text-lime-800 dark:bg-lime-950/60 dark:text-lime-300",
+    "bg-cyan-100 text-cyan-800 dark:bg-cyan-950/60 dark:text-cyan-300",
+    "bg-pink-100 text-pink-800 dark:bg-pink-950/60 dark:text-pink-300",
+    "bg-yellow-100 text-yellow-800 dark:bg-yellow-950/60 dark:text-yellow-300",
+  ];
+  return palette[Math.abs(year) % palette.length];
+}
+
 export function relativeDays(days: number | null): string {
   if (days === null) return "—";
   if (days <= 0) return "today";
@@ -79,6 +109,8 @@ export const STATUS_LABELS: Record<string, string> = {
   occasional_use: "Occasional Use",
   rare_use: "Rare Use",
   purgatory: "Purgatory",
+  offloaded_sold: "Offloaded ($)",
+  offloaded: "Offloaded",
   listed: "Listed",
   owned: "Owned",
   sold: "Sold",
@@ -92,11 +124,13 @@ export const STATUS_STYLES: Record<string, string> = {
   occasional_use: "bg-warn-soft text-warn",
   rare_use: "bg-danger-soft text-danger",
   purgatory: "bg-clay-soft text-clay",
-  listed: "bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300",
-  owned: "bg-wash text-ink-soft",
-  sold: "bg-accent-soft text-accent",
-  donated: "bg-info-soft text-info",
-  disposed: "bg-clay-soft text-clay",
+  offloaded_sold: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300",
+  offloaded: "bg-wash text-muted",
+  listed: "bg-warn-soft text-warn",
+  owned: "bg-warn-soft text-warn",
+  sold: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300",
+  donated: "bg-wash text-muted",
+  disposed: "bg-wash text-muted",
   closed: "bg-wash text-muted",
 };
 
@@ -105,18 +139,65 @@ export function getItemStatusInfo(item: {
   useFrequency?: string;
   priority?: string;
   currentValue?: number | null;
-}): { key: string; label: string; style: string } {
-  let key = item.status;
-  if (item.status === "owned") {
-    if (item.useFrequency === "daily") key = "heavy_use";
-    else if (item.useFrequency === "monthly") key = "occasional_use";
-    else if (item.useFrequency === "rare") key = "rare_use";
-    else if (item.priority === "get_rid") key = "listed";
+  offloadedDate?: string | null;
+  disposalAmount?: number | null;
+}): { key: string; label: string; style: string; isSold?: boolean } {
+  if (item.status === "purgatory") {
+    return {
+      key: "purgatory",
+      label: "Purgatory",
+      style: STATUS_STYLES.purgatory,
+    };
   }
+
+  const isOffloaded =
+    item.status === "sold" ||
+    item.status === "donated" ||
+    item.status === "disposed" ||
+    item.status === "closed" ||
+    item.status === "offloaded" ||
+    Boolean(item.offloadedDate && item.status !== "owned");
+
+  if (isOffloaded) {
+    const hasDollar =
+      item.status === "sold" ||
+      (item.disposalAmount !== null && item.disposalAmount !== undefined && item.disposalAmount > 0);
+    if (hasDollar) {
+      return {
+        key: "offloaded_sold",
+        label: "Offloaded ($)",
+        style: STATUS_STYLES.offloaded_sold,
+        isSold: true,
+      };
+    }
+    return {
+      key: "offloaded",
+      label: "Offloaded",
+      style: STATUS_STYLES.offloaded,
+      isSold: false,
+    };
+  }
+
+  const freq = item.useFrequency || "";
+  if (freq === "daily" || freq === "weekly" || item.status === "heavy_use") {
+    return {
+      key: "heavy_use",
+      label: "Heavy Use",
+      style: STATUS_STYLES.heavy_use,
+    };
+  }
+  if (freq === "rare" || freq === "never" || item.status === "rare_use") {
+    return {
+      key: "rare_use",
+      label: "Rare Use",
+      style: STATUS_STYLES.rare_use,
+    };
+  }
+
   return {
-    key,
-    label: STATUS_LABELS[key] ?? key,
-    style: STATUS_STYLES[key] ?? STATUS_STYLES.owned,
+    key: "occasional_use",
+    label: "Occasional Use",
+    style: STATUS_STYLES.occasional_use,
   };
 }
 

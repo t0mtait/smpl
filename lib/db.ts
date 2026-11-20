@@ -170,6 +170,7 @@ export function getDb(): DatabaseSync {
   ensureColumn(db, "items", "brand", "brand TEXT NOT NULL DEFAULT ''");
   ensureColumn(db, "items", "subcategory", "subcategory TEXT NOT NULL DEFAULT ''");
   ensureColumn(db, "items", "quality", "quality TEXT NOT NULL DEFAULT ''");
+  ensureColumn(db, "items", "purgatory_date", "purgatory_date TEXT");
   ensureColumn(db, "users", "avatar_path", "avatar_path TEXT");
   // Money columns must allow NULL ("never recorded") rather than 0 ("free").
   migrateMoneyColumns(db);
@@ -246,6 +247,13 @@ function toItem(row: Record<string, unknown>): Item {
     location: String(row.location ?? ""),
     purchaseDate: (row.purchase_date as string) ?? null,
     offloadedDate: (row.offloaded_date as string) ?? null,
+    purgatoryDate:
+      (row.purgatory_date as string) ??
+      (row.status === "purgatory"
+        ? ((row.updated_at as string) || (row.created_at as string))
+        : null),
+    disposalAmount:
+      row.disposal_amount != null ? Number(row.disposal_amount) : null,
     purchasePrice: row.purchase_price == null ? null : Number(row.purchase_price),
     currentValue: row.current_value == null ? null : Number(row.current_value),
     status: String(row.status) as ItemStatus,
@@ -264,7 +272,17 @@ function toItem(row: Record<string, unknown>): Item {
  * items that stopped being tracked without a sale, donation or disposal —
  * inventing one of those three would be a claim we cannot back up.
  */
-export type ItemStatus = "owned" | "sold" | "donated" | "disposed" | "closed" | "purgatory";
+export type ItemStatus =
+  | "owned"
+  | "sold"
+  | "donated"
+  | "disposed"
+  | "closed"
+  | "purgatory"
+  | "heavy_use"
+  | "occasional_use"
+  | "rare_use"
+  | "offloaded";
 export type Priority = "auto" | "keep" | "get_rid";
 export type Disposition = "sold" | "donated" | "disposed" | "closed";
 export type UseFrequency = "daily" | "weekly" | "monthly" | "seasonal" | "rare" | "never" | "unknown";
@@ -281,6 +299,8 @@ export interface Item {
   location: string;
   purchaseDate: string | null;
   offloadedDate?: string | null;
+  purgatoryDate?: string | null;
+  disposalAmount?: number | null;
   purchasePrice: number | null;
   currentValue: number | null;
   status: ItemStatus;
@@ -437,7 +457,17 @@ export function purgeExpiredSessions(): void {
 /** Every item belonging to one account, newest first. */
 export function listItems(ownerId: number): Item[] {
   const rows = getDb()
-    .prepare("SELECT * FROM items WHERE owner_id = ? ORDER BY created_at DESC, id DESC")
+    .prepare(`
+      SELECT i.*, d.amount AS disposal_amount
+      FROM items i
+      LEFT JOIN (
+        SELECT item_id, amount
+        FROM disposals
+        WHERE id IN (SELECT MAX(id) FROM disposals GROUP BY item_id)
+      ) d ON d.item_id = i.id
+      WHERE i.owner_id = ?
+      ORDER BY i.created_at DESC, i.id DESC
+    `)
     .all(ownerId) as Record<string, unknown>[];
   return rows.map(toItem);
 }
@@ -445,7 +475,16 @@ export function listItems(ownerId: number): Item[] {
 /** A single item, but only if the account owns it. */
 export function getItem(ownerId: number, id: number): Item | null {
   const row = getDb()
-    .prepare("SELECT * FROM items WHERE id = ? AND owner_id = ?")
+    .prepare(`
+      SELECT i.*, d.amount AS disposal_amount
+      FROM items i
+      LEFT JOIN (
+        SELECT item_id, amount
+        FROM disposals
+        WHERE id IN (SELECT MAX(id) FROM disposals GROUP BY item_id)
+      ) d ON d.item_id = i.id
+      WHERE i.id = ? AND i.owner_id = ?
+    `)
     .get(id, ownerId) as Record<string, unknown> | undefined;
   return row ? toItem(row) : null;
 }
@@ -468,6 +507,8 @@ export interface ItemInput {
   location: string;
   purchaseDate: string | null;
   offloadedDate?: string | null;
+  purgatoryDate?: string | null;
+  disposalAmount?: number | null;
   purchasePrice: number | null;
   currentValue: number | null;
   status: ItemStatus;
@@ -600,7 +641,7 @@ export function moveItemToPurgatory(ownerId: number, id: number): Item | null {
   const existing = getItem(ownerId, id);
   if (!existing) return null;
   getDb()
-    .prepare("UPDATE items SET status = 'purgatory', updated_at = datetime('now') WHERE id = ? AND owner_id = ?")
+    .prepare("UPDATE items SET status = 'purgatory', purgatory_date = datetime('now'), updated_at = datetime('now') WHERE id = ? AND owner_id = ?")
     .run(id, ownerId);
   return getItem(ownerId, id);
 }
@@ -644,7 +685,7 @@ export function restoreItem(ownerId: number, id: number): Item | null {
   if (!existing) return null;
   getDb().prepare("DELETE FROM disposals WHERE item_id = ?").run(id);
   getDb()
-    .prepare("UPDATE items SET status = 'owned', updated_at = datetime('now') WHERE id = ? AND owner_id = ?")
+    .prepare("UPDATE items SET status = 'owned', purgatory_date = NULL, updated_at = datetime('now') WHERE id = ? AND owner_id = ?")
     .run(id, ownerId);
   return getItem(ownerId, id);
 }

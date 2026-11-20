@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type { Item } from "@/lib/db";
-import { formatCategory, formatDate, formatMoney, formatQuarter, getItemStatusInfo } from "@/lib/format";
-import { CategoryTag, StatusTag } from "@/components/ui";
+import { formatCategory, formatDate, formatMoney, formatQuarter, getItemStatusInfo, getYearStyle } from "@/lib/format";
+import { CategoryTag, QualityIcon, StatusTag } from "@/components/ui";
 import { IconBox, IconFlame, IconPlus, IconSearch, IconX } from "@/components/icons";
 import {
   DEFAULT_SORT,
@@ -23,6 +23,7 @@ function InventoryInner() {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState(params.get("status") ?? "all");
   const [category, setCategory] = useState("all");
+  const [subcategory, setSubcategory] = useState("all");
   const [sort, setSort] = useState<SortState>(DEFAULT_SORT);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,9 +51,19 @@ function InventoryInner() {
     return [...set].sort();
   }, [items]);
 
+  const subcategories = useMemo(() => {
+    if (category === "all") return [];
+    const set = new Set(
+      (items ?? [])
+        .filter((i) => i.category === category && i.subcategory?.trim())
+        .map((i) => i.subcategory.trim())
+    );
+    return [...set].sort();
+  }, [items, category]);
+
   const filtered = useMemo(
-    () => filterItems(items ?? [], { query, status, category }),
-    [items, status, category, query]
+    () => filterItems(items ?? [], { query, status, category, subcategory }),
+    [items, status, category, subcategory, query]
   );
 
   const sorted = useMemo(() => sortItems(filtered, sort), [filtered, sort]);
@@ -110,7 +121,7 @@ function InventoryInner() {
               <input
                 id="q"
                 className="input pl-9"
-                placeholder="name, brand, category, quality…"
+                placeholder="Search by name or brand…"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
               />
@@ -131,12 +142,7 @@ function InventoryInner() {
               <option value="occasional_use">Occasional Use</option>
               <option value="rare_use">Rare Use</option>
               <option value="purgatory">Purgatory</option>
-              <option value="listed">Listed</option>
-              <option value="owned">Owned</option>
-              <option value="sold">Sold</option>
-              <option value="donated">Donated</option>
-              <option value="disposed">Thrown Out</option>
-              <option value="closed">Closed</option>
+              <option value="offloaded">Offloaded</option>
             </select>
           </div>
           <div className="sm:w-44">
@@ -147,12 +153,36 @@ function InventoryInner() {
               id="category"
               className="input"
               value={category}
-              onChange={(e) => setCategory(e.target.value)}
+              onChange={(e) => {
+                setCategory(e.target.value);
+                setSubcategory("all");
+              }}
             >
               <option value="all">All</option>
               {categories.map((c) => (
                 <option key={c} value={c}>
                   {formatCategory(c)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="sm:w-44">
+            <label className="label" htmlFor="subcategory">
+              Subcategory
+            </label>
+            <select
+              id="subcategory"
+              className="input"
+              disabled={category === "all"}
+              value={subcategory}
+              onChange={(e) => setSubcategory(e.target.value)}
+            >
+              <option value="all">
+                {category === "all" ? "Select category first" : "All subcategories"}
+              </option>
+              {subcategories.map((sub) => (
+                <option key={sub} value={sub}>
+                  {sub}
                 </option>
               ))}
             </select>
@@ -266,18 +296,40 @@ function InventoryInner() {
                         <CategoryTag category={item.category} />
                       </td>
                       <td className="px-4 py-3 text-[13px] text-ink-soft">{item.subcategory || "—"}</td>
-                      <td className="px-4 py-3 text-[13px] text-ink-soft">{item.quality || "—"}</td>
+                      <td className="px-4 py-3 text-[13px] text-ink-soft">
+                        <QualityIcon quality={item.quality} />
+                      </td>
                       <td className="px-4 py-3">
                         <StatusTag status={statusInfo} />
                       </td>
                       <td className="tabular px-4 py-3 text-right text-[13px] font-medium text-ink">
                         {formatMoney(item.currentValue)}
                       </td>
-                      <td className="tabular px-4 py-3 text-right text-[13px] text-muted">
-                        {formatQuarter(item.purchaseDate)}
+                      <td className="tabular px-4 py-3 text-right text-[13px]">
+                        {item.purchaseDate ? (
+                          <span
+                            className={`inline-block rounded px-2 py-0.5 text-[11px] font-medium tabular ${getYearStyle(
+                              item.purchaseDate
+                            )}`}
+                          >
+                            {formatQuarter(item.purchaseDate)}
+                          </span>
+                        ) : (
+                          <span className="text-muted">—</span>
+                        )}
                       </td>
-                      <td className="tabular px-4 py-3 text-right text-[13px] text-muted">
-                        {formatQuarter(item.offloadedDate)}
+                      <td className="tabular px-4 py-3 text-right text-[13px]">
+                        {item.offloadedDate ? (
+                          <span
+                            className={`inline-block rounded px-2 py-0.5 text-[11px] font-medium tabular ${getYearStyle(
+                              item.offloadedDate
+                            )}`}
+                          >
+                            {formatQuarter(item.offloadedDate)}
+                          </span>
+                        ) : (
+                          <span className="text-muted">—</span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-right">
                         {item.status === "owned" ? (

@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { WishlistItem } from "@/lib/db";
 import { formatMoney } from "@/lib/format";
 import { daysSinceDate } from "@/lib/dates";
+import { CategoryTag } from "@/components/ui";
 import {
   IconCheck,
   IconExternalLink,
@@ -17,6 +18,21 @@ import {
 } from "@/components/icons";
 
 type Priority = "high" | "medium" | "low";
+type WishlistSortKey = "name" | "priority" | "category" | "price" | "waiting";
+type SortDirection = "asc" | "desc";
+
+interface WishlistSortState {
+  key: WishlistSortKey;
+  direction: SortDirection;
+}
+
+const WISHLIST_COLUMNS: { key: WishlistSortKey; label: string; numeric?: boolean }[] = [
+  { key: "name", label: "Item" },
+  { key: "priority", label: "Priority" },
+  { key: "category", label: "Category" },
+  { key: "price", label: "Target Price", numeric: true },
+  { key: "waiting", label: "Cooldown", numeric: true },
+];
 
 const PRIORITIES: { value: Priority; label: string; tone: string; dot: string }[] = [
   { value: "high", label: "High priority", tone: "bg-clay-soft text-clay border-clay-line", dot: "bg-clay" },
@@ -45,7 +61,7 @@ export default function WishlistClient() {
   const [query, setQuery] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "price_desc" | "price_asc" | "priority">("newest");
+  const [sort, setSort] = useState<WishlistSortState>({ key: "waiting", direction: "desc" });
 
   // Add form toggle
   const [showAddForm, setShowAddForm] = useState(false);
@@ -121,26 +137,44 @@ export default function WishlistClient() {
       list = list.filter((i) => i.category === categoryFilter);
     }
 
+    const dir = sort.direction === "asc" ? 1 : -1;
     return [...list].sort((a, b) => {
-      if (sortBy === "newest") {
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      if (sort.key === "name") {
+        return a.name.localeCompare(b.name) * dir;
       }
-      if (sortBy === "oldest") {
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      }
-      if (sortBy === "price_desc") {
-        return (b.price ?? -1) - (a.price ?? -1);
-      }
-      if (sortBy === "price_asc") {
-        return (a.price ?? 999999) - (b.price ?? 999999);
-      }
-      if (sortBy === "priority") {
+      if (sort.key === "priority") {
         const rank = { high: 3, medium: 2, low: 1 };
-        return rank[b.priority] - rank[a.priority];
+        const diff = rank[a.priority] - rank[b.priority];
+        return diff * dir;
+      }
+      if (sort.key === "category") {
+        return a.category.localeCompare(b.category) * dir;
+      }
+      if (sort.key === "price") {
+        const pA = a.price ?? -1;
+        const pB = b.price ?? -1;
+        if (pA === pB) return 0;
+        return (pA - pB) * dir;
+      }
+      if (sort.key === "waiting") {
+        const tA = new Date(a.createdAt).getTime();
+        const tB = new Date(b.createdAt).getTime();
+        return (tA - tB) * dir;
       }
       return 0;
     });
-  }, [items, query, priorityFilter, categoryFilter, sortBy]);
+  }, [items, query, priorityFilter, categoryFilter, sort]);
+
+  const toggleSort = (key: WishlistSortKey) => {
+    setSort((curr) => {
+      if (curr.key === key) {
+        return { key, direction: curr.direction === "asc" ? "desc" : "asc" };
+      }
+      const defaultDir: "asc" | "desc" =
+        key === "price" || key === "waiting" || key === "priority" ? "desc" : "asc";
+      return { key, direction: defaultDir };
+    });
+  };
 
   const stats = useMemo(() => {
     const list = items ?? [];
@@ -547,19 +581,6 @@ export default function WishlistClient() {
                 </option>
               ))}
             </select>
-
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
-              className="input w-auto text-sm"
-              aria-label="Sort by"
-            >
-              <option value="newest">Added: newest first</option>
-              <option value="oldest">Added: oldest first</option>
-              <option value="price_desc">Price: highest first</option>
-              <option value="price_asc">Price: lowest first</option>
-              <option value="priority">Priority: high to low</option>
-            </select>
           </div>
         </div>
       </div>
@@ -596,116 +617,157 @@ export default function WishlistClient() {
           )}
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredItems.map((item) => {
-            const daysWaiting = daysSinceDate(item.createdAt.slice(0, 10)) ?? 0;
-            const cooldownPassed = daysWaiting >= 30;
-            const priorityMeta = PRIORITIES.find((p) => p.value === item.priority) ?? PRIORITIES[1];
-
-            return (
-              <div
-                key={item.id}
-                className="card flex flex-col justify-between overflow-hidden p-5 transition-shadow hover:shadow-sm"
-              >
-                <div>
-                  <div className="flex items-start justify-between gap-2">
-                    <span
-                      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${priorityMeta.tone}`}
-                    >
-                      <span className={`h-1.5 w-1.5 rounded-full ${priorityMeta.dot}`} />
-                      {priorityMeta.label.split(" ")[0]}
-                    </span>
-
-                    <span className="pill bg-wash text-ink-soft text-[11px]">
-                      {item.category}
-                    </span>
-                  </div>
-
-                  <h3 className="display mt-3 text-xl font-medium leading-snug text-ink">
-                    {item.name}
-                  </h3>
-
-                  <div className="mt-2 flex items-baseline gap-2">
-                    <span className="text-2xl font-semibold tabular text-ink">
-                      {formatMoney(item.price)}
-                    </span>
-                    {item.price === null && (
-                      <span className="text-xs text-muted">price not set</span>
-                    )}
-                  </div>
-
-                  {/* Cooldown indicator */}
-                  <div className="mt-3">
-                    {cooldownPassed ? (
-                      <div className="inline-flex items-center gap-1.5 rounded-md bg-accent-soft px-2 py-1 text-xs font-medium text-accent">
-                        <IconCheck width={13} height={13} />
-                        <span>30+ day cooldown passed</span>
-                      </div>
-                    ) : (
-                      <div className="inline-flex items-center gap-1.5 rounded-md bg-wash px-2 py-1 text-xs text-muted">
-                        <span>Waiting {daysWaiting}d</span>
-                        <span>·</span>
-                        <span>{30 - daysWaiting}d cooldown left</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {item.notes && (
-                    <p className="mt-3 text-[13px] leading-relaxed text-ink-soft line-clamp-3">
-                      {item.notes}
-                    </p>
-                  )}
-
-                  {item.url && (
-                    <div className="mt-3">
-                      <a
-                        href={item.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs text-muted hover:text-ink underline"
+        <div className="card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[760px] border-collapse text-left">
+              <thead>
+                <tr className="border-b border-line">
+                  {WISHLIST_COLUMNS.map((col) => {
+                    const active = sort.key === col.key;
+                    return (
+                      <th
+                        key={col.key}
+                        scope="col"
+                        aria-sort={
+                          active
+                            ? sort.direction === "asc"
+                              ? "ascending"
+                              : "descending"
+                            : "none"
+                        }
+                        className={`whitespace-nowrap px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] ${
+                          col.numeric ? "text-right" : "text-left"
+                        }`}
                       >
-                        <IconExternalLink width={13} height={13} />
-                        View product page
-                      </a>
-                    </div>
-                  )}
-                </div>
-
-                {/* Card actions */}
-                <div className="mt-5 border-t border-line pt-3 flex items-center justify-between gap-2">
-                  <button
-                    type="button"
-                    onClick={() => openConvert(item)}
-                    className="btn bg-accent-soft text-accent hover:bg-accent hover:text-accent-fg border border-accent/20 px-3 py-1.5 text-xs font-semibold"
-                    title="I bought this: move to owned inventory"
+                        <button
+                          type="button"
+                          onClick={() => toggleSort(col.key)}
+                          className={`inline-flex items-center gap-1.5 rounded transition-colors hover:text-ink ${
+                            active ? "text-ink" : "text-muted"
+                          }`}
+                        >
+                          {col.label}
+                          <span
+                            aria-hidden="true"
+                            className={`text-[9px] leading-none ${active ? "opacity-100" : "opacity-0"}`}
+                          >
+                            {sort.direction === "asc" ? "▲" : "▼"}
+                          </span>
+                        </button>
+                      </th>
+                    );
+                  })}
+                  <th
+                    scope="col"
+                    className="whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-[0.12em] text-muted"
                   >
-                    <IconCheck width={14} height={14} />
-                    Bought this
-                  </button>
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredItems.map((item) => {
+                  const daysWaiting = daysSinceDate(item.createdAt.slice(0, 10)) ?? 0;
+                  const cooldownPassed = daysWaiting >= 30;
+                  const priorityMeta =
+                    PRIORITIES.find((p) => p.value === item.priority) ?? PRIORITIES[1];
 
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => openEdit(item)}
-                      className="btn border border-line p-1.5 text-muted hover:text-ink hover:bg-paper"
-                      title="Edit item"
+                  return (
+                    <tr
+                      key={item.id}
+                      className="border-b border-line-soft transition-colors last:border-0 hover:bg-paper"
                     >
-                      <IconPencil width={14} height={14} />
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(item)}
-                      className="btn border border-line p-1.5 text-muted hover:text-clay hover:bg-clay-soft"
-                      title="Remove from wishlist"
-                    >
-                      <IconTrash width={14} height={14} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+                      <th scope="row" className="px-4 py-3 text-left font-normal">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-ink">{item.name}</span>
+                            {item.url && (
+                              <a
+                                href={item.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-muted hover:text-ink transition-colors inline-flex items-center"
+                                title="View product page"
+                              >
+                                <IconExternalLink width={13} height={13} />
+                                <span className="sr-only">Product page</span>
+                              </a>
+                            )}
+                          </div>
+                          {item.notes && (
+                            <p className="mt-0.5 text-[12px] text-muted line-clamp-1 font-normal">
+                              {item.notes}
+                            </p>
+                          )}
+                        </div>
+                      </th>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${priorityMeta.tone}`}
+                        >
+                          <span className={`h-1.5 w-1.5 rounded-full ${priorityMeta.dot}`} />
+                          {priorityMeta.label.split(" ")[0]}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <CategoryTag category={item.category} />
+                      </td>
+                      <td className="tabular px-4 py-3 text-right text-[13px] font-medium text-ink">
+                        {item.price !== null ? (
+                          formatMoney(item.price)
+                        ) : (
+                          <span className="text-muted">—</span>
+                        )}
+                      </td>
+                      <td className="tabular px-4 py-3 text-right text-[13px]">
+                        {cooldownPassed ? (
+                          <span className="inline-flex items-center gap-1 rounded-md bg-accent-soft px-2 py-0.5 text-[11px] font-medium text-accent">
+                            <IconCheck width={12} height={12} />
+                            <span>30+ days (ready)</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-md bg-wash px-2 py-0.5 text-[11px] text-muted">
+                            <span>{daysWaiting}d waiting</span>
+                            <span className="opacity-60">·</span>
+                            <span>{30 - daysWaiting}d left</span>
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => openConvert(item)}
+                            className="btn bg-accent-soft text-accent hover:bg-accent hover:text-accent-fg border border-accent/20 px-2.5 py-1 text-xs font-semibold"
+                            title="I bought this: move to owned inventory"
+                          >
+                            <IconCheck width={13} height={13} />
+                            Bought
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openEdit(item)}
+                            className="btn border border-line p-1.5 text-muted hover:text-ink hover:bg-paper"
+                            title="Edit item"
+                          >
+                            <IconPencil width={13} height={13} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(item)}
+                            className="btn border border-line p-1.5 text-muted hover:text-clay hover:bg-clay-soft"
+                            title="Remove from wishlist"
+                          >
+                            <IconTrash width={13} height={13} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
