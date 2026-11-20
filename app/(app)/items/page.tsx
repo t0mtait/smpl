@@ -4,9 +4,16 @@ import { useEffect, useMemo, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type { Item } from "@/lib/db";
-import { formatCategory, formatDate, formatMoney, formatQuarter, getItemStatusInfo, getYearStyle } from "@/lib/format";
+import {
+  CATEGORIES,
+  formatCategory,
+  formatMoney,
+  formatQuarter,
+  getItemStatusInfo,
+  getYearStyle,
+} from "@/lib/format";
 import { CategoryTag, QualityIcon, StatusTag } from "@/components/ui";
-import { IconBox, IconFlame, IconPlus, IconSearch, IconX } from "@/components/icons";
+import { IconBox, IconFlame, IconPlus, IconSearch } from "@/components/icons";
 import {
   DEFAULT_SORT,
   SORT_COLUMNS,
@@ -27,6 +34,25 @@ function InventoryInner() {
   const [sort, setSort] = useState<SortState>(DEFAULT_SORT);
   const [error, setError] = useState<string | null>(null);
 
+  // General edit popup state (opened from clicking on the item name)
+  const [editingItem, setEditingItem] = useState<Item | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editBrand, setEditBrand] = useState("");
+  const [editCategory, setEditCategory] = useState("misc");
+  const [editSubcategory, setEditSubcategory] = useState("");
+  const [editQuality, setEditQuality] = useState("");
+  const [editLocation, setEditLocation] = useState("");
+  const [editUsage, setEditUsage] = useState("monthly");
+  const [editValue, setEditValue] = useState("");
+  const [editPrice, setEditPrice] = useState("");
+  const [editPurchaseDate, setEditPurchaseDate] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editBusy, setEditBusy] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  // Inline cell edit state: clicking on individual column values
+  const [editingCell, setEditingCell] = useState<{ itemId: number; field: string } | null>(null);
+
   const load = async () => {
     try {
       const res = await fetch("/api/items");
@@ -35,7 +61,21 @@ function InventoryInner() {
         return;
       }
       const data = await res.json();
-      setItems(data.items ?? []);
+      // Offloaded items or items in purgatory should not appear in the items table (inventory)
+      const activeItems = (data.items ?? []).filter((item: Item) => {
+        const isOffloaded =
+          item.status === "sold" ||
+          item.status === "donated" ||
+          item.status === "disposed" ||
+          item.status === "closed" ||
+          item.status === "offloaded" ||
+          Boolean(item.offloadedDate && item.status !== "owned");
+        const isPurgatory =
+          item.status === "purgatory" ||
+          Boolean(item.purgatoryDate && item.status !== "owned");
+        return !isOffloaded && !isPurgatory && item.status === "owned";
+      });
+      setItems(activeItems);
       setError(null);
     } catch {
       setError("Could not load items.");
@@ -74,16 +114,106 @@ function InventoryInner() {
     try {
       const res = await fetch(`/api/items/${id}/purgatory`, { method: "POST" });
       if (res.ok) {
-        setItems((prev) =>
-          prev
-            ? prev.map((item) =>
-                item.id === id ? { ...item, status: "purgatory" } : item
-              )
-            : null
-        );
+        // Remove immediately from active inventory
+        setItems((prev) => (prev ? prev.filter((item) => item.id !== id) : null));
+      } else {
+        setError("Failed to move item to Purgatory.");
       }
     } catch {
       setError("Failed to move item to Purgatory.");
+    }
+  };
+
+  // Open general edit popup modal from item name
+  const openEditModal = (item: Item) => {
+    setEditingItem(item);
+    setEditName(item.name);
+    setEditBrand(item.brand || "");
+    setEditCategory(item.category || "misc");
+    setEditSubcategory(item.subcategory || "");
+    setEditQuality(item.quality || "");
+    setEditLocation(item.location || "");
+    setEditUsage(
+      item.useFrequency === "daily" || item.useFrequency === "weekly"
+        ? "daily"
+        : item.useFrequency === "rare" || item.useFrequency === "never"
+        ? "rare"
+        : "monthly"
+    );
+    setEditValue(item.currentValue === null ? "" : String(item.currentValue));
+    setEditPrice(item.purchasePrice === null ? "" : String(item.purchasePrice));
+    setEditPurchaseDate(item.purchaseDate || "");
+    setEditDescription(item.description || "");
+    setEditError(null);
+  };
+
+  // Submit general edit modal
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingItem || !editName.trim()) return;
+    setEditBusy(true);
+    setEditError(null);
+
+    try {
+      const res = await fetch(`/api/items/${editingItem.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editName.trim(),
+          brand: editBrand.trim(),
+          category: editCategory.trim() || "uncategorized",
+          subcategory: editSubcategory.trim(),
+          quality: editQuality.trim(),
+          location: editLocation.trim(),
+          useFrequency: editUsage,
+          status: "owned",
+          currentValue: editValue.trim() === "" ? null : Number(editValue),
+          purchasePrice: editPrice.trim() === "" ? null : Number(editPrice),
+          purchaseDate: editPurchaseDate.trim() || null,
+          description: editDescription.trim(),
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setEditError(data.error ?? "Failed to update item.");
+        setEditBusy(false);
+        return;
+      }
+
+      const data = await res.json();
+      setItems((prev) =>
+        prev
+          ? prev.map((it) => (it.id === editingItem.id ? { ...it, ...data.item } : it))
+          : null
+      );
+      setEditingItem(null);
+      setEditBusy(false);
+    } catch {
+      setEditError("Network error. Try again.");
+      setEditBusy(false);
+    }
+  };
+
+  // Inline cell save helper
+  const saveInline = async (id: number, patch: Record<string, unknown>) => {
+    setEditingCell(null);
+    try {
+      const res = await fetch(`/api/items/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setItems((prev) =>
+          prev ? prev.map((it) => (it.id === id ? { ...it, ...data.item } : it)) : null
+        );
+      } else {
+        setError("Failed to save changes.");
+      }
+    } catch {
+      setError("Network error while saving.");
     }
   };
 
@@ -129,7 +259,7 @@ function InventoryInner() {
           </div>
           <div className="sm:w-44">
             <label className="label" htmlFor="status">
-              Status
+              Usage
             </label>
             <select
               id="status"
@@ -138,11 +268,9 @@ function InventoryInner() {
               onChange={(e) => setStatus(e.target.value)}
             >
               <option value="all">All</option>
-              <option value="heavy_use">Heavy Use</option>
-              <option value="occasional_use">Occasional Use</option>
-              <option value="rare_use">Rare Use</option>
-              <option value="purgatory">Purgatory</option>
-              <option value="offloaded">Offloaded</option>
+              <option value="heavy_use">Heavy</option>
+              <option value="occasional_use">Occasional</option>
+              <option value="rare_use">Rare</option>
             </select>
           </div>
           <div className="sm:w-44">
@@ -219,14 +347,11 @@ function InventoryInner() {
         </div>
       ) : null}
 
-      {/* ---------------- Table ----------------
-          The sort control is the column heading itself: a button inside
-          a th, with aria-sort on the th so a screen reader announces
-          which column is sorted and which way it is pointing. */}
+      {/* ---------------- Table ---------------- */}
       {sorted.length > 0 ? (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1120px] border-collapse text-left">
+            <table className="w-full min-w-[980px] border-collapse text-left">
               <caption className="sr-only">
                 Your inventory: {sorted.length} item{sorted.length === 1 ? "" : "s"}. Choose a column
                 heading to sort by that column.
@@ -278,80 +403,264 @@ function InventoryInner() {
                       key={item.id}
                       className="border-b border-line-soft transition-colors last:border-0 hover:bg-paper"
                     >
+                      {/* Item Name: clicking opens general edit popup */}
                       <th scope="row" className="px-4 py-3 text-left font-normal">
-                        <Link
-                          href={`/items/${item.id}`}
-                          className="min-w-0 block font-medium text-ink hover:text-accent"
+                        <button
+                          type="button"
+                          onClick={() => openEditModal(item)}
+                          className="min-w-0 text-left block group cursor-pointer"
+                          title="Click to edit item"
                         >
-                          <span className="block truncate">{item.name}</span>
+                          <span className="block truncate font-medium text-ink group-hover:text-accent group-hover:underline underline-offset-2 transition-colors">
+                            {item.name}
+                          </span>
                           {item.location ? (
                             <span className="block truncate text-[12px] font-normal text-muted">
                               {item.location}
                             </span>
                           ) : null}
-                        </Link>
+                        </button>
                       </th>
-                      <td className="px-4 py-3 text-[13px] text-ink-soft">{item.brand || "—"}</td>
-                      <td className="px-4 py-3">
-                        <CategoryTag category={item.category} />
-                      </td>
-                      <td className="px-4 py-3 text-[13px] text-ink-soft">{item.subcategory || "—"}</td>
+
+                      {/* Brand: clicking edits brand */}
                       <td className="px-4 py-3 text-[13px] text-ink-soft">
-                        <QualityIcon quality={item.quality} />
+                        {editingCell?.itemId === item.id && editingCell?.field === "brand" ? (
+                          <input
+                            type="text"
+                            autoFocus
+                            defaultValue={item.brand}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                saveInline(item.id, { brand: e.currentTarget.value.trim() });
+                              }
+                              if (e.key === "Escape") setEditingCell(null);
+                            }}
+                            onBlur={(e) =>
+                              saveInline(item.id, { brand: e.currentTarget.value.trim() })
+                            }
+                            className="input py-0.5 px-2 text-xs h-7 max-w-[120px]"
+                          />
+                        ) : (
+                          <span
+                            onClick={() => setEditingCell({ itemId: item.id, field: "brand" })}
+                            className="inline-block py-1 px-1.5 -mx-1.5 rounded hover:bg-wash cursor-pointer transition-colors"
+                            title="Click to edit brand"
+                          >
+                            {item.brand || <span className="text-muted/60">—</span>}
+                          </span>
+                        )}
                       </td>
+
+                      {/* Category: clicking edits category */}
                       <td className="px-4 py-3">
-                        <StatusTag status={statusInfo} />
+                        {editingCell?.itemId === item.id && editingCell?.field === "category" ? (
+                          <select
+                            autoFocus
+                            defaultValue={item.category}
+                            onChange={(e) => saveInline(item.id, { category: e.target.value })}
+                            onBlur={() => setEditingCell(null)}
+                            className="input py-0.5 px-2 text-xs h-7"
+                          >
+                            {CATEGORIES.map((c) => (
+                              <option key={c} value={c}>
+                                {formatCategory(c)}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span
+                            onClick={() => setEditingCell({ itemId: item.id, field: "category" })}
+                            className="inline-block cursor-pointer hover:opacity-80 transition-opacity"
+                            title="Click to edit category"
+                          >
+                            <CategoryTag category={item.category} />
+                          </span>
+                        )}
                       </td>
+
+                      {/* Subcategory: clicking edits subcategory */}
+                      <td className="px-4 py-3 text-[13px] text-ink-soft">
+                        {editingCell?.itemId === item.id && editingCell?.field === "subcategory" ? (
+                          <input
+                            type="text"
+                            autoFocus
+                            defaultValue={item.subcategory}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                saveInline(item.id, { subcategory: e.currentTarget.value.trim() });
+                              }
+                              if (e.key === "Escape") setEditingCell(null);
+                            }}
+                            onBlur={(e) =>
+                              saveInline(item.id, { subcategory: e.currentTarget.value.trim() })
+                            }
+                            className="input py-0.5 px-2 text-xs h-7 max-w-[120px]"
+                          />
+                        ) : (
+                          <span
+                            onClick={() => setEditingCell({ itemId: item.id, field: "subcategory" })}
+                            className="inline-block py-1 px-1.5 -mx-1.5 rounded hover:bg-wash cursor-pointer transition-colors"
+                            title="Click to edit subcategory"
+                          >
+                            {item.subcategory || <span className="text-muted/60">—</span>}
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Quality: clicking edits quality */}
+                      <td className="px-4 py-3 text-[13px] text-ink-soft">
+                        {editingCell?.itemId === item.id && editingCell?.field === "quality" ? (
+                          <select
+                            autoFocus
+                            defaultValue={item.quality || ""}
+                            onChange={(e) => saveInline(item.id, { quality: e.target.value })}
+                            onBlur={() => setEditingCell(null)}
+                            className="input py-0.5 px-2 text-xs h-7"
+                          >
+                            <option value="">— None —</option>
+                            <option value="high">High</option>
+                            <option value="medium">Medium</option>
+                            <option value="low">Low</option>
+                          </select>
+                        ) : (
+                          <span
+                            onClick={() => setEditingCell({ itemId: item.id, field: "quality" })}
+                            className="inline-flex items-center gap-1.5 py-1 px-1.5 -mx-1.5 rounded hover:bg-wash cursor-pointer transition-colors"
+                            title="Click to edit quality"
+                          >
+                            <QualityIcon quality={item.quality} />
+                            {item.quality ? (
+                              <span className="capitalize text-xs text-muted">({item.quality})</span>
+                            ) : null}
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Usage (was Status): clicking edits usage */}
+                      <td className="px-4 py-3">
+                        {editingCell?.itemId === item.id && editingCell?.field === "status" ? (
+                          <select
+                            autoFocus
+                            defaultValue={
+                              item.useFrequency === "daily" || item.useFrequency === "weekly"
+                                ? "daily"
+                                : item.useFrequency === "rare" || item.useFrequency === "never"
+                                ? "rare"
+                                : "monthly"
+                            }
+                            onChange={(e) =>
+                              saveInline(item.id, { useFrequency: e.target.value, status: "owned" })
+                            }
+                            onBlur={() => setEditingCell(null)}
+                            className="input py-0.5 px-2 text-xs h-7"
+                          >
+                            <option value="daily">Heavy</option>
+                            <option value="monthly">Occasional</option>
+                            <option value="rare">Rare</option>
+                          </select>
+                        ) : (
+                          <span
+                            onClick={() => setEditingCell({ itemId: item.id, field: "status" })}
+                            className="inline-block cursor-pointer hover:opacity-80 transition-opacity"
+                            title="Click to edit usage"
+                          >
+                            <StatusTag status={statusInfo} />
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Value: clicking edits value */}
                       <td className="tabular px-4 py-3 text-right text-[13px] font-medium text-ink">
-                        {formatMoney(item.currentValue)}
-                      </td>
-                      <td className="tabular px-4 py-3 text-right text-[13px]">
-                        {item.purchaseDate ? (
-                          <span
-                            className={`inline-block rounded px-2 py-0.5 text-[11px] font-medium tabular ${getYearStyle(
-                              item.purchaseDate
-                            )}`}
-                          >
-                            {formatQuarter(item.purchaseDate)}
-                          </span>
+                        {editingCell?.itemId === item.id && editingCell?.field === "value" ? (
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            autoFocus
+                            defaultValue={item.currentValue === null ? "" : String(item.currentValue)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                const val = e.currentTarget.value.trim();
+                                saveInline(item.id, {
+                                  currentValue: val === "" ? null : Number(val),
+                                });
+                              }
+                              if (e.key === "Escape") setEditingCell(null);
+                            }}
+                            onBlur={(e) => {
+                              const val = e.currentTarget.value.trim();
+                              saveInline(item.id, {
+                                currentValue: val === "" ? null : Number(val),
+                              });
+                            }}
+                            className="input py-0.5 px-2 text-xs h-7 tabular text-right max-w-[90px]"
+                          />
                         ) : (
-                          <span className="text-muted">—</span>
+                          <span
+                            onClick={() => setEditingCell({ itemId: item.id, field: "value" })}
+                            className="inline-block py-1 px-1.5 -mx-1.5 rounded hover:bg-wash cursor-pointer transition-colors"
+                            title="Click to edit value"
+                          >
+                            {formatMoney(item.currentValue)}
+                          </span>
                         )}
                       </td>
+
+                      {/* Acquired: clicking edits purchaseDate */}
                       <td className="tabular px-4 py-3 text-right text-[13px]">
-                        {item.offloadedDate ? (
-                          <span
-                            className={`inline-block rounded px-2 py-0.5 text-[11px] font-medium tabular ${getYearStyle(
-                              item.offloadedDate
-                            )}`}
-                          >
-                            {formatQuarter(item.offloadedDate)}
-                          </span>
+                        {editingCell?.itemId === item.id && editingCell?.field === "acquired" ? (
+                          <input
+                            type="text"
+                            placeholder="YYYY-MM-DD or Q1 2024"
+                            autoFocus
+                            defaultValue={item.purchaseDate || ""}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                saveInline(item.id, {
+                                  purchaseDate: e.currentTarget.value.trim() || null,
+                                });
+                              }
+                              if (e.key === "Escape") setEditingCell(null);
+                            }}
+                            onBlur={(e) =>
+                              saveInline(item.id, {
+                                purchaseDate: e.currentTarget.value.trim() || null,
+                              })
+                            }
+                            className="input py-0.5 px-2 text-xs h-7 tabular text-right max-w-[120px]"
+                          />
                         ) : (
-                          <span className="text-muted">—</span>
+                          <span
+                            onClick={() => setEditingCell({ itemId: item.id, field: "acquired" })}
+                            className="inline-block py-1 px-1.5 -mx-1.5 rounded hover:bg-wash cursor-pointer transition-colors"
+                            title="Click to edit acquired date"
+                          >
+                            {item.purchaseDate ? (
+                              <span
+                                className={`inline-block rounded px-2 py-0.5 text-[11px] font-medium tabular ${getYearStyle(
+                                  item.purchaseDate
+                                )}`}
+                              >
+                                {formatQuarter(item.purchaseDate)}
+                              </span>
+                            ) : (
+                              <span className="text-muted">—</span>
+                            )}
+                          </span>
                         )}
                       </td>
+
+                      {/* Purgatory: flame icon instead of X */}
                       <td className="px-4 py-3 text-right">
-                        {item.status === "owned" ? (
-                          <button
-                            type="button"
-                            onClick={() => moveToPurgatory(item.id)}
-                            title="Move to Purgatory"
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-danger-soft hover:text-danger"
-                          >
-                            <IconX width={16} height={16} />
-                            <span className="sr-only">Move to Purgatory</span>
-                          </button>
-                        ) : item.status === "purgatory" ? (
-                          <Link
-                            href="/purgatory"
-                            title="In Purgatory"
-                            className="inline-flex items-center gap-1 rounded-md bg-clay-soft px-2.5 py-1 text-[11px] font-medium text-clay hover:opacity-80"
-                          >
-                            <IconFlame width={12} height={12} />
-                            Purgatory
-                          </Link>
-                        ) : null}
+                        <button
+                          type="button"
+                          onClick={() => moveToPurgatory(item.id)}
+                          title="Move to Purgatory"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-clay-soft hover:text-clay"
+                        >
+                          <IconFlame width={16} height={16} />
+                          <span className="sr-only">Move to Purgatory</span>
+                        </button>
                       </td>
                     </tr>
                   );
@@ -361,6 +670,214 @@ function InventoryInner() {
           </div>
         </div>
       ) : null}
+
+      {/* ---------------- General Edit Modal (opened from item name) ---------------- */}
+      {editingItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+          <form
+            onSubmit={handleEditSubmit}
+            className="card animate-rise w-full max-w-lg space-y-4 p-6 shadow-xl max-h-[90vh] overflow-y-auto"
+          >
+            <div className="flex items-center justify-between border-b border-line pb-3">
+              <div>
+                <h2 className="display text-xl">Edit item</h2>
+                <Link
+                  href={`/items/${editingItem.id}`}
+                  className="text-xs text-muted hover:text-accent underline transition-colors"
+                >
+                  View full item page &rarr;
+                </Link>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingItem(null)}
+                className="text-xs text-muted hover:text-ink"
+              >
+                Close
+              </button>
+            </div>
+
+            {editError && (
+              <div className="rounded-lg border border-danger-line bg-danger-soft p-3 text-sm text-danger">
+                {editError}
+              </div>
+            )}
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <label className="label" htmlFor="edit-item-name">
+                  Name *
+                </label>
+                <input
+                  id="edit-item-name"
+                  className="input"
+                  required
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="label" htmlFor="edit-item-brand">
+                  Brand
+                </label>
+                <input
+                  id="edit-item-brand"
+                  className="input"
+                  value={editBrand}
+                  onChange={(e) => setEditBrand(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="label" htmlFor="edit-item-location">
+                  Location
+                </label>
+                <input
+                  id="edit-item-location"
+                  className="input"
+                  placeholder="e.g. Closet, Living Room"
+                  value={editLocation}
+                  onChange={(e) => setEditLocation(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="label" htmlFor="edit-item-cat">
+                  Category
+                </label>
+                <select
+                  id="edit-item-cat"
+                  className="input"
+                  value={editCategory}
+                  onChange={(e) => setEditCategory(e.target.value)}
+                >
+                  {CATEGORIES.map((c) => (
+                    <option key={c} value={c}>
+                      {formatCategory(c)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="label" htmlFor="edit-item-subcat">
+                  Subcategory
+                </label>
+                <input
+                  id="edit-item-subcat"
+                  className="input"
+                  value={editSubcategory}
+                  onChange={(e) => setEditSubcategory(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="label" htmlFor="edit-item-quality">
+                  Quality
+                </label>
+                <select
+                  id="edit-item-quality"
+                  className="input"
+                  value={editQuality}
+                  onChange={(e) => setEditQuality(e.target.value)}
+                >
+                  <option value="">— None —</option>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="label" htmlFor="edit-item-usage">
+                  Usage
+                </label>
+                <select
+                  id="edit-item-usage"
+                  className="input"
+                  value={editUsage}
+                  onChange={(e) => setEditUsage(e.target.value)}
+                >
+                  <option value="daily">Heavy</option>
+                  <option value="monthly">Occasional</option>
+                  <option value="rare">Rare</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="label" htmlFor="edit-item-value">
+                  Worth today ($)
+                </label>
+                <input
+                  id="edit-item-value"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="input"
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="label" htmlFor="edit-item-price">
+                  Paid ($)
+                </label>
+                <input
+                  id="edit-item-price"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="input"
+                  value={editPrice}
+                  onChange={(e) => setEditPrice(e.target.value)}
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="label" htmlFor="edit-item-date">
+                  Acquisition date
+                </label>
+                <input
+                  id="edit-item-date"
+                  className="input"
+                  placeholder="YYYY-MM-DD or Q1 2024"
+                  value={editPurchaseDate}
+                  onChange={(e) => setEditPurchaseDate(e.target.value)}
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="label" htmlFor="edit-item-desc">
+                  Notes / Description
+                </label>
+                <textarea
+                  id="edit-item-desc"
+                  rows={2}
+                  className="input"
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setEditingItem(null)}
+                className="btn border border-line"
+              >
+                Cancel
+              </button>
+              <button type="submit" disabled={editBusy} className="btn-primary">
+                {editBusy ? "Saving…" : "Save changes"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

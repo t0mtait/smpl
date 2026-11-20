@@ -105,9 +105,9 @@ export function relativeDays(days: number | null): string {
 }
 
 export const STATUS_LABELS: Record<string, string> = {
-  heavy_use: "Heavy Use",
-  occasional_use: "Occasional Use",
-  rare_use: "Rare Use",
+  heavy_use: "Heavy",
+  occasional_use: "Occasional",
+  rare_use: "Rare",
   purgatory: "Purgatory",
   offloaded_sold: "Offloaded ($)",
   offloaded: "Offloaded",
@@ -182,21 +182,21 @@ export function getItemStatusInfo(item: {
   if (freq === "daily" || freq === "weekly" || item.status === "heavy_use") {
     return {
       key: "heavy_use",
-      label: "Heavy Use",
+      label: "Heavy",
       style: STATUS_STYLES.heavy_use,
     };
   }
   if (freq === "rare" || freq === "never" || item.status === "rare_use") {
     return {
       key: "rare_use",
-      label: "Rare Use",
+      label: "Rare",
       style: STATUS_STYLES.rare_use,
     };
   }
 
   return {
     key: "occasional_use",
-    label: "Occasional Use",
+    label: "Occasional",
     style: STATUS_STYLES.occasional_use,
   };
 }
@@ -208,9 +208,9 @@ export function getItemStatusInfo(item: {
 export const TERMINAL_STATUSES = ["sold", "donated", "disposed", "closed"] as const;
 
 export const FREQUENCY_LABELS: Record<string, string> = {
-  daily: "Heavy Use",
-  monthly: "Occasional Use",
-  rare: "Rare Use",
+  daily: "Heavy",
+  monthly: "Occasional",
+  rare: "Rare",
   weekly: "Weekly",
   seasonal: "Seasonal",
   never: "Never used",

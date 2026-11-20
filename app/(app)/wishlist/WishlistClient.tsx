@@ -3,22 +3,20 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { WishlistItem } from "@/lib/db";
-import { formatMoney } from "@/lib/format";
+import { formatMoney, formatCategory } from "@/lib/format";
 import { daysSinceDate } from "@/lib/dates";
 import { CategoryTag } from "@/components/ui";
 import {
   IconCheck,
   IconExternalLink,
   IconHeart,
-  IconPencil,
   IconPlus,
   IconSearch,
-  IconTag,
   IconTrash,
 } from "@/components/icons";
 
 type Priority = "high" | "medium" | "low";
-type WishlistSortKey = "name" | "priority" | "category" | "price" | "waiting";
+type WishlistSortKey = "name" | "priority" | "category" | "price" | "url" | "waiting";
 type SortDirection = "asc" | "desc";
 
 interface WishlistSortState {
@@ -30,7 +28,8 @@ const WISHLIST_COLUMNS: { key: WishlistSortKey; label: string; numeric?: boolean
   { key: "name", label: "Item" },
   { key: "priority", label: "Priority" },
   { key: "category", label: "Category" },
-  { key: "price", label: "Target Price", numeric: true },
+  { key: "price", label: "Price", numeric: true },
+  { key: "url", label: "Store Link" },
   { key: "waiting", label: "Cooldown", numeric: true },
 ];
 
@@ -51,6 +50,15 @@ const COMMON_CATEGORIES = [
   "books",
   "misc",
 ];
+
+function getDomain(urlStr: string): string {
+  try {
+    const u = new URL(urlStr.startsWith("http") ? urlStr : `https://${urlStr}`);
+    return u.hostname.replace(/^www\./, "");
+  } catch {
+    return "Store";
+  }
+}
 
 export default function WishlistClient() {
   const [items, setItems] = useState<WishlistItem[] | null>(null);
@@ -74,7 +82,7 @@ export default function WishlistClient() {
   const [addBusy, setAddBusy] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
 
-  // Edit item state
+  // General edit popup state
   const [editingItem, setEditingItem] = useState<WishlistItem | null>(null);
   const [editName, setEditName] = useState("");
   const [editCategory, setEditCategory] = useState("");
@@ -84,6 +92,9 @@ export default function WishlistClient() {
   const [editPriority, setEditPriority] = useState<Priority>("medium");
   const [editBusy, setEditBusy] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
+
+  // Inline cell edit state
+  const [editingCell, setEditingCell] = useState<{ itemId: number; field: string } | null>(null);
 
   // Convert to inventory modal state
   const [convertingItem, setConvertingItem] = useState<WishlistItem | null>(null);
@@ -155,6 +166,9 @@ export default function WishlistClient() {
         const pB = b.price ?? -1;
         if (pA === pB) return 0;
         return (pA - pB) * dir;
+      }
+      if (sort.key === "url") {
+        return (a.url || "").localeCompare(b.url || "") * dir;
       }
       if (sort.key === "waiting") {
         const tA = new Date(a.createdAt).getTime();
@@ -231,7 +245,7 @@ export default function WishlistClient() {
     }
   };
 
-  // Start edit
+  // Start edit (general edit popup opened by clicking item name)
   const openEdit = (item: WishlistItem) => {
     setEditingItem(item);
     setEditName(item.name);
@@ -277,6 +291,28 @@ export default function WishlistClient() {
     } catch {
       setEditError("Network error. Try again.");
       setEditBusy(false);
+    }
+  };
+
+  // Inline cell save
+  const saveInline = async (id: number, patch: Record<string, unknown>) => {
+    setEditingCell(null);
+    try {
+      const res = await fetch(`/api/wishlist/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setItems((prev) =>
+          prev ? prev.map((it) => (it.id === id ? { ...it, ...data.item } : it)) : null
+        );
+      } else {
+        setError("Failed to update item field.");
+      }
+    } catch {
+      setError("Network error while saving.");
     }
   };
 
@@ -411,7 +447,7 @@ export default function WishlistClient() {
 
             <div>
               <label className="label" htmlFor="add-price">
-                Estimated price ($)
+                Price ($)
               </label>
               <input
                 id="add-price"
@@ -469,7 +505,7 @@ export default function WishlistClient() {
 
           <div>
             <label className="label" htmlFor="add-url">
-              Product URL / Link <span className="font-normal text-muted">(optional)</span>
+              Store / Shopping Link <span className="font-normal text-muted">(optional)</span>
             </label>
             <input
               id="add-url"
@@ -519,7 +555,7 @@ export default function WishlistClient() {
         </div>
 
         <div className="card p-4">
-          <p className="text-[12px] font-medium uppercase tracking-wider text-muted">Estimated Total</p>
+          <p className="text-[12px] font-medium uppercase tracking-wider text-muted">Total Price</p>
           <p className="mt-1 text-2xl font-semibold text-ink">{formatMoney(stats.totalEstCost)}</p>
           <p className="mt-0.5 text-xs text-muted">unspent capital</p>
         </div>
@@ -577,7 +613,7 @@ export default function WishlistClient() {
               <option value="all">All categories</option>
               {categories.map((c) => (
                 <option key={c} value={c}>
-                  {c}
+                  {formatCategory(c)}
                 </option>
               ))}
             </select>
@@ -619,7 +655,7 @@ export default function WishlistClient() {
       ) : (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] border-collapse text-left">
+            <table className="w-full min-w-[840px] border-collapse text-left">
               <thead>
                 <tr className="border-b border-line">
                   {WISHLIST_COLUMNS.map((col) => {
@@ -677,23 +713,17 @@ export default function WishlistClient() {
                       key={item.id}
                       className="border-b border-line-soft transition-colors last:border-0 hover:bg-paper"
                     >
+                      {/* Item Name (click to open general edit popup) */}
                       <th scope="row" className="px-4 py-3 text-left font-normal">
                         <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-ink">{item.name}</span>
-                            {item.url && (
-                              <a
-                                href={item.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-muted hover:text-ink transition-colors inline-flex items-center"
-                                title="View product page"
-                              >
-                                <IconExternalLink width={13} height={13} />
-                                <span className="sr-only">Product page</span>
-                              </a>
-                            )}
-                          </div>
+                          <button
+                            type="button"
+                            onClick={() => openEdit(item)}
+                            className="text-left font-medium text-ink hover:text-accent transition-colors block cursor-pointer group"
+                            title="Click to edit item"
+                          >
+                            <span className="group-hover:underline underline-offset-2">{item.name}</span>
+                          </button>
                           {item.notes && (
                             <p className="mt-0.5 text-[12px] text-muted line-clamp-1 font-normal">
                               {item.notes}
@@ -701,24 +731,155 @@ export default function WishlistClient() {
                           )}
                         </div>
                       </th>
+
+                      {/* Priority (click to edit field) */}
                       <td className="px-4 py-3">
-                        <span
-                          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${priorityMeta.tone}`}
-                        >
-                          <span className={`h-1.5 w-1.5 rounded-full ${priorityMeta.dot}`} />
-                          {priorityMeta.label.split(" ")[0]}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <CategoryTag category={item.category} />
-                      </td>
-                      <td className="tabular px-4 py-3 text-right text-[13px] font-medium text-ink">
-                        {item.price !== null ? (
-                          formatMoney(item.price)
+                        {editingCell?.itemId === item.id && editingCell?.field === "priority" ? (
+                          <select
+                            autoFocus
+                            defaultValue={item.priority}
+                            onChange={(e) => saveInline(item.id, { priority: e.target.value })}
+                            onBlur={() => setEditingCell(null)}
+                            className="input py-0.5 px-2 text-xs h-7"
+                          >
+                            <option value="high">High priority</option>
+                            <option value="medium">Medium priority</option>
+                            <option value="low">Low priority</option>
+                          </select>
                         ) : (
-                          <span className="text-muted">—</span>
+                          <span
+                            onClick={() => setEditingCell({ itemId: item.id, field: "priority" })}
+                            className="inline-block cursor-pointer hover:opacity-80 transition-opacity"
+                            title="Click to change priority"
+                          >
+                            <span
+                              className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${priorityMeta.tone}`}
+                            >
+                              <span className={`h-1.5 w-1.5 rounded-full ${priorityMeta.dot}`} />
+                              {priorityMeta.label.split(" ")[0]}
+                            </span>
+                          </span>
                         )}
                       </td>
+
+                      {/* Category (click to edit field) */}
+                      <td className="px-4 py-3">
+                        {editingCell?.itemId === item.id && editingCell?.field === "category" ? (
+                          <select
+                            autoFocus
+                            defaultValue={item.category}
+                            onChange={(e) => saveInline(item.id, { category: e.target.value })}
+                            onBlur={() => setEditingCell(null)}
+                            className="input py-0.5 px-2 text-xs h-7"
+                          >
+                            {COMMON_CATEGORIES.map((c) => (
+                              <option key={c} value={c}>
+                                {formatCategory(c)}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span
+                            onClick={() => setEditingCell({ itemId: item.id, field: "category" })}
+                            className="inline-block cursor-pointer hover:opacity-80 transition-opacity"
+                            title="Click to change category"
+                          >
+                            <CategoryTag category={item.category} />
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Price (click to edit field) */}
+                      <td className="tabular px-4 py-3 text-right text-[13px] font-medium text-ink">
+                        {editingCell?.itemId === item.id && editingCell?.field === "price" ? (
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            autoFocus
+                            defaultValue={item.price === null ? "" : String(item.price)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                const val = e.currentTarget.value.trim();
+                                saveInline(item.id, { price: val === "" ? null : Number(val) });
+                              }
+                              if (e.key === "Escape") setEditingCell(null);
+                            }}
+                            onBlur={(e) => {
+                              const val = e.currentTarget.value.trim();
+                              saveInline(item.id, { price: val === "" ? null : Number(val) });
+                            }}
+                            className="input py-0.5 px-2 text-xs h-7 tabular text-right max-w-[90px]"
+                          />
+                        ) : (
+                          <span
+                            onClick={() => setEditingCell({ itemId: item.id, field: "price" })}
+                            className="inline-block py-1 px-1.5 -mx-1.5 rounded hover:bg-wash cursor-pointer transition-colors"
+                            title="Click to edit price"
+                          >
+                            {item.price !== null ? (
+                              formatMoney(item.price)
+                            ) : (
+                              <span className="text-muted">—</span>
+                            )}
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Store / Shopping Link (click to add/edit field) */}
+                      <td className="px-4 py-3 text-[13px]">
+                        {editingCell?.itemId === item.id && editingCell?.field === "url" ? (
+                          <input
+                            type="url"
+                            placeholder="https://..."
+                            autoFocus
+                            defaultValue={item.url}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                saveInline(item.id, { url: e.currentTarget.value.trim() });
+                              }
+                              if (e.key === "Escape") setEditingCell(null);
+                            }}
+                            onBlur={(e) => {
+                              saveInline(item.id, { url: e.currentTarget.value.trim() });
+                            }}
+                            className="input py-0.5 px-2 text-xs h-7 max-w-[170px]"
+                          />
+                        ) : item.url ? (
+                          <div className="flex items-center gap-1.5">
+                            <a
+                              href={item.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 rounded bg-accent-soft px-2 py-0.5 text-[11px] font-medium text-accent hover:opacity-80 transition-opacity"
+                              title={`Visit ${item.url}`}
+                            >
+                              <IconExternalLink width={11} height={11} />
+                              <span className="max-w-[100px] truncate">{getDomain(item.url)}</span>
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => setEditingCell({ itemId: item.id, field: "url" })}
+                              className="text-[11px] text-muted hover:text-ink transition-colors"
+                              title="Edit link"
+                            >
+                              Edit
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setEditingCell({ itemId: item.id, field: "url" })}
+                            className="inline-flex items-center gap-1 rounded border border-dashed border-line px-2 py-0.5 text-[11px] text-muted hover:border-line-strong hover:text-ink transition-colors"
+                            title="Add shopping link"
+                          >
+                            <IconPlus width={11} height={11} />
+                            <span>Add link</span>
+                          </button>
+                        )}
+                      </td>
+
+                      {/* Cooldown */}
                       <td className="tabular px-4 py-3 text-right text-[13px]">
                         {cooldownPassed ? (
                           <span className="inline-flex items-center gap-1 rounded-md bg-accent-soft px-2 py-0.5 text-[11px] font-medium text-accent">
@@ -733,6 +894,8 @@ export default function WishlistClient() {
                           </span>
                         )}
                       </td>
+
+                      {/* Actions: Edit icon removed, only Bought and Delete */}
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
@@ -743,14 +906,6 @@ export default function WishlistClient() {
                           >
                             <IconCheck width={13} height={13} />
                             Bought
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => openEdit(item)}
-                            className="btn border border-line p-1.5 text-muted hover:text-ink hover:bg-paper"
-                            title="Edit item"
-                          >
-                            <IconPencil width={13} height={13} />
                           </button>
                           <button
                             type="button"
@@ -806,12 +961,13 @@ export default function WishlistClient() {
                   required
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
+                  autoFocus
                 />
               </div>
 
               <div>
                 <label className="label" htmlFor="edit-price">
-                  Estimated price ($)
+                  Price ($)
                 </label>
                 <input
                   id="edit-price"
@@ -819,6 +975,7 @@ export default function WishlistClient() {
                   min="0"
                   step="0.01"
                   className="input"
+                  placeholder="e.g. 120"
                   value={editPrice}
                   onChange={(e) => setEditPrice(e.target.value)}
                 />
@@ -832,11 +989,16 @@ export default function WishlistClient() {
                 </label>
                 <input
                   id="edit-cat"
-                  list="category-suggestions"
+                  list="edit-category-suggestions"
                   className="input"
                   value={editCategory}
                   onChange={(e) => setEditCategory(e.target.value)}
                 />
+                <datalist id="edit-category-suggestions">
+                  {COMMON_CATEGORIES.map((c) => (
+                    <option key={c} value={c} />
+                  ))}
+                </datalist>
               </div>
 
               <div>
@@ -862,12 +1024,13 @@ export default function WishlistClient() {
 
             <div>
               <label className="label" htmlFor="edit-url">
-                Product URL / Link
+                Store / Shopping Link
               </label>
               <input
                 id="edit-url"
                 type="url"
                 className="input"
+                placeholder="https://..."
                 value={editUrl}
                 onChange={(e) => setEditUrl(e.target.value)}
               />
@@ -875,12 +1038,13 @@ export default function WishlistClient() {
 
             <div>
               <label className="label" htmlFor="edit-notes">
-                Notes / Reason
+                Notes
               </label>
               <textarea
                 id="edit-notes"
-                rows={3}
+                rows={2}
                 className="input"
+                placeholder="Why do you want this?"
                 value={editNotes}
                 onChange={(e) => setEditNotes(e.target.value)}
               />
@@ -910,18 +1074,18 @@ export default function WishlistClient() {
             className="card animate-rise w-full max-w-md space-y-4 p-6 shadow-xl"
           >
             <div className="flex items-center justify-between border-b border-line pb-3">
-              <h2 className="display text-xl">Move to inventory</h2>
+              <h2 className="display text-xl">Bought item</h2>
               <button
                 type="button"
                 onClick={() => setConvertingItem(null)}
                 className="text-xs text-muted hover:text-ink"
               >
-                Close
+                Cancel
               </button>
             </div>
 
             <p className="text-sm text-ink-soft">
-              Did you acquire <strong>{convertingItem.name}</strong>? This will create an owned item in your inventory and remove it from your wishlist.
+              Moving <strong>{convertingItem.name}</strong> to your owned inventory.
             </p>
 
             {convertError && (
@@ -940,14 +1104,11 @@ export default function WishlistClient() {
                 min="0"
                 step="0.01"
                 className="input"
-                placeholder="Leave blank if unknown"
+                placeholder="What did you pay?"
                 value={convertPrice}
                 onChange={(e) => setConvertPrice(e.target.value)}
                 autoFocus
               />
-              <p className="mt-1 text-xs text-muted">
-                Defaults to the estimated price of {formatMoney(convertingItem.price)}.
-              </p>
             </div>
 
             <div className="flex justify-end gap-3 pt-2">
@@ -958,8 +1119,8 @@ export default function WishlistClient() {
               >
                 Cancel
               </button>
-              <button type="submit" disabled={convertBusy} className="btn bg-accent text-accent-fg hover:bg-accent-solid font-medium">
-                {convertBusy ? "Adding…" : "Add to Inventory"}
+              <button type="submit" disabled={convertBusy} className="btn-primary">
+                {convertBusy ? "Moving…" : "Confirm purchase"}
               </button>
             </div>
           </form>

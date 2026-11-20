@@ -109,10 +109,9 @@ export const SORT_COLUMNS: { key: SortKey; label: string; numeric?: boolean }[] 
   { key: "category", label: "Category" },
   { key: "subcategory", label: "Subcategory" },
   { key: "quality", label: "Quality" },
-  { key: "status", label: "Status" },
+  { key: "status", label: "Usage" },
   { key: "value", label: "Value", numeric: true },
   { key: "acquired", label: "Acquired", numeric: true },
-  { key: "offloaded", label: "Offloaded", numeric: true },
 ];
 
 /** The sort the table starts in. */
