@@ -74,11 +74,11 @@ let failed = false;
 /** Run one suite in its own throwaway database directory. */
 function runSuite(name, args) {
   console.log(`\n── ${name} ──`);
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), `declutter-${name}-`));
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), `smpl-${name}-`));
   const run = spawnSync("node", args, {
     cwd: ROOT,
     encoding: "utf8",
-    env: { ...process.env, DECLUTTER_DATA_DIR: tmp },
+    env: { ...process.env, SMPL_DATA_DIR: tmp, DECLUTTER_DATA_DIR: tmp },
   });
   process.stdout.write(run.stdout || "");
   process.stderr.write(run.stderr || "");

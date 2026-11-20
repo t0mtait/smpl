@@ -1,10 +1,10 @@
 services:
-  declutter:
-    container_name: declutter
+  smpl:
+    container_name: smpl
     build:
       context: .
       dockerfile: Dockerfile
-    image: declutter:latest
+    image: smpl:latest
     restart: unless-stopped
     # The image runs as uid 1000 so the bind-mounted ./data stays writable
     # without chowning it inside the container.

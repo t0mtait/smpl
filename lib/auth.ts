@@ -25,7 +25,8 @@ import {
 import type { User } from "./db.ts";
 import { fakeVerify, hashPassword, verifyPassword } from "./password.ts";
 
-export const SESSION_COOKIE = "declutter_session";
+export const SESSION_COOKIE = "smpl_session";
+export const LEGACY_SESSION_COOKIE = "declutter_session";
 const SESSION_DAYS = 30;
 
 export { hashPassword, verifyPassword };
@@ -74,8 +75,16 @@ export function sessionCookieOptions(expiresAt: Date, secure = false) {
  * over plain HTTP is not secure, so the cookie is not marked Secure there.
  */
 export async function isSecureRequest(): Promise<boolean> {
-  if (process.env.DECLUTTER_FORCE_SECURE_COOKIE === "1") return true;
-  if (process.env.DECLUTTER_INSECURE_COOKIE === "1") return false;
+  if (
+    process.env.SMPL_FORCE_SECURE_COOKIE === "1" ||
+    process.env.DECLUTTER_FORCE_SECURE_COOKIE === "1"
+  )
+    return true;
+  if (
+    process.env.SMPL_INSECURE_COOKIE === "1" ||
+    process.env.DECLUTTER_INSECURE_COOKIE === "1"
+  )
+    return false;
   const h = await headers();
   const proto = h.get("x-forwarded-proto");
   if (proto) return proto.split(",")[0].trim() === "https";
@@ -100,7 +109,8 @@ export function authenticate(email: string, password: string): User | null {
 /** The account signed in on this request, or null. */
 export async function currentUser(): Promise<User | null> {
   const jar = await cookies();
-  const token = jar.get(SESSION_COOKIE)?.value;
+  const token =
+    jar.get(SESSION_COOKIE)?.value || jar.get(LEGACY_SESSION_COOKIE)?.value;
   if (!token) return null;
   const user = findSessionUser(hashToken(token));
   if (!user) return null;

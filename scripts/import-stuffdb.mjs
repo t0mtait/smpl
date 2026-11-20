@@ -1,5 +1,5 @@
 /**
- * Import a TomsHQ-style inventory workbook into the declutter app.
+ * Import a TomsHQ-style inventory workbook into the smpl app.
  *
  *   node scripts/import-stuffdb.mjs --xlsx ~/Downloads/StuffDB.xlsx --email mail@tomjt.com
  *   node scripts/import-stuffdb.mjs --xlsx ... --email ... --dry-run

@@ -28,7 +28,7 @@ COPY --from=builder --chown=node:node /app/public ./public
 # The schema is read from disk at runtime, so it must ship with the app.
 COPY --from=builder --chown=node:node /app/lib/schema.sql ./lib/schema.sql
 # The seed script ships too, so a fresh container can be populated with
-# sample data:  docker exec declutter node scripts/seed.mjs
+# sample data:  docker exec smpl node scripts/seed.mjs
 COPY --from=builder --chown=node:node /app/scripts/seed.mjs ./scripts/seed.mjs
 # The StuffDB importer ships with the app so a container can import a
 # workbook without reaching back to the host checkout. It loads the same

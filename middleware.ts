@@ -13,7 +13,8 @@ import type { NextRequest } from "next/server";
  * database and re-checks ownership. This middleware is a fast path, not the
  * security boundary.
  */
-const SESSION_COOKIE = "declutter_session";
+const SESSION_COOKIE = "smpl_session";
+const LEGACY_SESSION_COOKIE = "declutter_session";
 
 /** Paths that must stay reachable without a session. */
 const PUBLIC_PREFIXES = ["/auth/", "/api/auth/", "/_next/", "/favicon"];
@@ -44,7 +45,10 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  const hasSession = Boolean(req.cookies.get(SESSION_COOKIE)?.value);
+  const hasSession = Boolean(
+    req.cookies.get(SESSION_COOKIE)?.value ||
+    req.cookies.get(LEGACY_SESSION_COOKIE)?.value
+  );
 
   // API routes answer with 401 rather than a redirect — a fetch() caller
   // wants a status code, not an HTML login page.

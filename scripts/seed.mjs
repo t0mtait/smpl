@@ -17,8 +17,11 @@ import fs from "node:fs";
 import path from "node:path";
 
 const ROOT = process.cwd();
-const DATA_DIR = path.join(ROOT, "data");
-const DB_PATH = path.join(DATA_DIR, "declutter.db");
+const DATA_DIR = (process.env.SMPL_DATA_DIR || process.env.DECLUTTER_DATA_DIR)
+  ? path.resolve(process.env.SMPL_DATA_DIR || process.env.DECLUTTER_DATA_DIR)
+  : path.join(ROOT, "data");
+const DB_NAME = fs.existsSync(path.join(DATA_DIR, "declutter.db")) ? "declutter.db" : "smpl.db";
+const DB_PATH = path.join(DATA_DIR, DB_NAME);
 const keepExisting = process.argv.includes("keep");
 const emailArg = process.argv.find(
   (a) => a.includes("@") && !a.startsWith("--")
@@ -34,7 +37,7 @@ db.exec(fs.readFileSync(path.join(ROOT, "lib", "schema.sql"), "utf8"));
 
 /* ------------------------------------------------------------- owner */
 
-const BOOTSTRAP_EMAIL = "bootstrap@declutter.invalid";
+const BOOTSTRAP_EMAIL = "bootstrap@smpl.invalid";
 
 function resolveOwnerId() {
   if (emailArg) {

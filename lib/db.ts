@@ -3,11 +3,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { today, quarterToIso } from "./dates.ts";
 
-export const DATA_DIR = process.env.DECLUTTER_DATA_DIR
-  ? path.resolve(process.env.DECLUTTER_DATA_DIR)
+export const DATA_DIR = (process.env.SMPL_DATA_DIR || process.env.DECLUTTER_DATA_DIR)
+  ? path.resolve(process.env.SMPL_DATA_DIR || process.env.DECLUTTER_DATA_DIR!)
   : path.join(process.cwd(), "data");
 export const UPLOAD_DIR = path.join(DATA_DIR, "uploads");
-const DB_PATH = path.join(DATA_DIR, "declutter.db");
+const DB_NAME = fs.existsSync(path.join(DATA_DIR, "declutter.db")) ? "declutter.db" : "smpl.db";
+const DB_PATH = path.join(DATA_DIR, DB_NAME);
 
 let db: DatabaseSync | null = null;
 
@@ -34,7 +35,7 @@ function ensureColumn(d: DatabaseSync, table: string, column: string, ddl: strin
  * first real registration claims it. This keeps existing inventories intact
  * instead of orphaning them behind a migration that needs manual repair.
  */
-const BOOTSTRAP_EMAIL = "bootstrap@declutter.invalid";
+const BOOTSTRAP_EMAIL = "bootstrap@smpl.invalid";
 
 /**
  * Money columns have to be nullable: NULL means "never recorded", 0 means

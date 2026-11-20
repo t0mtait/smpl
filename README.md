@@ -124,9 +124,9 @@ Every item you own is continuously evaluated against a transparent 100-point heu
 
 | Variable | Default | Description |
 |---|---|---|
-| `DECLUTTER_DATA_DIR` | `./data` | Directory where SQLite database and file uploads are stored |
-| `DECLUTTER_FORCE_SECURE_COOKIE` | *unset* | Force `Secure` flag on session cookies (useful behind reverse proxies) |
-| `DECLUTTER_INSECURE_COOKIE` | *unset* | Explicitly disable `Secure` cookie flag (for non-HTTPS testing) |
+| `SMPL_DATA_DIR` (or `DECLUTTER_DATA_DIR`) | `./data` | Directory where SQLite database and file uploads are stored |
+| `SMPL_FORCE_SECURE_COOKIE` (or `DECLUTTER_FORCE_SECURE_COOKIE`) | *unset* | Force `Secure` flag on session cookies (useful behind reverse proxies) |
+| `SMPL_INSECURE_COOKIE` (or `DECLUTTER_INSECURE_COOKIE`) | *unset* | Explicitly disable `Secure` cookie flag (for non-HTTPS testing) |
 
 ---
 
