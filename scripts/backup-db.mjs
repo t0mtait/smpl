@@ -16,7 +16,7 @@ async function backup() {
   }
 
   const db = getDb();
-  const dbName = fs.existsSync(path.join(DATA_DIR, "smpl.db")) ? "smpl.db" : "declutter.db";
+  const dbName = fs.existsSync(path.join(DATA_DIR, "declutter.db")) ? "declutter.db" : "smpl.db";
   const backupLocalPath = path.join(DATA_DIR, `${dbName}.backup`);
 
   try {

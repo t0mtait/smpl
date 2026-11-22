@@ -7,8 +7,13 @@ export const DATA_DIR = (process.env.SMPL_DATA_DIR || process.env.DECLUTTER_DATA
   ? path.resolve(process.env.SMPL_DATA_DIR || process.env.DECLUTTER_DATA_DIR!)
   : path.join(process.cwd(), "data");
 export const UPLOAD_DIR = path.join(DATA_DIR, "uploads");
-const DB_NAME = fs.existsSync(path.join(DATA_DIR, "declutter.db")) ? "declutter.db" : "smpl.db";
-const DB_PATH = path.join(DATA_DIR, DB_NAME);
+
+export function getDbPath(): string {
+  if (fs.existsSync(path.join(DATA_DIR, "declutter.db"))) {
+    return path.join(DATA_DIR, "declutter.db");
+  }
+  return path.join(DATA_DIR, "smpl.db");
+}
 
 let db: DatabaseSync | null = null;
 
@@ -160,7 +165,7 @@ export function getDb(): DatabaseSync {
         `(the image runs as uid 1000 — chown the host directory to match).`
     );
   }
-  db = new DatabaseSync(DB_PATH);
+  db = new DatabaseSync(getDbPath());
   db.exec("PRAGMA journal_mode = WAL;");
   db.exec("PRAGMA foreign_keys = ON;");
   db.exec(readSchema());

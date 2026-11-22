@@ -23,6 +23,9 @@ ENV PORT=3000
 # without chowning inside the container.
 RUN mkdir -p /app/data/uploads && chown -R node:node /app/data
 
+# Install su-exec for safe step-down from root to node user
+RUN apk add --no-cache su-exec
+
 # node:sqlite is a built-in module in Node 22 — no native compile needed.
 COPY --from=builder --chown=node:node /app/public ./public
 # The schema is read from disk at runtime, so it must ship with the app.
@@ -44,8 +47,11 @@ COPY --from=builder --chown=node:node /app/lib/stuffdb-map.ts ./lib/stuffdb-map.
 COPY --from=builder --chown=node:node /app/.next/standalone ./
 COPY --from=builder --chown=node:node /app/.next/static ./.next/static
 
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 # The SQLite file and uploaded photos live in /app/data.
 # In Railway/production, mount a persistent volume at /app/data.
-USER node
 EXPOSE 3000
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["node", "server.js"]
