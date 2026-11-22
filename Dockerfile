@@ -44,9 +44,8 @@ COPY --from=builder --chown=node:node /app/lib/stuffdb-map.ts ./lib/stuffdb-map.
 COPY --from=builder --chown=node:node /app/.next/standalone ./
 COPY --from=builder --chown=node:node /app/.next/static ./.next/static
 
-# The SQLite file and uploaded photos live here. Mount a volume over it.
-VOLUME ["/app/data"]
-
+# The SQLite file and uploaded photos live in /app/data.
+# In Railway/production, mount a persistent volume at /app/data.
 USER node
 EXPOSE 3000
 CMD ["node", "server.js"]
