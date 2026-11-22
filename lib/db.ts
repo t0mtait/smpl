@@ -339,6 +339,71 @@ export function createUser(email: string, name: string, passwordHash: string): U
   return getUserById(Number(res.lastInsertRowid))!;
 }
 
+export interface OAuthAccount {
+  id: number;
+  userId: number;
+  provider: string;
+  providerId: string;
+  email: string;
+  createdAt: string;
+}
+
+export function findOAuthAccount(provider: string, providerId: string): (OAuthAccount & { user: User }) | null {
+  const row = getDb()
+    .prepare(
+      `SELECT o.*, u.id as u_id, u.email as u_email, u.name as u_name, u.avatar_path as u_avatar, u.created_at as u_created_at
+       FROM oauth_accounts o
+       JOIN users u ON u.id = o.user_id
+       WHERE o.provider = ? AND o.provider_id = ?`
+    )
+    .get(provider, providerId) as Record<string, unknown> | undefined;
+  if (!row) return null;
+  return {
+    id: Number(row.id),
+    userId: Number(row.user_id),
+    provider: String(row.provider),
+    providerId: String(row.provider_id),
+    email: String(row.email),
+    createdAt: String(row.created_at),
+    user: {
+      id: Number(row.u_id),
+      email: String(row.u_email),
+      name: String(row.u_name ?? ""),
+      avatarPath: (row.u_avatar as string | null) ?? null,
+      createdAt: String(row.u_created_at),
+    },
+  };
+}
+
+export function linkOAuthAccount(userId: number, provider: string, providerId: string, email: string): void {
+  getDb()
+    .prepare(
+      "INSERT OR IGNORE INTO oauth_accounts (user_id, provider, provider_id, email) VALUES (?, ?, ?, ?)"
+    )
+    .run(userId, provider, providerId, email);
+}
+
+export function checkRateLimit(key: string, maxAttempts: number, windowSeconds: number): { allowed: boolean; remaining: number } {
+  const now = Math.floor(Date.now() / 1000);
+  const d = getDb();
+  
+  // Clean expired
+  d.prepare("DELETE FROM rate_limits WHERE reset_at <= ?").run(now);
+
+  const existing = d.prepare("SELECT count, reset_at FROM rate_limits WHERE key = ?").get(key) as { count: number; reset_at: number } | undefined;
+  if (!existing) {
+    d.prepare("INSERT INTO rate_limits (key, count, reset_at) VALUES (?, 1, ?)").run(key, now + windowSeconds);
+    return { allowed: true, remaining: maxAttempts - 1 };
+  }
+
+  if (existing.count >= maxAttempts) {
+    return { allowed: false, remaining: 0 };
+  }
+
+  d.prepare("UPDATE rate_limits SET count = count + 1 WHERE key = ?").run(key);
+  return { allowed: true, remaining: maxAttempts - (existing.count + 1) };
+}
+
 export function getUserById(id: number): User | null {
   const row = getDb().prepare("SELECT * FROM users WHERE id = ?").get(id) as
     | Record<string, unknown>

@@ -18,6 +18,25 @@ CREATE TABLE IF NOT EXISTS users (
   created_at    TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS oauth_accounts (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  provider      TEXT    NOT NULL,
+  provider_id   TEXT    NOT NULL,
+  email         TEXT    NOT NULL DEFAULT '',
+  created_at    TEXT    NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(provider, provider_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_oauth_user ON oauth_accounts(user_id);
+CREATE INDEX IF NOT EXISTS idx_oauth_provider ON oauth_accounts(provider, provider_id);
+
+CREATE TABLE IF NOT EXISTS rate_limits (
+  key           TEXT PRIMARY KEY,
+  count         INTEGER NOT NULL DEFAULT 1,
+  reset_at      INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS sessions (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,

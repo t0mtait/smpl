@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import fs from "node:fs";
 import path from "node:path";
-import { UPLOAD_DIR, getItem, updateItem } from "@/lib/db";
+import { getItem, updateItem } from "@/lib/db";
 import { apiUser } from "@/lib/auth";
+import { saveFile, deleteFile } from "@/lib/storage";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -53,23 +53,17 @@ export async function POST(req: Request, { params }: Ctx) {
     );
   }
 
-  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
   // The owner id is part of the filename so one account's uploads can never
   // collide with another's.
   const filename = `u${user.id}-item-${itemId}-${Date.now()}.${ext}`;
-  const dest = path.join(UPLOAD_DIR, filename);
   const bytes = Buffer.from(await file.arrayBuffer());
-  fs.writeFileSync(dest, bytes);
+  await saveFile({ filename, buffer: bytes, contentType: file.type });
 
-  // Remove the previous photo so the upload dir doesn't grow forever.
+  // Remove the previous photo so storage doesn't grow forever.
   if (item.photoPath) {
-    const old = path.join(UPLOAD_DIR, path.basename(item.photoPath));
-    if (old !== dest && fs.existsSync(old)) {
-      try {
-        fs.unlinkSync(old);
-      } catch {
-        // Non-fatal: a stale file is not worth failing the upload.
-      }
+    const old = path.basename(item.photoPath);
+    if (old !== filename) {
+      await deleteFile(old);
     }
   }
 

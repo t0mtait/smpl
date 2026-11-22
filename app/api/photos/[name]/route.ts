@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import fs from "node:fs";
 import path from "node:path";
-import { UPLOAD_DIR, getItemByPhotoPath } from "@/lib/db";
+import { getItemByPhotoPath } from "@/lib/db";
 import { apiUser } from "@/lib/auth";
+import { getFile } from "@/lib/storage";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,14 +31,16 @@ export async function GET(_req: Request, { params }: Ctx) {
   const item = isAvatar ? null : getItemByPhotoPath(user.id, safe);
   if (!isAvatar && !item) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const ext = safe.split(".").pop()?.toLowerCase() ?? "";
-  const file = path.join(UPLOAD_DIR, safe);
-  if (!fs.existsSync(file)) {
+  
+  const fileData = await getFile(safe);
+  if (!fileData) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  const buf = fs.readFileSync(file);
-  return new NextResponse(new Uint8Array(buf), {
+
+  const contentType = fileData.contentType || MIME[ext] || "application/octet-stream";
+  return new NextResponse(new Uint8Array(fileData.buffer), {
     headers: {
-      "Content-Type": MIME[ext] ?? "application/octet-stream",
+      "Content-Type": contentType,
       "Cache-Control": "private, max-age=31536000, immutable",
     },
   });

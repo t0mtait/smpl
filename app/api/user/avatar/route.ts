@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import fs from "node:fs";
 import path from "node:path";
-import { UPLOAD_DIR, updateUserProfile } from "@/lib/db";
+import { updateUserProfile } from "@/lib/db";
 import { apiUser } from "@/lib/auth";
+import { saveFile, deleteFile } from "@/lib/storage";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -47,24 +47,14 @@ export async function POST(req: Request) {
     );
   }
 
-  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-
   // Remove previous avatar file if exists
   if (user.avatarPath) {
-    const oldFile = path.join(UPLOAD_DIR, path.basename(user.avatarPath));
-    if (fs.existsSync(oldFile)) {
-      try {
-        fs.unlinkSync(oldFile);
-      } catch {
-        /* ignore */
-      }
-    }
+    await deleteFile(path.basename(user.avatarPath));
   }
 
   const filename = `u${user.id}-avatar-${Date.now()}.${ext}`;
-  const dest = path.join(UPLOAD_DIR, filename);
   const buf = Buffer.from(await file.arrayBuffer());
-  fs.writeFileSync(dest, buf);
+  await saveFile({ filename, buffer: buf, contentType: file.type });
 
   const updated = updateUserProfile(user.id, { avatarPath: filename });
   return NextResponse.json({ user: updated });
@@ -76,14 +66,7 @@ export async function DELETE() {
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
 
   if (user.avatarPath) {
-    const oldFile = path.join(UPLOAD_DIR, path.basename(user.avatarPath));
-    if (fs.existsSync(oldFile)) {
-      try {
-        fs.unlinkSync(oldFile);
-      } catch {
-        /* ignore */
-      }
-    }
+    await deleteFile(path.basename(user.avatarPath));
   }
 
   const updated = updateUserProfile(user.id, { avatarPath: null });
