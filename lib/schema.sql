@@ -15,6 +15,9 @@ CREATE TABLE IF NOT EXISTS users (
   -- A bootstrap account holds data that predates accounts. It has no
   -- password, cannot log in, and is claimed by the first real registration.
   is_bootstrap  INTEGER NOT NULL DEFAULT 0,
+  plan          TEXT    NOT NULL DEFAULT 'free',
+  subscription_interval TEXT,
+  subscription_renews_at TEXT,
   created_at    TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 

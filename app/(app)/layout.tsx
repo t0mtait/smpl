@@ -11,6 +11,7 @@ import {
   IconHeart,
   IconHouse,
   IconPlus,
+  IconSparkles,
 } from "@/components/icons";
 import { requireUser } from "@/lib/auth";
 
@@ -61,6 +62,22 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </Link>
         </div>
 
+        {user.plan !== "premium" && (
+          <div className="px-3 pb-2">
+            <Link
+              href="/account#subscription"
+              className="flex items-center justify-between gap-2 rounded-xl border border-accent/25 bg-accent-soft/40 p-2.5 text-[12px] text-accent transition-all hover:bg-accent-soft hover:shadow-sm"
+              title="Unlock premium features"
+            >
+              <div className="flex items-center gap-1.5 min-w-0">
+                <IconSparkles width={13} height={13} className="shrink-0 text-accent" />
+                <span className="truncate font-semibold text-accent">Upgrade to Pro</span>
+              </div>
+              <span className="shrink-0 text-[11px] font-medium text-ink-soft">$3.49/mo</span>
+            </Link>
+          </div>
+        )}
+
         <div className="border-t border-line p-3">
           <Link
             href="/account"
@@ -69,8 +86,19 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           >
             <UserAvatar name={accountName} email={user.email} avatarPath={user.avatarPath} size={36} />
             <div className="min-w-0 flex-1">
-              <div className="truncate text-[13px] font-semibold text-ink group-hover:text-accent">
-                {accountName}
+              <div className="flex items-center gap-1.5">
+                <span className="truncate text-[13px] font-semibold text-ink group-hover:text-accent">
+                  {accountName}
+                </span>
+                {user.plan === "premium" ? (
+                  <span className="rounded bg-accent-soft px-1.5 py-0.2 text-[9px] font-bold uppercase tracking-wider text-accent">
+                    PRO
+                  </span>
+                ) : (
+                  <span className="rounded bg-wash px-1.5 py-0.2 text-[9px] font-medium uppercase tracking-wider text-muted">
+                    FREE
+                  </span>
+                )}
               </div>
               <div className="truncate text-[11px] text-muted">{user.email}</div>
             </div>
@@ -96,6 +124,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           >
             <UserAvatar name={accountName} email={user.email} avatarPath={user.avatarPath} size={28} />
             <span className="max-w-[7rem] truncate text-[12px] text-muted">{accountName}</span>
+            {user.plan === "premium" && (
+              <span className="rounded bg-accent-soft px-1 py-0.2 text-[8px] font-bold uppercase tracking-wider text-accent">
+                PRO
+              </span>
+            )}
           </Link>
           <ThemeToggle variant="icon" />
           <SignOutIconButton />

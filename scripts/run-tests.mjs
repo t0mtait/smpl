@@ -40,6 +40,8 @@ const tsc = spawnSync(
     "tests/money.test.ts",
     "tests/dates.test.ts",
     "tests/sort.test.ts",
+    "tests/stats.test.ts",
+    "tests/backup.test.ts",
     "lib/scoring.ts",
     "lib/db.ts",
     "lib/password.ts",
@@ -47,6 +49,8 @@ const tsc = spawnSync(
     "lib/format.ts",
     "lib/dates.ts",
     "lib/sort.ts",
+    "lib/backup.ts",
+    "lib/storage.ts",
     "--outDir",
     OUT,
     "--module",
@@ -91,6 +95,8 @@ runSuite("auth", [path.join(OUT, "tests", "auth.test.js")]);
 runSuite("money", [path.join(OUT, "tests", "money.test.js")]);
 runSuite("dates", [path.join(OUT, "tests", "dates.test.js")]);
 runSuite("sort", [path.join(OUT, "tests", "sort.test.js")]);
+runSuite("stats", [path.join(OUT, "tests", "stats.test.js")]);
+runSuite("backup", [path.join(OUT, "tests", "backup.test.js")]);
 runSuite("import", [path.join(ROOT, "tests", "import.test.mjs")]);
 
 fs.rmSync(OUT, { recursive: true, force: true });

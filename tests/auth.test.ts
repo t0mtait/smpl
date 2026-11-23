@@ -198,5 +198,26 @@ const d = db.getDb();
   check("claimed wishlist items move too", db.listWishlist(claimant.id).length === 1);
 }
 
+/* ---------------------------------------------------- subscriptions */
+
+{
+  const subUser = db.createUser("sub@example.com", "SubUser", hashPassword("password123"));
+  check("user defaults to free plan", subUser.plan === "free");
+  check("user defaults to null subscription interval", subUser.subscriptionInterval === null);
+
+  const upgraded = db.updateUserSubscription(subUser.id, "premium", "monthly", "2026-12-23");
+  check("upgraded user is premium", upgraded?.plan === "premium");
+  check("upgraded interval is monthly", upgraded?.subscriptionInterval === "monthly");
+  check("upgraded renewsAt matches", upgraded?.subscriptionRenewsAt === "2026-12-23");
+
+  const yearly = db.updateUserSubscription(subUser.id, "premium", "yearly", "2027-11-23");
+  check("switched interval is yearly", yearly?.subscriptionInterval === "yearly");
+  check("switched renewsAt is yearly", yearly?.subscriptionRenewsAt === "2027-11-23");
+
+  const cancelled = db.updateUserSubscription(subUser.id, "free", null, null);
+  check("cancelled user returns to free", cancelled?.plan === "free");
+  check("cancelled user has no interval", cancelled?.subscriptionInterval === null);
+}
+
 console.log(`\n${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

@@ -3,19 +3,24 @@ import { getStats } from "@/lib/stats";
 import { listDisposals, listItems } from "@/lib/db";
 import { formatCategory, formatMoney, formatQuarter } from "@/lib/format";
 import { requireUser } from "@/lib/auth";
-import { BarRow, EarningsChart, StatTile } from "@/components/ui";
+import { BarRow, EarningsChart, PossessionsChart, StatTile } from "@/components/ui";
+import { UserAvatar } from "@/components/UserAvatar";
 import {
   IconBox,
   IconCash,
+  IconChart,
   IconFlame,
   IconLeaf,
   IconRecycle,
+  IconSparkles,
 } from "@/components/icons";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const user = await requireUser();
+  const username = user.name?.trim() || user.email.split("@")[0] || "User";
+  const possessiveName = `${username}'${username.toLowerCase().endsWith("s") ? "" : "s"}`;
   const stats = getStats(user.id);
   const allItems = listItems(user.id);
   const purgatoryItems = allItems.filter((i) => i.status === "purgatory");
@@ -36,15 +41,42 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-10">
       {/* ---------------- Hero ---------------- */}
-      <header className="animate-rise">
-        <p className="eyebrow">Dashboard</p>
-        <h1 className="display mt-2 text-4xl leading-[1.1] tracking-[-0.02em] sm:text-5xl">
-          Your stuff, at a glance.
-        </h1>
+      <header className="animate-rise flex items-center gap-4 sm:gap-5">
+        <Link href="/account" className="shrink-0 transition-transform hover:scale-105" title="Manage account">
+          <UserAvatar
+            name={user.name}
+            email={user.email}
+            avatarPath={user.avatarPath}
+            size={56}
+            className="ring-2 ring-line"
+          />
+        </Link>
+        <div>
+          <div className="flex items-center gap-2">
+            <p className="eyebrow">Dashboard</p>
+            {user.plan === "premium" ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-accent">
+                <IconSparkles width={10} height={10} />
+                Premium
+              </span>
+            ) : (
+              <Link
+                href="/account#subscription"
+                className="inline-flex items-center gap-1 rounded-full bg-paper px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted hover:bg-clay-soft hover:text-clay transition-colors"
+                title="Upgrade to unlock premium features"
+              >
+                Free Plan · Upgrade
+              </Link>
+            )}
+          </div>
+          <h1 className="display mt-1 text-3xl leading-[1.1] tracking-[-0.02em] sm:text-5xl">
+            {possessiveName} stuff, at a glance.
+          </h1>
+        </div>
       </header>
 
       {/* ---------------- Stat tiles ---------------- */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
         <StatTile
           label="Items owned"
           value={<span className="text-3xl font-semibold leading-none">{stats.ownedItems}</span>}
@@ -65,6 +97,18 @@ export default async function DashboardPage() {
           href="/items?status=owned"
         />
         <StatTile
+          label="Net items"
+          value={
+            <span className="tabular text-3xl font-semibold leading-none">
+              {stats.currentQuarterNet > 0 ? `+${stats.currentQuarterNet}` : stats.currentQuarterNet}
+            </span>
+          }
+          sub={`${stats.currentQuarterAcquired} in · ${stats.currentQuarterOffloaded} out (${stats.currentQuarter})`}
+          icon={<IconChart width={15} height={15} />}
+          tone={stats.currentQuarterNet > 0 ? "clay" : stats.currentQuarterNet < 0 ? "moss" : "neutral"}
+          href="/items"
+        />
+        <StatTile
           label="Lifetime sales"
           value={<span className="text-3xl font-semibold leading-none">{formatMoney(stats.lifetimeSalesEarnings)}</span>}
           icon={<IconCash width={15} height={15} />}
@@ -81,20 +125,20 @@ export default async function DashboardPage() {
         />
       </div>
 
-      {/* ---------------- Charts ---------------- */}
+      {/* ---------------- Possessions over time & Category breakdown ---------------- */}
       <div className="grid gap-5 lg:grid-cols-5">
         <section className="card flex flex-col justify-between p-6 lg:col-span-3">
           <div>
             <div className="mb-1 flex items-baseline justify-between gap-3">
-              <h2 className="display text-xl">Sales earnings</h2>
-              <span className="text-xs text-muted">last 12 months</span>
+              <h2 className="display text-xl">Possessions over time</h2>
+              <span className="text-xs text-muted">last 8 quarters</span>
             </div>
             <p className="mb-4 text-[13px] text-muted">
-              {formatMoney(stats.lifetimeSalesEarnings)} earned all-time
+              {stats.ownedItems} items owned today · {stats.currentQuarterNet > 0 ? `+${stats.currentQuarterNet}` : stats.currentQuarterNet} net in {stats.currentQuarter}
             </p>
           </div>
           <div className="mt-auto pt-4">
-            <EarningsChart data={stats.earningsByMonth} />
+            <PossessionsChart data={stats.possessionsOverTime} />
           </div>
         </section>
 
@@ -120,6 +164,67 @@ export default async function DashboardPage() {
               ))}
             </div>
           )}
+        </section>
+      </div>
+
+      {/* ---------------- Earnings & Disposals ---------------- */}
+      <div className="grid gap-5 lg:grid-cols-5">
+        <section className="card flex flex-col justify-between p-6 lg:col-span-3">
+          <div>
+            <div className="mb-1 flex items-baseline justify-between gap-3">
+              <h2 className="display text-xl">Sales earnings</h2>
+              <span className="text-xs text-muted">last 12 months</span>
+            </div>
+            <p className="mb-4 text-[13px] text-muted">
+              {formatMoney(stats.lifetimeSalesEarnings)} earned all-time
+            </p>
+          </div>
+          <div className="mt-auto pt-4">
+            <EarningsChart data={stats.earningsByMonth} />
+          </div>
+        </section>
+
+        <section className="card flex flex-col justify-between p-6 lg:col-span-2">
+          <div>
+            <div className="mb-1 flex items-baseline justify-between gap-3">
+              <h2 className="display text-xl">Offloaded items</h2>
+              <span className="text-xs text-muted">{goneCount} total</span>
+            </div>
+            <p className="mb-5 text-[13px] text-muted">Sales proceeds and decluttered goods</p>
+          </div>
+          <div className="grid grid-cols-1 gap-3.5">
+            <Link
+              href="/items?status=sold"
+              className="group flex items-center gap-4 rounded-xl border border-line p-4 transition-all hover:border-line-strong hover:shadow-lift"
+            >
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
+                <IconCash width={18} height={18} />
+              </span>
+              <div className="min-w-0">
+                <p className="text-[13px] font-medium text-ink">Sold for return</p>
+                <p className="tabular text-2xl font-semibold leading-tight text-ink">{soldForReturnCount}</p>
+                <p className="tabular mt-0.5 text-xs text-accent">
+                  {formatMoney(soldForReturnTotal)} total proceeds
+                </p>
+              </div>
+            </Link>
+
+            <Link
+              href="/items"
+              className="group flex items-center gap-4 rounded-xl border border-line p-4 transition-all hover:border-line-strong hover:shadow-lift"
+            >
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-clay-soft text-clay">
+                <IconRecycle width={18} height={18} />
+              </span>
+              <div className="min-w-0">
+                <p className="text-[13px] font-medium text-ink">No return</p>
+                <p className="tabular text-2xl font-semibold leading-tight text-ink">{noReturnCount}</p>
+                <p className="tabular mt-0.5 text-xs text-muted">
+                  Donated, disposed, or $0 return
+                </p>
+              </div>
+            </Link>
+          </div>
         </section>
       </div>
 
@@ -175,50 +280,6 @@ export default async function DashboardPage() {
             ))}
           </ul>
         )}
-      </section>
-
-      {/* ---------------- Offloaded items (Disposal record) ---------------- */}
-      <section className="card p-6">
-        <div className="mb-5 flex items-baseline justify-between gap-3">
-          <div>
-            <h2 className="display text-xl">Offloaded items</h2>
-            <p className="mt-0.5 text-[13px] text-muted">Items sold for return or offloaded with no return</p>
-          </div>
-          <span className="text-xs text-muted">{goneCount} total offloaded</span>
-        </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Link
-            href="/items?status=sold"
-            className="group flex items-center gap-4 rounded-xl border border-line p-5 transition-all hover:border-line-strong hover:shadow-lift"
-          >
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
-              <IconCash width={20} height={20} />
-            </span>
-            <div className="min-w-0">
-              <p className="text-[13px] font-medium text-ink">Sold for return</p>
-              <p className="tabular text-3xl font-semibold leading-tight text-ink">{soldForReturnCount}</p>
-              <p className="tabular mt-0.5 text-xs text-accent">
-                {formatMoney(soldForReturnTotal)} total proceeds
-              </p>
-            </div>
-          </Link>
-
-          <Link
-            href="/items"
-            className="group flex items-center gap-4 rounded-xl border border-line p-5 transition-all hover:border-line-strong hover:shadow-lift"
-          >
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-clay-soft text-clay">
-              <IconRecycle width={20} height={20} />
-            </span>
-            <div className="min-w-0">
-              <p className="text-[13px] font-medium text-ink">No return</p>
-              <p className="tabular text-3xl font-semibold leading-tight text-ink">{noReturnCount}</p>
-              <p className="tabular mt-0.5 text-xs text-muted">
-                Donated, disposed, or $0 return
-              </p>
-            </div>
-          </Link>
-        </div>
       </section>
     </div>
   );

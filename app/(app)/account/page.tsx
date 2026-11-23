@@ -1,5 +1,6 @@
 import { requireUser } from "@/lib/auth";
 import { getUserById, listItems, listWishlist } from "@/lib/db";
+import { getBackupStatus } from "@/lib/backup";
 import AccountClient from "./AccountClient";
 
 export const dynamic = "force-dynamic";
@@ -17,6 +18,8 @@ export default async function AccountPage() {
     ["sold", "donated", "disposed", "closed"].includes(i.status)
   ).length;
 
+  const backupStatus = getBackupStatus();
+
   return (
     <AccountClient
       initialUser={freshUser}
@@ -27,6 +30,7 @@ export default async function AccountPage() {
         offloadedCount,
         wishlistCount: wishlist.length,
       }}
+      initialBackup={backupStatus}
     />
   );
 }

@@ -1,63 +1,26 @@
 /**
- * Off-site SQLite backup utility.
- * Backs up the SQLite database to S3 / Cloudflare R2 if configured.
- * Can be run manually or as a cron / pre-shutdown task.
+ * Off-site SQLite and JSON data backup utility.
+ * Backs up the SQLite database snapshot and complete JSON data archive to Cloudflare R2 / S3.
+ * Can be run manually or as a cron / container pre-shutdown task:
+ *   node scripts/backup-db.mjs
  */
-import fs from "node:fs";
-import path from "node:path";
-import { DATA_DIR, getDb } from "../lib/db.ts";
-import { isS3Configured, saveFile } from "../lib/storage.ts";
+import { performDatabaseBackup } from "../lib/backup.ts";
 
-async function backup() {
-  console.log("Starting SQLite backup check...");
-  if (!isS3Configured) {
-    console.log("S3/R2 storage is not configured (missing environment variables). Skipping off-site cloud backup.");
-    return;
-  }
+async function main() {
+  console.log("Starting full database & data backup...");
+  const result = await performDatabaseBackup();
 
-  const db = getDb();
-  const dbName = fs.existsSync(path.join(DATA_DIR, "declutter.db")) ? "declutter.db" : "smpl.db";
-  const backupLocalPath = path.join(DATA_DIR, `${dbName}.backup`);
-
-  try {
-    // Perform safe SQLite VACUUM INTO snapshot
-    if (fs.existsSync(backupLocalPath)) {
-      fs.unlinkSync(backupLocalPath);
-    }
-    console.log(`Creating consistent SQLite snapshot at ${backupLocalPath}...`);
-    db.exec(`VACUUM INTO '${backupLocalPath}'`);
-
-    const fileBuffer = fs.readFileSync(backupLocalPath);
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const cloudFilename = `backups/${dbName}-${timestamp}.sqlite`;
-    const latestFilename = `backups/${dbName}-latest.sqlite`;
-
-    console.log(`Uploading snapshot to ${cloudFilename} and ${latestFilename}...`);
-    await saveFile({
-      filename: cloudFilename,
-      buffer: fileBuffer,
-      contentType: "application/vnd.sqlite3",
-    });
-
-    await saveFile({
-      filename: latestFilename,
-      buffer: fileBuffer,
-      contentType: "application/vnd.sqlite3",
-    });
-
+  if (result.ok) {
     console.log("Backup completed successfully!");
-  } catch (err) {
-    console.error("Backup failed:", err);
+    console.log(`- Timestamp: ${result.timestamp}`);
+    console.log(`- Uploaded to Cloudflare R2 / S3: ${result.uploadedToCloud ? "YES" : "NO (local only)"}`);
+    console.log(`- SQLite Snapshot: ${Math.round((result.sqliteSize || 0) / 1024)} KB`);
+    console.log(`- JSON Data Archive: ${Math.round((result.jsonSize || 0) / 1024)} KB`);
+    console.log(`- Records: ${JSON.stringify(result.counts)}`);
+  } else {
+    console.error("Backup failed:", result.error);
     process.exitCode = 1;
-  } finally {
-    if (fs.existsSync(backupLocalPath)) {
-      try {
-        fs.unlinkSync(backupLocalPath);
-      } catch {
-        // ignore
-      }
-    }
   }
 }
 
-backup();
+main();

@@ -6,7 +6,7 @@ import {
   GetObjectCommand,
   DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
-import { UPLOAD_DIR } from "./db";
+import { UPLOAD_DIR } from "./db.ts";
 
 // Cloudflare R2 / S3 Configuration from environment
 const S3_ENDPOINT = process.env.R2_ENDPOINT || process.env.S3_ENDPOINT;
@@ -19,6 +19,16 @@ const S3_PUBLIC_URL = process.env.R2_PUBLIC_URL || process.env.S3_PUBLIC_URL; //
 export const isS3Configured = Boolean(
   S3_ENDPOINT && S3_ACCESS_KEY_ID && S3_SECRET_ACCESS_KEY && S3_BUCKET
 );
+
+export function getStorageConfig() {
+  return {
+    isConfigured: isS3Configured,
+    bucket: S3_BUCKET || null,
+    endpoint: S3_ENDPOINT || null,
+    region: S3_REGION || null,
+    hasPublicUrl: Boolean(S3_PUBLIC_URL),
+  };
+}
 
 let s3Client: S3Client | null = null;
 function getS3Client(): S3Client {
@@ -35,6 +45,16 @@ function getS3Client(): S3Client {
   return s3Client;
 }
 
+function normalizeKey(filename: string): string {
+  return filename.replace(/\\/g, "/").replace(/^\/+/, "");
+}
+
+function resolveLocalPath(filename: string): string {
+  const clean = normalizeKey(filename);
+  const safeRelPath = path.normalize(clean).replace(/^(\.\.[\/\\])+/, "");
+  return path.join(UPLOAD_DIR, safeRelPath);
+}
+
 export interface PutFileOptions {
   filename: string;
   buffer: Buffer | Uint8Array;
@@ -46,33 +66,33 @@ export interface PutFileOptions {
  * otherwise persists it to the local UPLOAD_DIR on disk.
  */
 export async function saveFile({ filename, buffer, contentType }: PutFileOptions): Promise<string> {
-  const safeFilename = path.basename(filename);
+  const key = normalizeKey(filename);
 
   if (isS3Configured) {
     const client = getS3Client();
     await client.send(
       new PutObjectCommand({
         Bucket: S3_BUCKET,
-        Key: safeFilename,
+        Key: key,
         Body: buffer,
         ContentType: contentType,
       })
     );
-    return safeFilename;
+    return key;
   }
 
   // Fallback to local filesystem
-  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-  const localPath = path.join(UPLOAD_DIR, safeFilename);
+  const localPath = resolveLocalPath(filename);
+  fs.mkdirSync(path.dirname(localPath), { recursive: true });
   fs.writeFileSync(localPath, buffer);
-  return safeFilename;
+  return key;
 }
 
 /**
  * Retrieves a file's binary data and content type from object storage or local filesystem.
  */
 export async function getFile(filename: string): Promise<{ buffer: Buffer; contentType?: string } | null> {
-  const safeFilename = path.basename(filename);
+  const key = normalizeKey(filename);
 
   if (isS3Configured) {
     try {
@@ -80,7 +100,7 @@ export async function getFile(filename: string): Promise<{ buffer: Buffer; conte
       const res = await client.send(
         new GetObjectCommand({
           Bucket: S3_BUCKET,
-          Key: safeFilename,
+          Key: key,
         })
       );
       if (!res.Body) return null;
@@ -94,7 +114,7 @@ export async function getFile(filename: string): Promise<{ buffer: Buffer; conte
         return null;
       }
       // If S3 fetch fails, also attempt local fallback in case file was stored before migration
-      const localPath = path.join(UPLOAD_DIR, safeFilename);
+      const localPath = resolveLocalPath(filename);
       if (fs.existsSync(localPath)) {
         return { buffer: fs.readFileSync(localPath) };
       }
@@ -103,7 +123,7 @@ export async function getFile(filename: string): Promise<{ buffer: Buffer; conte
   }
 
   // Local filesystem
-  const localPath = path.join(UPLOAD_DIR, safeFilename);
+  const localPath = resolveLocalPath(filename);
   if (!fs.existsSync(localPath)) {
     return null;
   }
@@ -114,7 +134,7 @@ export async function getFile(filename: string): Promise<{ buffer: Buffer; conte
  * Deletes a file from storage. Non-fatal if missing.
  */
 export async function deleteFile(filename: string): Promise<void> {
-  const safeFilename = path.basename(filename);
+  const key = normalizeKey(filename);
 
   if (isS3Configured) {
     try {
@@ -122,7 +142,7 @@ export async function deleteFile(filename: string): Promise<void> {
       await client.send(
         new DeleteObjectCommand({
           Bucket: S3_BUCKET,
-          Key: safeFilename,
+          Key: key,
         })
       );
     } catch {
@@ -131,7 +151,7 @@ export async function deleteFile(filename: string): Promise<void> {
   }
 
   // Check and delete local file as well if present
-  const localPath = path.join(UPLOAD_DIR, safeFilename);
+  const localPath = resolveLocalPath(filename);
   if (fs.existsSync(localPath)) {
     try {
       fs.unlinkSync(localPath);
@@ -147,7 +167,8 @@ export async function deleteFile(filename: string): Promise<void> {
 export function getPublicUrl(filename: string): string | null {
   if (S3_PUBLIC_URL) {
     const base = S3_PUBLIC_URL.replace(/\/$/, "");
-    return `${base}/${encodeURIComponent(path.basename(filename))}`;
+    const key = normalizeKey(filename);
+    return `${base}/${key.split("/").map(encodeURIComponent).join("/")}`;
   }
   return null;
 }

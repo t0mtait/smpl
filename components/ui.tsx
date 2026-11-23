@@ -265,6 +265,114 @@ export function EarningsChart({ data }: { data: { month: string; amount: number 
 }
 
 /* ------------------------------------------------------------------
+   Possessions over time chart
+   ------------------------------------------------------------------ */
+
+function formatQuarterLabel(q: string): string {
+  const m = /^Q([1-4])\s*(?:20)?(\d{2})$/i.exec(q.trim());
+  if (m) {
+    return `Q${m[1]} '${m[2]}`;
+  }
+  return q;
+}
+
+export function PossessionsChart({ data }: { data: { quarter: string; count: number }[] }) {
+  if (!data.length || data.every((d) => d.count === 0)) {
+    return (
+      <div className="flex h-48 items-center justify-center text-sm text-muted">
+        No possession history yet — the chart fills in as you track your items.
+      </div>
+    );
+  }
+
+  const w = 640;
+  const h = 240;
+  const pad = { top: 20, right: 16, bottom: 28, left: 44 };
+  const max = Math.max(...data.map((d) => d.count), 1);
+  const innerW = w - pad.left - pad.right;
+  const innerH = h - pad.top - pad.bottom;
+
+  const x = (i: number) =>
+    pad.left + (data.length === 1 ? innerW / 2 : (i / (data.length - 1)) * innerW);
+  const y = (v: number) => pad.top + innerH - (v / max) * innerH;
+
+  const line = data.map((d, i) => `${i === 0 ? "M" : "L"} ${x(i).toFixed(1)} ${y(d.count).toFixed(1)}`).join(" ");
+  const area = `${line} L ${x(data.length - 1).toFixed(1)} ${(pad.top + innerH).toFixed(1)} L ${x(0).toFixed(1)} ${(
+    pad.top + innerH
+  ).toFixed(1)} Z`;
+
+  const ticks = [0, 0.33, 0.66, 1].map((f) => Math.round(max * f));
+
+  return (
+    <div className="w-full overflow-hidden">
+      <svg viewBox={`0 0 ${w} ${h}`} className="w-full" role="img" aria-label="Possessions over time">
+        <defs>
+          <linearGradient id="possessFill" x1="0" y1="0" x2="0" y2="1" className="text-accent">
+            <stop offset="0%" stopColor="currentColor" stopOpacity="0.22" />
+            <stop offset="100%" stopColor="currentColor" stopOpacity="0.02" />
+          </linearGradient>
+        </defs>
+
+        {ticks.map((t, i) => (
+          <g key={i}>
+            <line
+              x1={pad.left}
+              x2={w - pad.right}
+              y1={y(t)}
+              y2={y(t)}
+              className="stroke-line"
+              strokeWidth="1"
+            />
+            <text
+              x={pad.left - 8}
+              y={y(t) + 4}
+              textAnchor="end"
+              fontSize="10"
+              className="tabular fill-chart-ink"
+            >
+              {t}
+            </text>
+          </g>
+        ))}
+
+        <path d={area} fill="url(#possessFill)" />
+        <path
+          d={line}
+          fill="none"
+          className="stroke-accent"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+
+        {data.map((d, i) => (
+          <g key={i}>
+            <circle
+              cx={x(i)}
+              cy={y(d.count)}
+              r="4"
+              className="fill-card stroke-accent"
+              strokeWidth="2"
+            >
+              <title>{d.quarter}: {d.count} item{d.count === 1 ? "" : "s"}</title>
+            </circle>
+            <text
+              x={x(i)}
+              y={h - 8}
+              textAnchor="middle"
+              fontSize="11"
+              className="fill-chart-ink"
+            >
+              {formatQuarterLabel(d.quarter)}
+            </text>
+          </g>
+        ))}
+      </svg>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------
    Empty state
    ------------------------------------------------------------------ */
 

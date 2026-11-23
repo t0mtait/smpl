@@ -103,7 +103,8 @@ export function authenticate(email: string, password: string): User | null {
   }
   if (user.isBootstrap) return null;
   if (!user.passwordHash || !verifyPassword(password, user.passwordHash)) return null;
-  return { id: user.id, email: user.email, name: user.name, createdAt: user.createdAt };
+  const { passwordHash: _p, isBootstrap: _b, ...safeUser } = user;
+  return safeUser;
 }
 
 /** The account signed in on this request, or null. */

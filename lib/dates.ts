@@ -110,3 +110,49 @@ export function quarterToIso(value: string | null | undefined): string | null {
   }
   return null;
 }
+
+/**
+ * Convert a quarter string or ISO date string to a monotonic quarter order number:
+ * year * 4 + quarter.
+ * e.g. "Q4 2026" or "2026-10-01" -> 2026 * 4 + 4 = 8108.
+ * Returns null for unparseable dates.
+ */
+export function quarterToOrder(value: string | null | undefined): number | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  const qy = /^Q([1-4])\s*(\d{4})$/i.exec(trimmed);
+  if (qy) return Number(qy[2]) * 4 + Number(qy[1]);
+
+  const yq = /^(\d{4})[-\s]*Q([1-4])$/i.exec(trimmed);
+  if (yq) return Number(yq[1]) * 4 + Number(yq[2]);
+
+  const iso = /^(\d{4})-(\d{2})(?:-\d{2})?/.exec(trimmed);
+  if (iso) {
+    const year = Number(iso[1]);
+    const month = parseInt(iso[2], 10);
+    if (month >= 1 && month <= 12) {
+      const q = Math.ceil(month / 3);
+      return year * 4 + q;
+    }
+  }
+
+  const d = new Date(trimmed.includes("T") ? trimmed : `${trimmed}T00:00:00`);
+  if (!Number.isNaN(d.getTime())) {
+    return d.getFullYear() * 4 + Math.ceil((d.getMonth() + 1) / 3);
+  }
+
+  return null;
+}
+
+/**
+ * Convert a quarter order number back to "QN YYYY".
+ * e.g. 8108 -> "Q4 2026".
+ */
+export function orderToQuarter(order: number): string {
+  const year = Math.floor((order - 1) / 4);
+  const q = ((order - 1) % 4) + 1;
+  return `Q${q} ${year}`;
+}
+

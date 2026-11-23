@@ -11,7 +11,7 @@
  *   - writing "today" produces today's local calendar date
  *   - reading it back gives 0 days, never -1
  */
-import { toDateOnly, today, parseDateOnly, daysFromNow, daysSinceDate } from "../lib/dates.ts";
+import { toDateOnly, today, parseDateOnly, daysFromNow, daysSinceDate, quarterToOrder, orderToQuarter } from "../lib/dates.ts";
 import { daysSince } from "../lib/scoring.ts";
 import { formatDate, formatQuarter } from "../lib/format.ts";
 
@@ -111,6 +111,19 @@ function eq(name: string, actual: unknown, expected: unknown) {
   eq("formatQuarter handles YYYY QN", formatQuarter("2024 Q3"), "Q3 2024");
   eq("formatQuarter handles QN YYYY", formatQuarter("Q3 2024"), "Q3 2024");
   eq("formatQuarter handles YYYY-QN", formatQuarter("2026-Q1"), "Q1 2026");
+}
+
+/* ------------------------------------------------------- quarterToOrder & orderToQuarter */
+
+{
+  eq("quarterToOrder handles null", quarterToOrder(null), null);
+  eq("quarterToOrder handles empty string", quarterToOrder(""), null);
+  eq("quarterToOrder Q1 from ISO", quarterToOrder("2024-01-15"), 2024 * 4 + 1);
+  eq("quarterToOrder Q4 from ISO", quarterToOrder("2026-11-23"), 2026 * 4 + 4);
+  eq("quarterToOrder from QN YYYY", quarterToOrder("Q4 2026"), 2026 * 4 + 4);
+  eq("quarterToOrder from YYYY QN", quarterToOrder("2025 Q2"), 2025 * 4 + 2);
+  eq("orderToQuarter Q4 2026", orderToQuarter(2026 * 4 + 4), "Q4 2026");
+  eq("orderToQuarter Q1 2025", orderToQuarter(2025 * 4 + 1), "Q1 2025");
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

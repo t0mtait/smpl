@@ -1,6 +1,7 @@
 import { listDisposals, listItems } from "./db.ts";
 import type { Item, Disposal } from "./db.ts";
 import { daysSince } from "./scoring.ts";
+import { currentQuarter, quarterToOrder, orderToQuarter } from "./dates.ts";
 
 export interface Stats {
   totalItems: number;
@@ -33,13 +34,18 @@ export interface Stats {
   topCategories: { category: string; count: number }[];
   neverUsed: number;
   idleOver90Days: number;
+  currentQuarter: string;
+  currentQuarterNet: number;
+  currentQuarterAcquired: number;
+  currentQuarterOffloaded: number;
+  possessionsOverTime: { quarter: string; count: number }[];
 }
 
 function monthKey(date: string): string {
   return date.slice(0, 7);
 }
 
-export function computeStats(items: Item[], disposals: Disposal[]): Stats {
+export function computeStats(items: Item[], disposals: Disposal[], now: Date = new Date()): Stats {
   const owned = items.filter((i) => i.status === "owned");
   const sold = items.filter((i) => i.status === "sold");
   const donated = items.filter((i) => i.status === "donated");
@@ -81,7 +87,6 @@ export function computeStats(items: Item[], disposals: Disposal[]): Stats {
     .sort((a, b) => b.value - a.value || b.count - a.count);
 
   // Earnings by month, last 12 months
-  const now = new Date();
   const monthKeys: string[] = [];
   for (let i = 11; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
@@ -95,6 +100,56 @@ export function computeStats(items: Item[], disposals: Disposal[]): Stats {
     if (earnMap.has(key)) earnMap.set(key, (earnMap.get(key) ?? 0) + (d.amount ?? 0));
   }
   const earningsByMonth = monthKeys.map((month) => ({ month, amount: earnMap.get(month) ?? 0 }));
+
+  // Net items & possessions over time
+  const curQuarter = currentQuarter(now);
+  const curOrder = quarterToOrder(curQuarter)!;
+
+  const dispMap = new Map<number, string>();
+  for (const d of disposals) {
+    if (!dispMap.has(d.itemId)) {
+      dispMap.set(d.itemId, d.disposedAt);
+    }
+  }
+
+  const TERMINAL_SET = new Set(["sold", "donated", "disposed", "closed"]);
+
+  const timeline = items.map((item) => {
+    const acqOrder = quarterToOrder(item.purchaseDate);
+    let offloadOrder: number | null = null;
+    if (TERMINAL_SET.has(item.status)) {
+      const dispDate = dispMap.get(item.id);
+      offloadOrder = quarterToOrder(item.offloadedDate) ?? (dispDate ? quarterToOrder(dispDate) : null);
+    }
+    return { acqOrder, offloadOrder };
+  });
+
+  let currentQuarterAcquired = 0;
+  let currentQuarterOffloaded = 0;
+  for (const t of timeline) {
+    if (t.acqOrder === curOrder) {
+      currentQuarterAcquired++;
+    }
+    if (t.offloadOrder === curOrder) {
+      currentQuarterOffloaded++;
+    }
+  }
+  const currentQuarterNet = currentQuarterAcquired - currentQuarterOffloaded;
+
+  const possessionsOverTime: { quarter: string; count: number }[] = [];
+  for (let i = 7; i >= 0; i--) {
+    const ord = curOrder - i;
+    const quarterLabel = orderToQuarter(ord);
+    const count = timeline.filter((t) => {
+      if (t.acqOrder !== null && t.acqOrder > ord) return false;
+      if (t.offloadOrder !== null) {
+        const effectiveOffload = Math.min(t.offloadOrder, curOrder);
+        if (effectiveOffload <= ord) return false;
+      }
+      return true;
+    }).length;
+    possessionsOverTime.push({ quarter: quarterLabel, count });
+  }
 
   const breakdownMap = new Map<string, { count: number; amount: number }>();
   for (const d of disposals) {
@@ -156,6 +211,11 @@ export function computeStats(items: Item[], disposals: Disposal[]): Stats {
     topCategories,
     neverUsed,
     idleOver90Days,
+    currentQuarter: curQuarter,
+    currentQuarterNet,
+    currentQuarterAcquired,
+    currentQuarterOffloaded,
+    possessionsOverTime,
   };
 }
 

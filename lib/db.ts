@@ -8,6 +8,8 @@ export const DATA_DIR = (process.env.SMPL_DATA_DIR || process.env.DECLUTTER_DATA
   : path.join(process.cwd(), "data");
 export const UPLOAD_DIR = path.join(DATA_DIR, "uploads");
 
+import { scheduleAutoBackup } from "./backup.ts";
+
 export function getDbPath(): string {
   if (fs.existsSync(path.join(DATA_DIR, "declutter.db"))) {
     return path.join(DATA_DIR, "declutter.db");
@@ -177,6 +179,9 @@ export function getDb(): DatabaseSync {
   ensureColumn(db, "items", "quality", "quality TEXT NOT NULL DEFAULT ''");
   ensureColumn(db, "items", "purgatory_date", "purgatory_date TEXT");
   ensureColumn(db, "users", "avatar_path", "avatar_path TEXT");
+  ensureColumn(db, "users", "plan", "plan TEXT NOT NULL DEFAULT 'free'");
+  ensureColumn(db, "users", "subscription_interval", "subscription_interval TEXT");
+  ensureColumn(db, "users", "subscription_renews_at", "subscription_renews_at TEXT");
   // Money columns must allow NULL ("never recorded") rather than 0 ("free").
   migrateMoneyColumns(db);
   db.exec("CREATE INDEX IF NOT EXISTS idx_items_owner ON items(owner_id);");
@@ -332,6 +337,9 @@ export interface User {
   email: string;
   name: string;
   avatarPath?: string | null;
+  plan: "free" | "premium";
+  subscriptionInterval?: "monthly" | "yearly" | null;
+  subscriptionRenewsAt?: string | null;
   createdAt: string;
 }
 
@@ -341,7 +349,9 @@ export function createUser(email: string, name: string, passwordHash: string): U
   const res = getDb()
     .prepare("INSERT INTO users (email, name, password_hash) VALUES (?, ?, ?)")
     .run(email, name, passwordHash);
-  return getUserById(Number(res.lastInsertRowid))!;
+  const user = getUserById(Number(res.lastInsertRowid))!;
+  scheduleAutoBackup();
+  return user;
 }
 
 export interface OAuthAccount {
@@ -356,7 +366,9 @@ export interface OAuthAccount {
 export function findOAuthAccount(provider: string, providerId: string): (OAuthAccount & { user: User }) | null {
   const row = getDb()
     .prepare(
-      `SELECT o.*, u.id as u_id, u.email as u_email, u.name as u_name, u.avatar_path as u_avatar, u.created_at as u_created_at
+      `SELECT o.*, u.id as u_id, u.email as u_email, u.name as u_name, u.avatar_path as u_avatar,
+              u.plan as u_plan, u.subscription_interval as u_sub_interval, u.subscription_renews_at as u_sub_renews,
+              u.created_at as u_created_at
        FROM oauth_accounts o
        JOIN users u ON u.id = o.user_id
        WHERE o.provider = ? AND o.provider_id = ?`
@@ -375,6 +387,9 @@ export function findOAuthAccount(provider: string, providerId: string): (OAuthAc
       email: String(row.u_email),
       name: String(row.u_name ?? ""),
       avatarPath: (row.u_avatar as string | null) ?? null,
+      plan: ((row.u_plan as string) || "free") === "premium" ? "premium" : "free",
+      subscriptionInterval: (row.u_sub_interval as "monthly" | "yearly") ?? null,
+      subscriptionRenewsAt: (row.u_sub_renews as string) ?? null,
       createdAt: String(row.u_created_at),
     },
   };
@@ -386,6 +401,7 @@ export function linkOAuthAccount(userId: number, provider: string, providerId: s
       "INSERT OR IGNORE INTO oauth_accounts (user_id, provider, provider_id, email) VALUES (?, ?, ?, ?)"
     )
     .run(userId, provider, providerId, email);
+  scheduleAutoBackup();
 }
 
 export function checkRateLimit(key: string, maxAttempts: number, windowSeconds: number): { allowed: boolean; remaining: number } {
@@ -430,8 +446,28 @@ function toUser(row: Record<string, unknown>): User {
     email: String(row.email),
     name: String(row.name ?? ""),
     avatarPath: (row.avatar_path as string | null) ?? null,
+    plan: ((row.plan as string) || "free") === "premium" ? "premium" : "free",
+    subscriptionInterval: (row.subscription_interval as "monthly" | "yearly") ?? null,
+    subscriptionRenewsAt: (row.subscription_renews_at as string) ?? null,
     createdAt: String(row.created_at),
   };
+}
+
+export function updateUserSubscription(
+  userId: number,
+  plan: "free" | "premium",
+  interval: "monthly" | "yearly" | null = null,
+  renewsAt: string | null = null
+): User | null {
+  getDb()
+    .prepare(
+      `UPDATE users
+       SET plan = ?, subscription_interval = ?, subscription_renews_at = ?
+       WHERE id = ?`
+    )
+    .run(plan, interval, renewsAt, userId);
+  scheduleAutoBackup();
+  return getUserById(userId);
 }
 
 export function updateUserProfile(
@@ -468,6 +504,7 @@ export function updateUserProfile(
     .prepare(`UPDATE users SET ${sets.join(", ")} WHERE id = ?`)
     .run(...args);
 
+  scheduleAutoBackup();
   return getUserById(id);
 }
 
@@ -490,6 +527,9 @@ export function claimBootstrapData(newUserId: number): void {
     d.prepare("UPDATE items SET owner_id = ? WHERE owner_id = ?").run(newUserId, b.id);
     d.prepare("UPDATE wishlist_items SET owner_id = ? WHERE owner_id = ?").run(newUserId, b.id);
     d.prepare("DELETE FROM users WHERE id = ?").run(b.id);
+  }
+  if (boot.length > 0) {
+    scheduleAutoBackup();
   }
 }
 
@@ -614,7 +654,9 @@ export function createItem(ownerId: number, input: ItemInput): Item {
       input.photoPath,
       input.priority
     );
-  return getItem(ownerId, Number(res.lastInsertRowid))!;
+  const item = getItem(ownerId, Number(res.lastInsertRowid))!;
+  scheduleAutoBackup();
+  return item;
 }
 
 export function updateItem(ownerId: number, id: number, input: Partial<ItemInput>): Item | null {
@@ -667,6 +709,7 @@ export function updateItem(ownerId: number, id: number, input: Partial<ItemInput
       id,
       ownerId
     );
+  scheduleAutoBackup();
   return getItem(ownerId, id);
 }
 
@@ -675,7 +718,9 @@ export function deleteItem(ownerId: number, id: number): boolean {
   if (!existing) return false;
   getDb().prepare("DELETE FROM disposals WHERE item_id = ?").run(id);
   const res = getDb().prepare("DELETE FROM items WHERE id = ? AND owner_id = ?").run(id, ownerId);
-  return Number(res.changes) > 0;
+  const changed = Number(res.changes) > 0;
+  if (changed) scheduleAutoBackup();
+  return changed;
 }
 
 /**
@@ -703,6 +748,7 @@ export function disposeItem(
   getDb()
     .prepare("UPDATE items SET status = ?, updated_at = datetime('now') WHERE id = ? AND owner_id = ?")
     .run(disposition, id, ownerId);
+  scheduleAutoBackup();
   return getItem(ownerId, id);
 }
 
@@ -713,6 +759,7 @@ export function moveItemToPurgatory(ownerId: number, id: number): Item | null {
   getDb()
     .prepare("UPDATE items SET status = 'purgatory', purgatory_date = datetime('now'), updated_at = datetime('now') WHERE id = ? AND owner_id = ?")
     .run(id, ownerId);
+  scheduleAutoBackup();
   return getItem(ownerId, id);
 }
 
@@ -746,6 +793,7 @@ export function offloadItem(
     )
     .run(disposition, dateStr, id, ownerId);
 
+  scheduleAutoBackup();
   return getItem(ownerId, id);
 }
 
@@ -757,6 +805,7 @@ export function restoreItem(ownerId: number, id: number): Item | null {
   getDb()
     .prepare("UPDATE items SET status = 'owned', purgatory_date = NULL, updated_at = datetime('now') WHERE id = ? AND owner_id = ?")
     .run(id, ownerId);
+  scheduleAutoBackup();
   return getItem(ownerId, id);
 }
 
@@ -849,7 +898,9 @@ export function createWishlistItem(ownerId: number, input: WishlistInput): Wishl
       (input.notes ?? "").trim(),
       input.priority ?? "medium"
     );
-  return getWishlistItem(ownerId, Number(res.lastInsertRowid))!;
+  const item = getWishlistItem(ownerId, Number(res.lastInsertRowid))!;
+  scheduleAutoBackup();
+  return item;
 }
 
 export function updateWishlistItem(
@@ -886,6 +937,7 @@ export function updateWishlistItem(
       ownerId
     );
 
+  scheduleAutoBackup();
   return getWishlistItem(ownerId, id);
 }
 
@@ -893,7 +945,9 @@ export function deleteWishlistItem(ownerId: number, id: number): boolean {
   const res = getDb()
     .prepare("DELETE FROM wishlist_items WHERE id = ? AND owner_id = ?")
     .run(id, ownerId);
-  return Number(res.changes) > 0;
+  const changed = Number(res.changes) > 0;
+  if (changed) scheduleAutoBackup();
+  return changed;
 }
 
 export function convertWishlistItemToInventory(
