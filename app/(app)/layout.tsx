@@ -45,7 +45,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <div>
             <div className="display text-[19px] leading-none tracking-[-0.01em]">smpl.</div>
             <div className="mt-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
-              liv_smply
+              go_smpl
             </div>
           </div>
         </div>

@@ -7,4 +7,5 @@ next-env.d.ts
 
 # Local data: SQLite DB + uploaded item photos. Never commit.
 data/
-.env*.local
+.env*
+!.env.example

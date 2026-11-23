@@ -182,6 +182,8 @@ export function getDb(): DatabaseSync {
   ensureColumn(db, "users", "plan", "plan TEXT NOT NULL DEFAULT 'free'");
   ensureColumn(db, "users", "subscription_interval", "subscription_interval TEXT");
   ensureColumn(db, "users", "subscription_renews_at", "subscription_renews_at TEXT");
+  ensureColumn(db, "users", "stripe_customer_id", "stripe_customer_id TEXT");
+  ensureColumn(db, "users", "stripe_subscription_id", "stripe_subscription_id TEXT");
   // Money columns must allow NULL ("never recorded") rather than 0 ("free").
   migrateMoneyColumns(db);
   db.exec("CREATE INDEX IF NOT EXISTS idx_items_owner ON items(owner_id);");
@@ -411,6 +413,8 @@ export interface User {
   plan: "free" | "premium";
   subscriptionInterval?: "monthly" | "yearly" | null;
   subscriptionRenewsAt?: string | null;
+  stripeCustomerId?: string | null;
+  stripeSubscriptionId?: string | null;
   createdAt: string;
 }
 
@@ -520,6 +524,8 @@ function toUser(row: Record<string, unknown>): User {
     plan: ((row.plan as string) || "free") === "premium" ? "premium" : "free",
     subscriptionInterval: (row.subscription_interval as "monthly" | "yearly") ?? null,
     subscriptionRenewsAt: (row.subscription_renews_at as string) ?? null,
+    stripeCustomerId: (row.stripe_customer_id as string | null) ?? null,
+    stripeSubscriptionId: (row.stripe_subscription_id as string | null) ?? null,
     createdAt: String(row.created_at),
   };
 }
@@ -528,17 +534,37 @@ export function updateUserSubscription(
   userId: number,
   plan: "free" | "premium",
   interval: "monthly" | "yearly" | null = null,
-  renewsAt: string | null = null
+  renewsAt: string | null = null,
+  stripeCustomerId: string | null = null,
+  stripeSubscriptionId: string | null = null
 ): User | null {
   getDb()
     .prepare(
       `UPDATE users
-       SET plan = ?, subscription_interval = ?, subscription_renews_at = ?
+       SET plan = ?,
+           subscription_interval = ?,
+           subscription_renews_at = ?,
+           stripe_customer_id = COALESCE(?, stripe_customer_id),
+           stripe_subscription_id = ?
        WHERE id = ?`
     )
-    .run(plan, interval, renewsAt, userId);
+    .run(plan, interval, renewsAt, stripeCustomerId, stripeSubscriptionId, userId);
   scheduleAutoBackup();
   return getUserById(userId);
+}
+
+export function getUserByStripeCustomer(customerId: string): User | null {
+  const row = getDb()
+    .prepare("SELECT * FROM users WHERE stripe_customer_id = ?")
+    .get(customerId) as Record<string, unknown> | undefined;
+  return row ? toUser(row) : null;
+}
+
+export function setStripeCustomerId(userId: number, customerId: string): void {
+  getDb()
+    .prepare("UPDATE users SET stripe_customer_id = ? WHERE id = ?")
+    .run(customerId, userId);
+  scheduleAutoBackup();
 }
 
 export function updateUserProfile(

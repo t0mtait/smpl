@@ -18,6 +18,8 @@ CREATE TABLE IF NOT EXISTS users (
   plan          TEXT    NOT NULL DEFAULT 'free',
   subscription_interval TEXT,
   subscription_renews_at TEXT,
+  stripe_customer_id TEXT,
+  stripe_subscription_id TEXT,
   created_at    TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 

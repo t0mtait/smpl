@@ -178,26 +178,40 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
     setSubBusy(true);
     setSubMsg(null);
     try {
-      const res = await fetch("/api/user/subscription", {
+      if (targetPlan === "premium") {
+        // Redirect to Stripe Hosted Checkout
+        const res = await fetch("/api/stripe/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ interval: targetInterval }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to start checkout");
+        if (data.url) {
+          window.location.href = data.url;
+          return;
+        }
+      }
+
+      // If user is managing existing subscription or cancelling
+      const res = await fetch("/api/stripe/portal", {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        window.location.href = data.url;
+        return;
+      }
+
+      // Fallback
+      const subRes = await fetch("/api/user/subscription", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plan: targetPlan, interval: targetInterval }),
       });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Failed to update subscription");
-      }
-      const data = await res.json();
-      setUser(data.user);
-      if (data.user.subscriptionInterval) {
-        setSubInterval(data.user.subscriptionInterval);
-      }
-      setSubMsg({
-        type: "success",
-        text: targetPlan === "premium"
-          ? `Upgraded to Pro (${targetInterval === "yearly" ? "$29.99/year" : "$3.49/month"})! All Pro features are unlocked.`
-          : "Subscription cancelled. Your account has returned to the Free tier.",
-      });
+      const subData = await subRes.json();
+      if (!subRes.ok) throw new Error(subData.error || "Failed to update subscription");
+      setUser(subData.user);
       router.refresh();
     } catch (err: unknown) {
       setSubMsg({
@@ -648,9 +662,9 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                   : "text-muted hover:text-ink"
               }`}
             >
-              <span>Yearly ($29.99/yr)</span>
+              <span>Yearly ($24.99/yr)</span>
               <span className="rounded-full bg-accent-soft px-1.5 py-0.5 text-[10px] font-bold text-accent">
-                Save 28%
+                Save 40%
               </span>
             </button>
           </div>
@@ -749,10 +763,10 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
               </div>
               <div className="mt-2 flex items-baseline gap-1.5">
                 <span className="display text-3xl font-semibold text-ink">
-                  {subInterval === "yearly" ? "$29.99" : "$3.49"}
+                  {subInterval === "yearly" ? "$24.99" : "$3.49"}
                 </span>
                 <span className="text-xs text-muted">
-                  {subInterval === "yearly" ? "USD / year ($2.50/mo)" : "USD / month"}
+                  {subInterval === "yearly" ? "USD / year ($2.08/mo)" : "USD / month"}
                 </span>
               </div>
               <p className="mt-2 text-[12px] text-muted">
@@ -792,7 +806,7 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                     disabled={subBusy}
                     className="btn-primary w-full"
                   >
-                    {subBusy ? "Updating…" : `Switch to ${subInterval === "yearly" ? "Yearly ($29.99/yr)" : "Monthly ($3.49/mo)"}`}
+                    {subBusy ? "Updating…" : `Switch to ${subInterval === "yearly" ? "Yearly ($24.99/yr)" : "Monthly ($3.49/mo)"}`}
                   </button>
                 ) : (
                   <div className="rounded-lg bg-accent-soft py-2 text-center text-[13px] font-semibold text-accent">
@@ -809,7 +823,7 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                   <IconSparkles width={15} height={15} />
                   {subBusy
                     ? "Upgrading…"
-                    : `Upgrade to Pro — ${subInterval === "yearly" ? "$29.99/yr" : "$3.49/mo"}`}
+                    : `Upgrade to Pro — ${subInterval === "yearly" ? "$24.99/yr" : "$3.49/mo"}`}
                 </button>
               )}
             </div>
