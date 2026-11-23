@@ -1,12 +1,29 @@
 import Stripe from "stripe";
 
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY || "";
+let stripeInstance: Stripe | null = null;
 
-export const stripe = new Stripe(stripeSecretKey, {
-  apiVersion: "2025-02-24.acacia" as any,
-  appInfo: {
-    name: "smpl.",
-    version: "0.1.0",
+export function getStripe(): Stripe {
+  if (!stripeInstance) {
+    const key = process.env.STRIPE_SECRET_KEY;
+    if (!key) {
+      throw new Error("STRIPE_SECRET_KEY is not defined in the environment");
+    }
+    stripeInstance = new Stripe(key, {
+      apiVersion: "2025-02-24.acacia" as any,
+      appInfo: {
+        name: "smpl.",
+        version: "0.1.0",
+      },
+    });
+  }
+  return stripeInstance;
+}
+
+export const stripe = new Proxy({} as Stripe, {
+  get(_target, prop) {
+    const instance = getStripe();
+    const val = (instance as any)[prop];
+    return typeof val === "function" ? val.bind(instance) : val;
   },
 });
 
