@@ -43,6 +43,15 @@ export async function POST(req: Request) {
   switch (action) {
     case "add_category": {
       if (!category) return NextResponse.json({ error: "Category name required" }, { status: 400 });
+      if (user.plan === "free") {
+        const existing = listUserCategories(user.id);
+        if (existing.length >= 5) {
+          return NextResponse.json(
+            { error: "Free plan is limited to 5 categories. Upgrade to Pro for unlimited categories." },
+            { status: 403 }
+          );
+        }
+      }
       addUserCategory(user.id, category);
       break;
     }
@@ -61,6 +70,16 @@ export async function POST(req: Request) {
     case "add_subcategory": {
       if (!category || !subcategory) {
         return NextResponse.json({ error: "Category and subcategory required" }, { status: 400 });
+      }
+      if (user.plan === "free") {
+        const existing = listUserCategories(user.id);
+        const catItem = existing.find((c) => c.category.toLowerCase() === category.toLowerCase());
+        if (catItem && catItem.subcategories.length >= 2) {
+          return NextResponse.json(
+            { error: "Free plan is limited to 2 subcategories per category. Upgrade to Pro for unlimited subcategories." },
+            { status: 403 }
+          );
+        }
       }
       addUserSubcategory(user.id, category, subcategory);
       break;

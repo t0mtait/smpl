@@ -13,6 +13,7 @@ import {
   IconHeart,
   IconPlus,
   IconSearch,
+  IconSparkles,
   IconTrash,
 } from "@/components/icons";
 
@@ -44,7 +45,7 @@ function getDomain(urlStr: string): string {
   }
 }
 
-export default function WishlistClient() {
+export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
   const [items, setItems] = useState<WishlistItem[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -389,18 +390,41 @@ export default function WishlistClient() {
           </p>
         </div>
 
-        <div>
-          <button
-            type="button"
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="btn-primary"
-          >
-            <IconPlus width={16} height={16} />
-            {showAddForm ? "Close form" : "Add to wishlist"}
-          </button>
-        </div>
+        {isPro && (
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowAddForm(!showAddForm)}
+              className="btn-primary"
+            >
+              <IconPlus width={16} height={16} />
+              {showAddForm ? "Close form" : "Add to wishlist"}
+            </button>
+          </div>
+        )}
       </header>
 
+      {!isPro ? (
+        <div className="card border-accent/40 bg-paper p-8 sm:p-12 text-center">
+          <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-accent-soft text-accent mb-4">
+            <IconHeart width={28} height={28} />
+          </span>
+          <h2 className="display text-2xl sm:text-3xl">Wishlist is a Pro Feature</h2>
+          <p className="mt-2 text-[14px] text-muted max-w-lg mx-auto">
+            Upgrade to smpl. Pro to unlock intentional purchasing and cooldown tracking. Give potential buys a 30-day cooling-off period, prioritize candidates from 0 to 100, and convert them seamlessly into owned inventory when ready.
+          </p>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <Link href="/account#subscription" className="btn-primary">
+              <IconSparkles width={16} height={16} />
+              Upgrade to Pro for $3.49/mo
+            </Link>
+            <Link href="/items" className="btn-secondary">
+              Back to Inventory
+            </Link>
+          </div>
+        </div>
+      ) : (
+        <>
       {/* ---------------- Notice if converted ---------------- */}
       {convertedNotice && (
         <div className="flex items-center justify-between rounded-xl border border-accent bg-accent-soft px-4 py-3 text-sm text-accent">
@@ -1179,6 +1203,8 @@ export default function WishlistClient() {
         onConfirm={confirmDeleteWishlistItem}
         onCancel={() => setDeletingItem(null)}
       />
+        </>
+      )}
     </div>
   );
 }

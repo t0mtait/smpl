@@ -370,9 +370,6 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
         <div>
           <p className="eyebrow">Account</p>
           <h1 className="display mt-2 text-4xl leading-[1.1] sm:text-5xl">Account options</h1>
-          <p className="mt-2 text-[15px] text-muted">
-            Manage your personal profile, credentials, and app preferences.
-          </p>
         </div>
         <Link href="/" className="btn-secondary">
           <IconArrowLeft width={15} height={15} />
@@ -609,7 +606,7 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
             <p className="mt-1 text-[13px] text-muted">
               {isPro
                 ? `You have unlocked smpl. Pro on a ${user.subscriptionInterval || "monthly"} plan${user.subscriptionRenewsAt ? ` (renews on ${user.subscriptionRenewsAt})` : ""}.`
-                : "Free tier covers up to 100 items. Upgrade to Pro to unlock unlimited possessions tracking, full historical charts, and CSV & JSON data exports."}
+                : "Free tier includes unlimited items tracking with essential declutter tools. Upgrade to Pro to unlock the AI Advisor, Wishlist & cooldown tracker, and unlimited categories."}
             </p>
           </div>
 
@@ -696,7 +693,11 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
               <ul className="mt-4 space-y-2 text-[13px] text-ink-soft">
                 <li className="flex items-center gap-2">
                   <IconCheck width={14} height={14} className="text-accent shrink-0" />
-                  <span>Track up to 100 items</span>
+                  <span>Unlimited tracked items</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <IconCheck width={14} height={14} className="text-accent shrink-0" />
+                  <span>Up to 5 categories (2 subcategories each)</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <IconCheck width={14} height={14} className="text-accent shrink-0" />
@@ -774,19 +775,19 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
               <ul className="mt-4 space-y-2 text-[13px] text-ink-soft">
                 <li className="flex items-center gap-2">
                   <IconCheck width={14} height={14} className="text-accent shrink-0" />
-                  <strong>Unlimited inventory items & photos</strong>
+                  <strong>AI Advisor & offload recommendations</strong>
                 </li>
                 <li className="flex items-center gap-2">
                   <IconCheck width={14} height={14} className="text-accent shrink-0" />
-                  <span>Possessions over time historical charts</span>
+                  <strong>Wishlist & 30-day cooldown tracker</strong>
                 </li>
                 <li className="flex items-center gap-2">
                   <IconCheck width={14} height={14} className="text-accent shrink-0" />
-                  <span>Quarterly Net Items & sales recovery</span>
+                  <strong>Unlimited custom categories & subcategories</strong>
                 </li>
                 <li className="flex items-center gap-2">
                   <IconCheck width={14} height={14} className="text-accent shrink-0" />
-                  <strong>Complete CSV & JSON data backups and exports</strong>
+                  <span>Complete CSV & JSON data backups and exports</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <IconCheck width={14} height={14} className="text-accent shrink-0" />
@@ -833,7 +834,18 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
       <section className="card p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="display text-lg">Categories & Subcategories</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="display text-lg">Categories & Subcategories</h2>
+              {!isPro ? (
+                <span className="rounded-full bg-wash px-2 py-0.5 text-[10px] font-medium text-muted">
+                  Free: 5 categories · 2 subcategories each ({categories.length}/5)
+                </span>
+              ) : (
+                <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[10px] font-bold text-accent">
+                  Pro: Unlimited
+                </span>
+              )}
+            </div>
             <p className="mt-1 text-[13px] text-muted">
               Customize the categories and subcategories you use to organize your possessions.
             </p>
@@ -841,15 +853,16 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
           <form onSubmit={handleAddCategory} className="flex items-center gap-2">
             <input
               type="text"
-              placeholder="New category name…"
+              placeholder={!isPro && categories.length >= 5 ? "Limit reached (5/5)" : "New category name…"}
               value={newCatName}
               onChange={(e) => setNewCatName(e.target.value)}
-              className="input py-1.5 px-3 text-xs h-9 w-48 sm:w-60"
+              disabled={!isPro && categories.length >= 5}
+              className="input py-1.5 px-3 text-xs h-9 w-48 sm:w-60 disabled:opacity-50"
             />
             <button
               type="submit"
-              disabled={catBusy || !newCatName.trim()}
-              className="btn-primary text-xs h-9 flex items-center gap-1.5 shrink-0"
+              disabled={catBusy || !newCatName.trim() || (!isPro && categories.length >= 5)}
+              className="btn-primary text-xs h-9 flex items-center gap-1.5 shrink-0 disabled:opacity-50"
             >
               <IconPlus width={13} height={13} />
               Add Category
@@ -1021,36 +1034,42 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                       })}
 
                       {/* Add Subcategory Inline Input */}
-                      <div className="inline-flex items-center gap-1.5">
-                        <input
-                          type="text"
-                          placeholder="+ Subcategory"
-                          value={newSubcatNames[c.category] || ""}
-                          onChange={(e) =>
-                            setNewSubcatNames((prev) => ({
-                              ...prev,
-                              [c.category]: e.target.value,
-                            }))
-                          }
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault();
-                              handleAddSubcategory(c.category);
+                      {!isPro && c.subcategories.length >= 2 ? (
+                        <span className="text-[11px] text-muted italic px-2 py-1">
+                          Max 2 subcategories (Free)
+                        </span>
+                      ) : (
+                        <div className="inline-flex items-center gap-1.5">
+                          <input
+                            type="text"
+                            placeholder="+ Subcategory"
+                            value={newSubcatNames[c.category] || ""}
+                            onChange={(e) =>
+                              setNewSubcatNames((prev) => ({
+                                ...prev,
+                                [c.category]: e.target.value,
+                              }))
                             }
-                          }}
-                          className="input py-1 px-2 text-xs h-7 w-32 bg-card/60 focus:bg-card"
-                        />
-                        {(newSubcatNames[c.category] || "").trim() && (
-                          <button
-                            type="button"
-                            onClick={() => handleAddSubcategory(c.category)}
-                            disabled={catBusy}
-                            className="btn-primary py-0.5 px-2 text-xs h-7"
-                          >
-                            Add
-                          </button>
-                        )}
-                      </div>
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleAddSubcategory(c.category);
+                              }
+                            }}
+                            className="input py-1 px-2 text-xs h-7 w-32 bg-card/60 focus:bg-card"
+                          />
+                          {(newSubcatNames[c.category] || "").trim() && (
+                            <button
+                              type="button"
+                              onClick={() => handleAddSubcategory(c.category)}
+                              disabled={catBusy}
+                              className="btn-primary py-0.5 px-2 text-xs h-7"
+                            >
+                              Add
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

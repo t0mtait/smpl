@@ -228,7 +228,7 @@ const d = db.getDb();
 {
   const catUser = db.createUser("categories@example.com", "CatUser", hashPassword("password123"));
   const initialCats = db.listUserCategories(catUser.id);
-  check("new user has default categories", initialCats.length >= 8);
+  check("new user has default categories", initialCats.length >= 5);
 
   db.addUserCategory(catUser.id, "photography");
   db.addUserSubcategory(catUser.id, "photography", "Lenses");

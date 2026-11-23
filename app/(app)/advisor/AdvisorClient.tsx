@@ -30,7 +30,7 @@ interface Props {
   isPro: boolean;
 }
 
-export default function AdvisorClient({ initialSuggestions }: Props) {
+export default function AdvisorClient({ initialSuggestions, isPro }: Props) {
   const [items, setItems] = useState<AdvisorItem[]>(initialSuggestions);
   const [actionBusy, setActionBusy] = useState<number | null>(null);
   const [msg, setMsg] = useState<{ text: string; type: "success" | "error" } | null>(null);
@@ -108,7 +108,26 @@ export default function AdvisorClient({ initialSuggestions }: Props) {
         </div>
       )}
 
-      {items.length === 0 ? (
+      {!isPro ? (
+        <div className="card border-accent/40 bg-paper p-8 sm:p-12 text-center">
+          <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-accent-soft text-accent mb-4">
+            <IconSparkles width={28} height={28} />
+          </span>
+          <h2 className="display text-2xl sm:text-3xl">AI Advisor is a Pro Feature</h2>
+          <p className="mt-2 text-[14px] text-muted max-w-lg mx-auto">
+            Upgrade to smpl. Pro to unlock intelligent declutter recommendations. Our heuristic engine analyzes expected usage frequency, seasonal timing, depreciation, and duplicates to recommend the top items to offload.
+          </p>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <Link href="/account#subscription" className="btn-primary">
+              <IconSparkles width={16} height={16} />
+              Upgrade to Pro for $3.49/mo
+            </Link>
+            <Link href="/items" className="btn-secondary">
+              Back to Inventory
+            </Link>
+          </div>
+        </div>
+      ) : items.length === 0 ? (
         <div className="card p-12 text-center">
           <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-accent-soft text-accent mb-4">
             <IconCheck width={24} height={24} />

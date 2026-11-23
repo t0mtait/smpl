@@ -9,6 +9,9 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
   const user = await apiUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  if (user.plan !== "premium") {
+    return NextResponse.json({ error: "AI Advisor is only available on the Pro plan." }, { status: 403 });
+  }
   const url = new URL(req.url);
   const min = Number(url.searchParams.get("min") ?? 0);
   const all = scoreAll(listItems(user.id));

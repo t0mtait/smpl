@@ -1150,9 +1150,9 @@ export function listUserCategories(userId: number): { category: string; subcateg
     }
   }
 
-  // If map is completely empty (brand new user with no items), seed with default 8 categories
+  // If map is completely empty (brand new user with no items), seed with default 5 categories
   if (map.size === 0) {
-    const defaults = ["clothing", "electronics", "home", "kitchen", "sports", "hobbies", "tools", "misc"];
+    const defaults = ["clothing", "electronics", "home", "kitchen", "misc"];
     for (const def of defaults) {
       map.set(def, new Set());
     }

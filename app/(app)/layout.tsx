@@ -23,9 +23,9 @@ const NAV = [
   { href: "/", label: "Dashboard", icon: <IconHouse width={17} height={17} /> },
   { href: "/items", label: "Inventory", icon: <IconBox width={17} height={17} /> },
   { href: "/purgatory", label: "Purgatory", icon: <IconFlame width={17} height={17} /> },
-  { href: "/advisor", label: "AI Advisor", icon: <IconSparkles width={17} height={17} /> },
+  { href: "/advisor", label: "AI Advisor", icon: <IconSparkles width={17} height={17} />, proOnly: true },
   { href: "/offloaded", label: "Offloaded", icon: <IconArchive width={17} height={17} /> },
-  { href: "/wishlist", label: "Wishlist", icon: <IconHeart width={17} height={17} /> },
+  { href: "/wishlist", label: "Wishlist", icon: <IconHeart width={17} height={17} />, proOnly: true },
 ];
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -33,6 +33,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // account-scoped, so this is the single choke point.
   const user = await requireUser();
   const accountName = user.name?.trim() || user.email;
+  const isPro = user.plan === "premium";
 
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
@@ -52,7 +53,19 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
         <nav className="flex-1 space-y-0.5 px-3">
           {NAV.map((item) => (
-            <NavLinks key={item.href} href={item.href} label={item.label} icon={item.icon} />
+            <NavLinks
+              key={item.href}
+              href={item.href}
+              label={item.label}
+              icon={item.icon}
+              badge={
+                item.proOnly && !isPro ? (
+                  <span className="rounded bg-accent-soft px-1.5 py-0.5 text-[9px] font-bold text-accent">
+                    PRO
+                  </span>
+                ) : undefined
+              }
+            />
           ))}
         </nav>
 

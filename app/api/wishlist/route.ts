@@ -15,12 +15,18 @@ function money(v: unknown): number | null {
 export async function GET() {
   const user = await apiUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  if (user.plan !== "premium") {
+    return NextResponse.json({ items: [], error: "Wishlist is only available on the Pro plan." }, { status: 403 });
+  }
   return NextResponse.json({ items: listWishlist(user.id) });
 }
 
 export async function POST(req: Request) {
   const user = await apiUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  if (user.plan !== "premium") {
+    return NextResponse.json({ error: "Wishlist is only available on the Pro plan." }, { status: 403 });
+  }
 
   const body = await req.json().catch(() => ({}));
   const name = typeof body.name === "string" ? body.name.trim() : "";
