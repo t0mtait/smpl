@@ -82,7 +82,7 @@ export default async function DashboardPage() {
       </header>
 
       {/* ---------------- Stat tiles ---------------- */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <StatTile
           label="Items owned"
           value={<span className="text-3xl font-semibold leading-none">{stats.ownedItems}</span>}
@@ -104,36 +104,53 @@ export default async function DashboardPage() {
         <StatTile
           label={`Net items (${stats.currentQuarter})`}
           value={
-            <span className="tabular text-3xl font-semibold leading-none">
-              {stats.currentQuarterNet > 0 ? `+${stats.currentQuarterNet}` : stats.currentQuarterNet}
-            </span>
+            <div className="flex items-baseline gap-2.5">
+              <span className="tabular text-3xl font-semibold leading-none">
+                {stats.currentQuarterNet > 0 ? `+${stats.currentQuarterNet}` : stats.currentQuarterNet}
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted tabular">
+                <span className="inline-flex items-center text-clay" title={`${stats.currentQuarterAcquired} acquired`}>
+                  ↑{stats.currentQuarterAcquired}
+                </span>
+                <span className="inline-flex items-center text-accent" title={`${stats.currentQuarterOffloaded} offloaded`}>
+                  ↓{stats.currentQuarterOffloaded}
+                </span>
+              </span>
+            </div>
           }
-          sub={`${stats.currentQuarterAcquired} in · ${stats.currentQuarterOffloaded} out`}
           icon={<IconChart width={15} height={15} />}
           tone={stats.currentQuarterNet > 0 ? "clay" : stats.currentQuarterNet < 0 ? "moss" : "neutral"}
           href="/items"
         />
         <StatTile
           label="In purgatory"
-          value={<span className="text-3xl font-semibold leading-none">{purgatoryItems.length}</span>}
-          sub={formatMoney(purgatoryValue)}
+          value={
+            <div className="flex items-baseline gap-2.5">
+              <span className="tabular text-3xl font-semibold leading-none">{purgatoryItems.length}</span>
+              {purgatoryValue > 0 && (
+                <span className="tabular text-xs font-medium text-muted">
+                  {formatMoney(purgatoryValue)}
+                </span>
+              )}
+            </div>
+          }
           icon={<IconFlame width={15} height={15} />}
           tone="clay"
           href="/purgatory"
         />
         <StatTile
-          label="Lifetime sales"
-          value={<span className="text-3xl font-semibold leading-none">{formatMoney(stats.lifetimeSalesEarnings)}</span>}
-          icon={<IconCash width={15} height={15} />}
-          tone="moss"
-          href="/items?status=sold"
-        />
-        <StatTile
           label="Decluttered"
-          value={<span className="text-3xl font-semibold leading-none">{goneCount}</span>}
+          value={
+            <div className="flex items-baseline gap-2.5">
+              <span className="tabular text-3xl font-semibold leading-none">{goneCount}</span>
+              <span className="tabular text-xs font-medium text-accent" title="Total sales proceeds">
+                {formatMoney(stats.lifetimeSalesEarnings)}
+              </span>
+            </div>
+          }
           icon={<IconRecycle width={15} height={15} />}
-          tone="clay"
-          href="/items"
+          tone="moss"
+          href="/offloaded"
         />
       </div>
 
