@@ -36,7 +36,14 @@ export const metadata: Metadata = {
 const THEME_SCRIPT = `
 (function () {
   try {
-    var stored = localStorage.getItem('smpl-theme') || localStorage.getItem('declutter-theme');
+    var stored = localStorage.getItem('smpl-theme');
+    if (!stored) {
+      stored = localStorage.getItem('declutter-theme');
+      if (stored) {
+        localStorage.setItem('smpl-theme', stored);
+        localStorage.removeItem('declutter-theme');
+      }
+    }
     var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     var theme = stored === 'dark' || stored === 'light' ? stored : (prefersDark ? 'dark' : 'light');
     document.documentElement.classList.toggle('dark', theme === 'dark');

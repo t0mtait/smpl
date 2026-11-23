@@ -163,28 +163,32 @@ export function scoreItem(item: Item, duplicateIds: Set<number>): ScoredItem {
   const reasons: ScoreReason[] = [];
   let score = 0;
 
-  const idleDays = daysSince(item.lastUsedAt ?? item.purchaseDate);
+  // Idle days is only known if an explicit lastUsedAt date was recorded,
+  // or if the item was explicitly marked as never used (where purchase date is the idle start).
+  const idleDays = item.lastUsedAt
+    ? daysSince(item.lastUsedAt)
+    : item.useFrequency === "never"
+    ? daysSince(item.purchaseDate)
+    : null;
 
   // 1. Idle time — up to 40 points. 30 days idle = ~1 point, scaling to
-  //    full marks at roughly 3 years of no use. For an item that has never
-  //    been used, the acquisition date is the idle reference.
-  {
-    const idle = idleDays ?? 0;
-    const idlePoints = Math.min(40, Math.round((idle / 1095) * 40));
+  //    full marks at roughly 3 years of no use.
+  if (idleDays !== null && idleDays > 0) {
+    const idlePoints = Math.min(40, Math.round((idleDays / 1095) * 40));
     if (idlePoints > 0) {
       reasons.push({
         label: item.lastUsedAt
-          ? `Unused for ${idle} day${idle === 1 ? "" : "s"}`
-          : `Sitting unused for ${idle} day${idle === 1 ? "" : "s"}`,
+          ? `Unused for ${idleDays} day${idleDays === 1 ? "" : "s"}`
+          : `Never used (${idleDays} day${idleDays === 1 ? "" : "s"} owned)`,
         weight: idlePoints,
       });
       score += idlePoints;
     }
   }
 
-  // 2. Never used — 25 points. An item with no usage record and no
-  //    last-used date is the strongest "this is dead weight" signal we have.
-  const neverUsed = !item.lastUsedAt;
+  // 2. Never used — 25 points. An item marked with "never" use frequency
+  //    is the strongest "this is dead weight" signal we have.
+  const neverUsed = item.useFrequency === "never";
   if (neverUsed) {
     const acquiredDays = daysSince(item.purchaseDate);
     if (acquiredDays !== null && acquiredDays > 30) {

@@ -38,6 +38,7 @@ function applyTheme(next: Theme) {
   root.dataset.theme = next;
   try {
     localStorage.setItem(STORAGE_KEY, next);
+    localStorage.removeItem("declutter-theme");
   } catch {
     // Private mode or blocked storage: the theme still applies for this
     // page view, it just will not be remembered next time.

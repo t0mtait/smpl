@@ -380,19 +380,64 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
         </Link>
       </header>
 
-      {/* 3-Column Profile, Credentials & Security Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-        {/* Profile Picture Card */}
-        <section className="card p-6 flex flex-col justify-between">
-          <div>
-            <h2 className="display text-lg">Profile picture</h2>
-            <p className="mt-1 text-[13px] text-muted">
-              Your photo appears in the sidebar and top navigation.
-            </p>
+      {/* Combined Profile, Credentials & Security Card */}
+      <section className="card p-6 sm:p-7 space-y-6">
+        <div>
+          <h2 className="display text-xl">Account settings</h2>
+          <p className="mt-1 text-[13px] text-muted">
+            Manage your profile picture, account details, and password in one place.
+          </p>
+        </div>
+
+        {/* Top Section: Photo and Personal Info */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Avatar Area (4 cols on lg) */}
+          <div className="lg:col-span-4 rounded-xl border border-line bg-shell/50 p-4 space-y-3">
+            <label className="label mb-1">Profile photo</label>
+            <div className="flex items-center gap-4">
+              <UserAvatar
+                name={user.name}
+                email={user.email}
+                avatarPath={user.avatarPath}
+                size={68}
+              />
+              <div className="space-y-2 min-w-0 flex-1">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  className="hidden"
+                  id="avatar-upload-input"
+                />
+                <div className="flex flex-wrap items-center gap-2">
+                  <label
+                    htmlFor="avatar-upload-input"
+                    className={`btn-secondary cursor-pointer py-1.5 px-3 text-xs ${avatarBusy ? "opacity-50 pointer-events-none" : ""}`}
+                  >
+                    <IconCamera width={14} height={14} />
+                    {avatarBusy ? "Uploading…" : "Upload"}
+                  </label>
+
+                  {user.avatarPath && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveAvatar}
+                      disabled={avatarBusy}
+                      className="btn-secondary py-1.5 px-3 text-xs text-danger hover:border-danger-line"
+                    >
+                      <IconTrash width={14} height={14} />
+                      Remove
+                    </button>
+                  )}
+                </div>
+                <p className="text-[11px] text-muted">JPG, PNG, WebP or GIF</p>
+              </div>
+            </div>
 
             {avatarMsg && (
               <div
-                className={`mt-4 rounded-lg p-3 text-sm ${
+                className={`rounded-lg p-2.5 text-xs ${
                   avatarMsg.type === "success"
                     ? "border border-accent-line bg-accent-soft text-accent"
                     : "border border-danger-line bg-danger-soft text-danger"
@@ -401,73 +446,11 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                 {avatarMsg.text}
               </div>
             )}
-
-            <div className="mt-5 flex flex-col items-center sm:items-start gap-4">
-              <UserAvatar
-                name={user.name}
-                email={user.email}
-                avatarPath={user.avatarPath}
-                size={76}
-              />
-              <div className="space-y-2 w-full">
-                <div className="flex flex-wrap items-center gap-2">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarUpload}
-                    className="hidden"
-                    id="avatar-upload-input"
-                  />
-                  <label
-                    htmlFor="avatar-upload-input"
-                    className={`btn-secondary cursor-pointer ${avatarBusy ? "opacity-50 pointer-events-none" : ""}`}
-                  >
-                    <IconCamera width={15} height={15} />
-                    {avatarBusy ? "Uploading…" : "Upload photo"}
-                  </label>
-
-                  {user.avatarPath ? (
-                    <button
-                      type="button"
-                      onClick={handleRemoveAvatar}
-                      disabled={avatarBusy}
-                      className="btn-secondary text-danger hover:border-danger-line"
-                    >
-                      <IconTrash width={15} height={15} />
-                      Remove
-                    </button>
-                  ) : null}
-                </div>
-              </div>
-            </div>
           </div>
-          <p className="mt-4 text-[11px] text-muted border-t border-line pt-3">
-            Supports JPEG, PNG, WebP or GIF up to 10 MB.
-          </p>
-        </section>
 
-        {/* Display Name and Email Card */}
-        <section className="card p-6 flex flex-col justify-between">
-          <div>
-            <h2 className="display text-lg">Profile information</h2>
-            <p className="mt-1 text-[13px] text-muted">
-              Update your display name and email address.
-            </p>
-
-            {profileMsg && (
-              <div
-                className={`mt-4 rounded-lg p-3 text-sm ${
-                  profileMsg.type === "success"
-                    ? "border border-accent-line bg-accent-soft text-accent"
-                    : "border border-danger-line bg-danger-soft text-danger"
-                }`}
-              >
-                {profileMsg.text}
-              </div>
-            )}
-
-            <form id="profile-form" onSubmit={handleUpdateProfile} className="mt-5 space-y-4">
+          {/* Profile Details Area (8 cols on lg) */}
+          <form id="profile-form" onSubmit={handleUpdateProfile} className="lg:col-span-8 space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className="label" htmlFor="user-name">
                   Display Name
@@ -495,43 +478,55 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                   required
                 />
               </div>
-            </form>
-          </div>
+            </div>
 
-          <div className="pt-4 border-t border-line mt-4">
-            <button
-              type="submit"
-              form="profile-form"
-              className="btn-primary w-full"
-              disabled={profileBusy}
-            >
-              <IconCheck width={15} height={15} />
-              {profileBusy ? "Saving…" : "Save profile"}
-            </button>
-          </div>
-        </section>
-
-        {/* Password & Security Card */}
-        <section className="card p-6 flex flex-col justify-between">
-          <div>
-            <h2 className="display text-lg">Password & security</h2>
-            <p className="mt-1 text-[13px] text-muted">
-              Change your password to keep your account secure.
-            </p>
-
-            {passwordMsg && (
+            {profileMsg && (
               <div
-                className={`mt-4 rounded-lg p-3 text-sm ${
-                  passwordMsg.type === "success"
+                className={`rounded-lg p-2.5 text-xs ${
+                  profileMsg.type === "success"
                     ? "border border-accent-line bg-accent-soft text-accent"
                     : "border border-danger-line bg-danger-soft text-danger"
                 }`}
               >
-                {passwordMsg.text}
+                {profileMsg.text}
               </div>
             )}
 
-            <form id="password-form" onSubmit={handleChangePassword} className="mt-5 space-y-3">
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                form="profile-form"
+                className="btn-primary py-2 px-4 text-xs"
+                disabled={profileBusy}
+              >
+                <IconCheck width={14} height={14} />
+                {profileBusy ? "Saving…" : "Save profile"}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* Divider & Password Section */}
+        <div className="border-t border-line pt-6">
+          <div className="mb-4">
+            <h3 className="text-sm font-semibold text-ink">Change password</h3>
+            <p className="text-xs text-muted">Enter your current password and choose a new secure password.</p>
+          </div>
+
+          {passwordMsg && (
+            <div
+              className={`mb-4 rounded-lg p-2.5 text-xs ${
+                passwordMsg.type === "success"
+                  ? "border border-accent-line bg-accent-soft text-accent"
+                  : "border border-danger-line bg-danger-soft text-danger"
+              }`}
+            >
+              {passwordMsg.text}
+            </div>
+          )}
+
+          <form id="password-form" onSubmit={handleChangePassword} className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-3">
               <div>
                 <label className="label" htmlFor="current-password">
                   Current Password
@@ -557,6 +552,7 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   minLength={8}
+                  placeholder="Min 8 characters"
                   required
                 />
               </div>
@@ -572,24 +568,26 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   minLength={8}
+                  placeholder="Repeat new password"
                   required
                 />
               </div>
-            </form>
-          </div>
+            </div>
 
-          <div className="pt-4 border-t border-line mt-4">
-            <button
-              type="submit"
-              form="password-form"
-              className="btn-primary w-full"
-              disabled={passwordBusy}
-            >
-              {passwordBusy ? "Updating…" : "Update password"}
-            </button>
-          </div>
-        </section>
-      </div>
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                form="password-form"
+                className="btn-secondary py-2 px-4 text-xs"
+                disabled={passwordBusy}
+              >
+                <IconLock width={14} height={14} />
+                {passwordBusy ? "Updating…" : "Update password"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
 
       {/* Membership & Subscription Card */}
       <section id="subscription" className="card p-6 scroll-mt-6">
