@@ -6,6 +6,7 @@ import Link from "next/link";
 import type { Disposition, Item } from "@/lib/db";
 import { formatDate, formatMoney, STATUS_LABELS, STATUS_STYLES } from "@/lib/format";
 import { StatusTag } from "@/components/ui";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { today } from "@/lib/dates";
 import {
   IconArchive,
@@ -39,6 +40,7 @@ export default function ItemActions({ item }: { item: Item }) {
   const [disposedAt, setDisposedAt] = useState(today());
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,10 +80,14 @@ export default function ItemActions({ item }: { item: Item }) {
   };
 
   const remove = async () => {
-    if (!confirm("Delete this item and its history permanently?")) return;
     setBusy(true);
-    await fetch(`/api/items/${item.id}`, { method: "DELETE" });
-    router.push("/items");
+    try {
+      await fetch(`/api/items/${item.id}`, { method: "DELETE" });
+      router.push("/items");
+    } finally {
+      setBusy(false);
+      setConfirmDelete(false);
+    }
   };
 
   const moveToPurgatory = async () => {
@@ -267,11 +273,25 @@ export default function ItemActions({ item }: { item: Item }) {
           <IconPencil width={15} height={15} />
           Edit details
         </Link>
-        <button className="btn-danger" onClick={remove} disabled={busy}>
+        <button className="btn-danger" onClick={() => setConfirmDelete(true)} disabled={busy}>
           <IconTrash width={15} height={15} />
           Delete permanently
         </button>
       </div>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        title="Delete item permanently?"
+        message={
+          <>
+            Are you sure you want to permanently delete <strong className="text-ink">{item.name}</strong> and all of its recorded history? This action cannot be undone.
+          </>
+        }
+        confirmLabel="Delete permanently"
+        busy={busy}
+        onConfirm={remove}
+        onCancel={() => setConfirmDelete(false)}
+      />
     </section>
   );
 }

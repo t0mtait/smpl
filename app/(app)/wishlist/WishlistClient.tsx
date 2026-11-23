@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { WishlistItem } from "@/lib/db";
-import { formatMoney, formatCategory } from "@/lib/format";
+import { formatMoney, formatCategory, CATEGORIES } from "@/lib/format";
 import { daysSinceDate } from "@/lib/dates";
-import { CategoryTag } from "@/components/ui";
+import { CategoryTag, PriorityRing } from "@/components/ui";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import {
   IconCheck,
   IconExternalLink,
@@ -15,7 +16,6 @@ import {
   IconTrash,
 } from "@/components/icons";
 
-type Priority = "high" | "medium" | "low";
 type WishlistSortKey = "name" | "priority" | "category" | "price" | "url" | "waiting";
 type SortDirection = "asc" | "desc";
 
@@ -33,23 +33,7 @@ const WISHLIST_COLUMNS: { key: WishlistSortKey; label: string; numeric?: boolean
   { key: "waiting", label: "Cooldown", numeric: true },
 ];
 
-const PRIORITIES: { value: Priority; label: string; tone: string; dot: string }[] = [
-  { value: "high", label: "High priority", tone: "bg-clay-soft text-clay border-clay-line", dot: "bg-clay" },
-  { value: "medium", label: "Medium priority", tone: "bg-warn-soft text-warn border-warn", dot: "bg-warn-mark" },
-  { value: "low", label: "Low priority", tone: "bg-wash text-ink-soft border-line", dot: "bg-ink-faint" },
-];
-
-const COMMON_CATEGORIES = [
-  "clothing",
-  "electronics",
-  "home",
-  "kitchen",
-  "tools",
-  "entertainment",
-  "health",
-  "books",
-  "misc",
-];
+const COMMON_CATEGORIES = CATEGORIES;
 
 function getDomain(urlStr: string): string {
   try {
@@ -78,23 +62,26 @@ export default function WishlistClient() {
   const [addPrice, setAddPrice] = useState("");
   const [addUrl, setAddUrl] = useState("");
   const [addNotes, setAddNotes] = useState("");
-  const [addPriority, setAddPriority] = useState<Priority>("medium");
+  const [addPriority, setAddPriority] = useState<number>(50);
   const [addBusy, setAddBusy] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
 
   // General edit popup state
   const [editingItem, setEditingItem] = useState<WishlistItem | null>(null);
+  const [deletingItem, setDeletingItem] = useState<WishlistItem | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
   const [editName, setEditName] = useState("");
   const [editCategory, setEditCategory] = useState("");
   const [editPrice, setEditPrice] = useState("");
   const [editUrl, setEditUrl] = useState("");
   const [editNotes, setEditNotes] = useState("");
-  const [editPriority, setEditPriority] = useState<Priority>("medium");
+  const [editPriority, setEditPriority] = useState<number>(50);
   const [editBusy, setEditBusy] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
   // Inline cell edit state
   const [editingCell, setEditingCell] = useState<{ itemId: number; field: string } | null>(null);
+  const [inlinePriority, setInlinePriority] = useState<number>(50);
 
   // Convert to inventory modal state
   const [convertingItem, setConvertingItem] = useState<WishlistItem | null>(null);
@@ -141,8 +128,12 @@ export default function WishlistClient() {
           i.notes.toLowerCase().includes(q)
       );
     }
-    if (priorityFilter !== "all") {
-      list = list.filter((i) => i.priority === priorityFilter);
+    if (priorityFilter === "high") {
+      list = list.filter((i) => i.priority >= 70);
+    } else if (priorityFilter === "medium") {
+      list = list.filter((i) => i.priority >= 40 && i.priority < 70);
+    } else if (priorityFilter === "low") {
+      list = list.filter((i) => i.priority < 40);
     }
     if (categoryFilter !== "all") {
       list = list.filter((i) => i.category === categoryFilter);
@@ -154,9 +145,7 @@ export default function WishlistClient() {
         return a.name.localeCompare(b.name) * dir;
       }
       if (sort.key === "priority") {
-        const rank = { high: 3, medium: 2, low: 1 };
-        const diff = rank[a.priority] - rank[b.priority];
-        return diff * dir;
+        return (a.priority - b.priority) * dir;
       }
       if (sort.key === "category") {
         return a.category.localeCompare(b.category) * dir;
@@ -194,7 +183,7 @@ export default function WishlistClient() {
     const list = items ?? [];
     const totalCount = list.length;
     const totalEstCost = list.reduce((sum, item) => sum + (item.price ?? 0), 0);
-    const highPriorityCount = list.filter((i) => i.priority === "high").length;
+    const highPriorityCount = list.filter((i) => i.priority >= 70).length;
     const matureCount = list.filter((i) => {
       const days = daysSinceDate(i.createdAt.slice(0, 10));
       return days !== null && days >= 30;
@@ -235,7 +224,7 @@ export default function WishlistClient() {
       setAddPrice("");
       setAddUrl("");
       setAddNotes("");
-      setAddPriority("medium");
+      setAddPriority(50);
       setShowAddForm(false);
       setAddBusy(false);
       load();
@@ -317,15 +306,21 @@ export default function WishlistClient() {
   };
 
   // Delete
-  const handleDelete = async (item: WishlistItem) => {
-    if (!confirm(`Remove "${item.name}" from your wishlist?`)) return;
+  const handleDelete = (item: WishlistItem) => {
+    setDeletingItem(item);
+  };
+
+  const confirmDeleteWishlistItem = async () => {
+    if (!deletingItem) return;
+    setDeleteBusy(true);
     try {
-      const res = await fetch(`/api/wishlist/${item.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/wishlist/${deletingItem.id}`, { method: "DELETE" });
       if (res.ok) {
+        setDeletingItem(null);
         load();
       }
-    } catch {
-      alert("Could not remove item.");
+    } finally {
+      setDeleteBusy(false);
     }
   };
 
@@ -483,22 +478,32 @@ export default function WishlistClient() {
             </div>
 
             <div>
-              <label className="label">Priority</label>
-              <div className="flex gap-2">
-                {PRIORITIES.map((p) => (
-                  <button
-                    key={p.value}
-                    type="button"
-                    onClick={() => setAddPriority(p.value)}
-                    className={`btn flex-1 text-xs border ${
-                      addPriority === p.value
-                        ? "border-brand bg-brand text-brand-fg font-medium"
-                        : "border-line bg-card text-ink-soft hover:border-line-strong"
-                    }`}
-                  >
-                    {p.label.split(" ")[0]}
-                  </button>
-                ))}
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="label mb-0" htmlFor="add-priority">Priority</label>
+                <span className="text-xs font-semibold tabular text-muted">{addPriority} / 100</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <PriorityRing priority={addPriority} size={38} stroke={3.5} />
+                <input
+                  id="add-priority"
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={addPriority}
+                  onChange={(e) => setAddPriority(Number(e.target.value))}
+                  className="flex-1 accent-brand h-2 bg-wash rounded-lg cursor-pointer"
+                />
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={addPriority}
+                  onChange={(e) => {
+                    const val = e.target.value === "" ? 0 : Math.min(100, Math.max(0, Number(e.target.value)));
+                    setAddPriority(val);
+                  }}
+                  className="input w-16 py-1 px-2 text-center text-sm font-semibold tabular"
+                />
               </div>
             </div>
           </div>
@@ -599,9 +604,9 @@ export default function WishlistClient() {
               aria-label="Filter by priority"
             >
               <option value="all">All priorities</option>
-              <option value="high">High priority</option>
-              <option value="medium">Medium priority</option>
-              <option value="low">Low priority</option>
+              <option value="high">High priority (70–100)</option>
+              <option value="medium">Medium priority (40–69)</option>
+              <option value="low">Low priority (0–39)</option>
             </select>
 
             <select
@@ -705,8 +710,6 @@ export default function WishlistClient() {
                 {filteredItems.map((item) => {
                   const daysWaiting = daysSinceDate(item.createdAt.slice(0, 10)) ?? 0;
                   const cooldownPassed = daysWaiting >= 30;
-                  const priorityMeta =
-                    PRIORITIES.find((p) => p.value === item.priority) ?? PRIORITIES[1];
 
                   return (
                     <tr
@@ -735,30 +738,45 @@ export default function WishlistClient() {
                       {/* Priority (click to edit field) */}
                       <td className="px-4 py-3">
                         {editingCell?.itemId === item.id && editingCell?.field === "priority" ? (
-                          <select
-                            autoFocus
-                            defaultValue={item.priority}
-                            onChange={(e) => saveInline(item.id, { priority: e.target.value })}
-                            onBlur={() => setEditingCell(null)}
-                            className="input py-0.5 px-2 text-xs h-7"
-                          >
-                            <option value="high">High priority</option>
-                            <option value="medium">Medium priority</option>
-                            <option value="low">Low priority</option>
-                          </select>
+                          <div className="flex items-center gap-2">
+                            <PriorityRing priority={inlinePriority} size={32} stroke={3} />
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              autoFocus
+                              value={inlinePriority}
+                              onChange={(e) => {
+                                const val = e.target.value === "" ? 0 : Math.min(100, Math.max(0, Number(e.target.value)));
+                                setInlinePriority(val);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  saveInline(item.id, { priority: inlinePriority });
+                                }
+                                if (e.key === "Escape") setEditingCell(null);
+                              }}
+                              onBlur={() => {
+                                saveInline(item.id, { priority: inlinePriority });
+                              }}
+                              className="input py-0.5 px-2 text-xs h-7 tabular text-center w-16"
+                            />
+                          </div>
                         ) : (
-                          <span
-                            onClick={() => setEditingCell({ itemId: item.id, field: "priority" })}
-                            className="inline-block cursor-pointer hover:opacity-80 transition-opacity"
-                            title="Click to change priority"
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setInlinePriority(item.priority);
+                              setEditingCell({ itemId: item.id, field: "priority" });
+                            }}
+                            className="inline-flex items-center gap-2 rounded-lg py-1 px-1.5 -mx-1.5 hover:bg-wash transition-colors group cursor-pointer"
+                            title="Click to edit priority (0–100)"
                           >
-                            <span
-                              className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${priorityMeta.tone}`}
-                            >
-                              <span className={`h-1.5 w-1.5 rounded-full ${priorityMeta.dot}`} />
-                              {priorityMeta.label.split(" ")[0]}
+                            <PriorityRing priority={item.priority} size={32} stroke={3} />
+                            <span className="text-xs text-muted font-medium tabular group-hover:text-ink">
+                              /100
                             </span>
-                          </span>
+                          </button>
                         )}
                       </td>
 
@@ -1002,22 +1020,32 @@ export default function WishlistClient() {
               </div>
 
               <div>
-                <label className="label">Priority</label>
-                <div className="flex gap-2">
-                  {PRIORITIES.map((p) => (
-                    <button
-                      key={p.value}
-                      type="button"
-                      onClick={() => setEditPriority(p.value)}
-                      className={`btn flex-1 text-xs border ${
-                        editPriority === p.value
-                          ? "border-brand bg-brand text-brand-fg font-medium"
-                          : "border-line bg-card text-ink-soft hover:border-line-strong"
-                      }`}
-                    >
-                      {p.label.split(" ")[0]}
-                    </button>
-                  ))}
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="label mb-0" htmlFor="edit-priority">Priority</label>
+                  <span className="text-xs font-semibold tabular text-muted">{editPriority} / 100</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <PriorityRing priority={editPriority} size={38} stroke={3.5} />
+                  <input
+                    id="edit-priority"
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={editPriority}
+                    onChange={(e) => setEditPriority(Number(e.target.value))}
+                    className="flex-1 accent-brand h-2 bg-wash rounded-lg cursor-pointer"
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={editPriority}
+                    onChange={(e) => {
+                      const val = e.target.value === "" ? 0 : Math.min(100, Math.max(0, Number(e.target.value)));
+                      setEditPriority(val);
+                    }}
+                    className="input w-16 py-1 px-2 text-center text-sm font-semibold tabular"
+                  />
                 </div>
               </div>
             </div>
@@ -1126,6 +1154,22 @@ export default function WishlistClient() {
           </form>
         </div>
       )}
+      {/* ---------------- Confirm Delete Modal ---------------- */}
+      <ConfirmDialog
+        open={!!deletingItem}
+        title="Remove from wishlist?"
+        message={
+          deletingItem ? (
+            <>
+              Are you sure you want to remove <strong className="text-ink">{deletingItem.name}</strong> from your wishlist?
+            </>
+          ) : null
+        }
+        confirmLabel="Remove item"
+        busy={deleteBusy}
+        onConfirm={confirmDeleteWishlistItem}
+        onCancel={() => setDeletingItem(null)}
+      />
     </div>
   );
 }

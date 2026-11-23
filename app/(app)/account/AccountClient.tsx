@@ -7,36 +7,35 @@ import type { User } from "@/lib/db";
 import { UserAvatar } from "@/components/UserAvatar";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SignOutButton } from "@/components/SignOutButton";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import {
   IconArchive,
   IconArrowLeft,
   IconBox,
   IconCamera,
   IconCheck,
-  IconCloud,
-  IconDatabase,
   IconFlame,
   IconHeart,
+  IconLock,
   IconSparkles,
   IconTrash,
 } from "@/components/icons";
-import type { BackupStatus } from "@/lib/backup";
 
 interface AccountStats {
-  totalItems: number;
-  ownedCount: number;
-  purgatoryCount: number;
-  offloadedCount: number;
-  wishlistCount: number;
+  totalItems?: number;
+  ownedCount?: number;
+  purgatoryCount?: number;
+  offloadedCount?: number;
+  wishlistCount?: number;
 }
 
 interface AccountClientProps {
   initialUser: User;
-  stats: AccountStats;
-  initialBackup?: BackupStatus;
+  stats?: AccountStats;
+  initialBackup?: unknown;
 }
 
-export default function AccountClient({ initialUser, stats, initialBackup }: AccountClientProps) {
+export default function AccountClient({ initialUser }: AccountClientProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -49,6 +48,7 @@ export default function AccountClient({ initialUser, stats, initialBackup }: Acc
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const [avatarBusy, setAvatarBusy] = useState(false);
+  const [confirmRemoveAvatar, setConfirmRemoveAvatar] = useState(false);
   const [profileBusy, setProfileBusy] = useState(false);
   const [passwordBusy, setPasswordBusy] = useState(false);
 
@@ -61,46 +61,6 @@ export default function AccountClient({ initialUser, stats, initialBackup }: Acc
   );
   const [subBusy, setSubBusy] = useState(false);
   const [subMsg, setSubMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
-
-  const [backupStatus, setBackupStatus] = useState<BackupStatus | undefined>(initialBackup);
-  const [backupBusy, setBackupBusy] = useState(false);
-  const [backupMsg, setBackupMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
-
-  const handleManualBackup = async () => {
-    setBackupBusy(true);
-    setBackupMsg(null);
-    try {
-      const res = await fetch("/api/backup", { method: "POST" });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Backup failed");
-      }
-      const data = await res.json();
-      setBackupStatus((prev) => ({
-        configured: prev?.configured ?? true,
-        bucket: prev?.bucket || "Cloudflare R2",
-        lastBackupTime: data.timestamp,
-        lastStatus: "success",
-        lastError: null,
-        sqliteSize: data.sqliteSize,
-        jsonSize: data.jsonSize,
-        counts: data.counts,
-      }));
-      setBackupMsg({
-        type: "success",
-        text: data.uploadedToCloud
-          ? `Successfully backed up database snapshot and JSON data archive to Cloudflare R2! (${Math.round(((data.sqliteSize || 0) + (data.jsonSize || 0)) / 1024)} KB total)`
-          : `Local backup snapshot created (${Math.round(((data.sqliteSize || 0) + (data.jsonSize || 0)) / 1024)} KB). Note: Cloudflare R2 environment variables are not configured.`,
-      });
-    } catch (err: unknown) {
-      setBackupMsg({
-        type: "error",
-        text: err instanceof Error ? err.message : "Failed to run backup",
-      });
-    } finally {
-      setBackupBusy(false);
-    }
-  };
 
   const handleSubscribe = async (targetPlan: "free" | "premium", targetInterval: "monthly" | "yearly" = subInterval) => {
     setSubBusy(true);
@@ -123,7 +83,7 @@ export default function AccountClient({ initialUser, stats, initialBackup }: Acc
       setSubMsg({
         type: "success",
         text: targetPlan === "premium"
-          ? `Upgraded to Premium (${targetInterval === "yearly" ? "$29.99/year" : "$3.49/month"})! All premium features are unlocked.`
+          ? `Upgraded to Pro (${targetInterval === "yearly" ? "$29.99/year" : "$3.49/month"})! All Pro features are unlocked.`
           : "Subscription cancelled. Your account has returned to the Free tier.",
       });
       router.refresh();
@@ -155,17 +115,17 @@ export default function AccountClient({ initialUser, stats, initialBackup }: Acc
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Failed to upload avatar");
+        throw new Error(data.error || "Failed to upload photo");
       }
 
       const data = await res.json();
       setUser(data.user);
-      setAvatarMsg({ type: "success", text: "Profile picture updated!" });
+      setAvatarMsg({ type: "success", text: "Profile photo updated." });
       router.refresh();
     } catch (err: unknown) {
       setAvatarMsg({
         type: "error",
-        text: err instanceof Error ? err.message : "Failed to upload profile picture",
+        text: err instanceof Error ? err.message : "Failed to upload photo",
       });
     } finally {
       setAvatarBusy(false);
@@ -173,22 +133,30 @@ export default function AccountClient({ initialUser, stats, initialBackup }: Acc
     }
   };
 
-  const handleRemoveAvatar = async () => {
-    if (!confirm("Remove your profile picture?")) return;
+  const handleRemoveAvatar = () => {
+    setConfirmRemoveAvatar(true);
+  };
+
+  const confirmDeleteAvatar = async () => {
+    setConfirmRemoveAvatar(false);
     setAvatarBusy(true);
     setAvatarMsg(null);
 
     try {
       const res = await fetch("/api/user/avatar", { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed to remove avatar");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to remove photo");
+      }
+
       const data = await res.json();
       setUser(data.user);
-      setAvatarMsg({ type: "success", text: "Profile picture removed." });
+      setAvatarMsg({ type: "success", text: "Profile photo removed." });
       router.refresh();
     } catch (err: unknown) {
       setAvatarMsg({
         type: "error",
-        text: err instanceof Error ? err.message : "Failed to remove avatar",
+        text: err instanceof Error ? err.message : "Failed to remove photo",
       });
     } finally {
       setAvatarBusy(false);
@@ -268,6 +236,8 @@ export default function AccountClient({ initialUser, stats, initialBackup }: Acc
     }
   };
 
+  const isPro = user.plan === "premium";
+
   return (
     <div className="space-y-8">
       <header className="animate-rise flex flex-wrap items-end justify-between gap-4">
@@ -284,66 +254,216 @@ export default function AccountClient({ initialUser, stats, initialBackup }: Acc
         </Link>
       </header>
 
-      {/* Profile Picture Card */}
-      <section className="card p-6">
-        <h2 className="display text-lg">Profile picture</h2>
-        <p className="mt-1 text-[13px] text-muted">
-          Your photo appears next to your name and email in the sidebar and top navigation.
-        </p>
+      {/* 3-Column Profile, Credentials & Security Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+        {/* Profile Picture Card */}
+        <section className="card p-6 flex flex-col justify-between">
+          <div>
+            <h2 className="display text-lg">Profile picture</h2>
+            <p className="mt-1 text-[13px] text-muted">
+              Your photo appears in the sidebar and top navigation.
+            </p>
 
-        {avatarMsg && (
-          <div
-            className={`mt-4 rounded-lg p-3 text-sm ${
-              avatarMsg.type === "success"
-                ? "border border-accent-line bg-accent-soft text-accent"
-                : "border border-danger-line bg-danger-soft text-danger"
-            }`}
-          >
-            {avatarMsg.text}
-          </div>
-        )}
-
-        <div className="mt-5 flex flex-wrap items-center gap-5">
-          <UserAvatar
-            name={user.name}
-            email={user.email}
-            avatarPath={user.avatarPath}
-            size={72}
-          />
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleAvatarUpload}
-                className="hidden"
-                id="avatar-upload-input"
-              />
-              <label
-                htmlFor="avatar-upload-input"
-                className={`btn-secondary cursor-pointer ${avatarBusy ? "opacity-50 pointer-events-none" : ""}`}
+            {avatarMsg && (
+              <div
+                className={`mt-4 rounded-lg p-3 text-sm ${
+                  avatarMsg.type === "success"
+                    ? "border border-accent-line bg-accent-soft text-accent"
+                    : "border border-danger-line bg-danger-soft text-danger"
+                }`}
               >
-                <IconCamera width={15} height={15} />
-                {avatarBusy ? "Uploading…" : "Upload new photo"}
-              </label>
+                {avatarMsg.text}
+              </div>
+            )}
 
-              {user.avatarPath ? (
-                <button
-                  type="button"
-                  onClick={handleRemoveAvatar}
-                  disabled={avatarBusy}
-                  className="btn-secondary text-danger hover:border-danger-line"
-                >
-                  <IconTrash width={15} height={15} />
-                  Remove
-                </button>
-              ) : null}
+            <div className="mt-5 flex flex-col items-center sm:items-start gap-4">
+              <UserAvatar
+                name={user.name}
+                email={user.email}
+                avatarPath={user.avatarPath}
+                size={76}
+              />
+              <div className="space-y-2 w-full">
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                    id="avatar-upload-input"
+                  />
+                  <label
+                    htmlFor="avatar-upload-input"
+                    className={`btn-secondary cursor-pointer ${avatarBusy ? "opacity-50 pointer-events-none" : ""}`}
+                  >
+                    <IconCamera width={15} height={15} />
+                    {avatarBusy ? "Uploading…" : "Upload photo"}
+                  </label>
+
+                  {user.avatarPath ? (
+                    <button
+                      type="button"
+                      onClick={handleRemoveAvatar}
+                      disabled={avatarBusy}
+                      className="btn-secondary text-danger hover:border-danger-line"
+                    >
+                      <IconTrash width={15} height={15} />
+                      Remove
+                    </button>
+                  ) : null}
+                </div>
+              </div>
             </div>
-            <p className="text-[11px] text-muted">Supports JPEG, PNG, WebP or GIF up to 10 MB.</p>
           </div>
-        </div>
-      </section>
+          <p className="mt-4 text-[11px] text-muted border-t border-line pt-3">
+            Supports JPEG, PNG, WebP or GIF up to 10 MB.
+          </p>
+        </section>
+
+        {/* Display Name and Email Card */}
+        <section className="card p-6 flex flex-col justify-between">
+          <div>
+            <h2 className="display text-lg">Profile information</h2>
+            <p className="mt-1 text-[13px] text-muted">
+              Update your display name and email address.
+            </p>
+
+            {profileMsg && (
+              <div
+                className={`mt-4 rounded-lg p-3 text-sm ${
+                  profileMsg.type === "success"
+                    ? "border border-accent-line bg-accent-soft text-accent"
+                    : "border border-danger-line bg-danger-soft text-danger"
+                }`}
+              >
+                {profileMsg.text}
+              </div>
+            )}
+
+            <form id="profile-form" onSubmit={handleUpdateProfile} className="mt-5 space-y-4">
+              <div>
+                <label className="label" htmlFor="user-name">
+                  Display Name
+                </label>
+                <input
+                  id="user-name"
+                  type="text"
+                  className="input"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. Tom"
+                />
+              </div>
+
+              <div>
+                <label className="label" htmlFor="user-email">
+                  Email Address
+                </label>
+                <input
+                  id="user-email"
+                  type="email"
+                  className="input"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+            </form>
+          </div>
+
+          <div className="pt-4 border-t border-line mt-4">
+            <button
+              type="submit"
+              form="profile-form"
+              className="btn-primary w-full"
+              disabled={profileBusy}
+            >
+              <IconCheck width={15} height={15} />
+              {profileBusy ? "Saving…" : "Save profile"}
+            </button>
+          </div>
+        </section>
+
+        {/* Password & Security Card */}
+        <section className="card p-6 flex flex-col justify-between">
+          <div>
+            <h2 className="display text-lg">Password & security</h2>
+            <p className="mt-1 text-[13px] text-muted">
+              Change your password to keep your account secure.
+            </p>
+
+            {passwordMsg && (
+              <div
+                className={`mt-4 rounded-lg p-3 text-sm ${
+                  passwordMsg.type === "success"
+                    ? "border border-accent-line bg-accent-soft text-accent"
+                    : "border border-danger-line bg-danger-soft text-danger"
+                }`}
+              >
+                {passwordMsg.text}
+              </div>
+            )}
+
+            <form id="password-form" onSubmit={handleChangePassword} className="mt-5 space-y-3">
+              <div>
+                <label className="label" htmlFor="current-password">
+                  Current Password
+                </label>
+                <input
+                  id="current-password"
+                  type="password"
+                  className="input"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="label" htmlFor="new-password">
+                  New Password
+                </label>
+                <input
+                  id="new-password"
+                  type="password"
+                  className="input"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  minLength={8}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="label" htmlFor="confirm-password">
+                  Confirm Password
+                </label>
+                <input
+                  id="confirm-password"
+                  type="password"
+                  className="input"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  minLength={8}
+                  required
+                />
+              </div>
+            </form>
+          </div>
+
+          <div className="pt-4 border-t border-line mt-4">
+            <button
+              type="submit"
+              form="password-form"
+              className="btn-primary w-full"
+              disabled={passwordBusy}
+            >
+              {passwordBusy ? "Updating…" : "Update password"}
+            </button>
+          </div>
+        </section>
+      </div>
 
       {/* Membership & Subscription Card */}
       <section id="subscription" className="card p-6 scroll-mt-6">
@@ -351,10 +471,10 @@ export default function AccountClient({ initialUser, stats, initialBackup }: Acc
           <div>
             <div className="flex items-center gap-2">
               <h2 className="display text-lg">Membership & plan</h2>
-              {user.plan === "premium" ? (
+              {isPro ? (
                 <span className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-accent">
                   <IconSparkles width={11} height={11} />
-                  Premium Active
+                  Pro Active
                 </span>
               ) : (
                 <span className="inline-flex items-center rounded-full bg-wash px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider text-muted">
@@ -363,13 +483,13 @@ export default function AccountClient({ initialUser, stats, initialBackup }: Acc
               )}
             </div>
             <p className="mt-1 text-[13px] text-muted">
-              {user.plan === "premium"
-                ? `You have unlocked smpl. Premium on a ${user.subscriptionInterval || "monthly"} plan${user.subscriptionRenewsAt ? ` (renews on ${user.subscriptionRenewsAt})` : ""}.`
-                : "Free tier covers up to 50 items. Upgrade to unlock unlimited possessions tracking, full historical charts, and CSV data exports."}
+              {isPro
+                ? `You have unlocked smpl. Pro on a ${user.subscriptionInterval || "monthly"} plan${user.subscriptionRenewsAt ? ` (renews on ${user.subscriptionRenewsAt})` : ""}.`
+                : "Free tier covers up to 100 items. Upgrade to Pro to unlock unlimited possessions tracking, full historical charts, and CSV & JSON data exports."}
             </p>
           </div>
 
-          {user.plan === "premium" && (
+          {isPro && (
             <button
               type="button"
               onClick={() => handleSubscribe("free")}
@@ -429,7 +549,7 @@ export default function AccountClient({ initialUser, stats, initialBackup }: Acc
           {/* Free Tier */}
           <div
             className={`flex flex-col justify-between rounded-xl border p-5 transition-all ${
-              user.plan === "free"
+              !isPro
                 ? "border-line-strong bg-paper ring-1 ring-line-strong"
                 : "border-line bg-card opacity-80"
             }`}
@@ -437,7 +557,7 @@ export default function AccountClient({ initialUser, stats, initialBackup }: Acc
             <div>
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-ink">Free Plan</h3>
-                {user.plan === "free" && (
+                {!isPro && (
                   <span className="rounded bg-wash px-2 py-0.5 text-[11px] font-medium text-muted">
                     Current plan
                   </span>
@@ -452,7 +572,7 @@ export default function AccountClient({ initialUser, stats, initialBackup }: Acc
               <ul className="mt-4 space-y-2 text-[13px] text-ink-soft">
                 <li className="flex items-center gap-2">
                   <IconCheck width={14} height={14} className="text-accent shrink-0" />
-                  <span>Track up to 50 items</span>
+                  <span>Track up to 100 items</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <IconCheck width={14} height={14} className="text-accent shrink-0" />
@@ -470,7 +590,7 @@ export default function AccountClient({ initialUser, stats, initialBackup }: Acc
             </div>
 
             <div className="mt-6">
-              {user.plan === "free" ? (
+              {!isPro ? (
                 <button
                   type="button"
                   disabled
@@ -491,10 +611,10 @@ export default function AccountClient({ initialUser, stats, initialBackup }: Acc
             </div>
           </div>
 
-          {/* Premium Tier */}
+          {/* Pro Tier */}
           <div
             className={`flex flex-col justify-between rounded-xl border p-5 transition-all ${
-              user.plan === "premium"
+              isPro
                 ? "border-accent bg-accent-soft/20 ring-1 ring-accent"
                 : "border-accent/40 bg-paper shadow-sm"
             }`}
@@ -502,10 +622,10 @@ export default function AccountClient({ initialUser, stats, initialBackup }: Acc
             <div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
-                  <h3 className="font-semibold text-ink">Premium Plan</h3>
+                  <h3 className="font-semibold text-ink">Pro Plan</h3>
                   <IconSparkles width={14} height={14} className="text-accent" />
                 </div>
-                {user.plan === "premium" ? (
+                {isPro ? (
                   <span className="rounded bg-accent-soft px-2 py-0.5 text-[11px] font-bold text-accent">
                     Active Plan
                   </span>
@@ -524,7 +644,7 @@ export default function AccountClient({ initialUser, stats, initialBackup }: Acc
                 </span>
               </div>
               <p className="mt-2 text-[12px] text-muted">
-                Complete possession analytics, unlimited items, and full data export
+                Complete possession analytics, unlimited items, and full CSV & JSON data exports
               </p>
 
               <ul className="mt-4 space-y-2 text-[13px] text-ink-soft">
@@ -542,17 +662,17 @@ export default function AccountClient({ initialUser, stats, initialBackup }: Acc
                 </li>
                 <li className="flex items-center gap-2">
                   <IconCheck width={14} height={14} className="text-accent shrink-0" />
-                  <span>Full CSV exports (Inventory, Purgatory, Wishlist, Offloaded)</span>
+                  <strong>Complete CSV & JSON data backups and exports</strong>
                 </li>
                 <li className="flex items-center gap-2">
                   <IconCheck width={14} height={14} className="text-accent shrink-0" />
-                  <span>Premium PRO badge across dashboard and profile</span>
+                  <span>PRO badge across dashboard and profile</span>
                 </li>
               </ul>
             </div>
 
             <div className="mt-6">
-              {user.plan === "premium" ? (
+              {isPro ? (
                 user.subscriptionInterval !== subInterval ? (
                   <button
                     type="button"
@@ -577,7 +697,7 @@ export default function AccountClient({ initialUser, stats, initialBackup }: Acc
                   <IconSparkles width={15} height={15} />
                   {subBusy
                     ? "Upgrading…"
-                    : `Upgrade to Premium — ${subInterval === "yearly" ? "$29.99/yr" : "$3.49/mo"}`}
+                    : `Upgrade to Pro — ${subInterval === "yearly" ? "$29.99/yr" : "$3.49/mo"}`}
                 </button>
               )}
             </div>
@@ -585,142 +705,64 @@ export default function AccountClient({ initialUser, stats, initialBackup }: Acc
         </div>
       </section>
 
-      {/* Profile Details Card */}
+      {/* Export Data Card — Paywalled for Pro */}
       <section className="card p-6">
-        <h2 className="display text-lg">Profile information</h2>
-        <p className="mt-1 text-[13px] text-muted">
-          Update the display name and email address associated with your account.
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="display text-lg">Export data</h2>
+              <span className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-bold text-accent uppercase tracking-wider">
+                <IconSparkles width={10} height={10} />
+                Pro Feature
+              </span>
+            </div>
+            <p className="mt-1 text-[13px] text-muted">
+              Download your smpl. data as CSV spreadsheets and JSON archives.
+            </p>
+          </div>
 
-        {profileMsg && (
-          <div
-            className={`mt-4 rounded-lg p-3 text-sm ${
-              profileMsg.type === "success"
-                ? "border border-accent-line bg-accent-soft text-accent"
-                : "border border-danger-line bg-danger-soft text-danger"
-            }`}
-          >
-            {profileMsg.text}
+          {!isPro && (
+            <button
+              type="button"
+              onClick={() => {
+                const el = document.getElementById("subscription");
+                el?.scrollIntoView({ behavior: "smooth" });
+              }}
+              className="btn-primary text-xs flex items-center gap-1.5"
+            >
+              <IconLock width={13} height={13} />
+              Upgrade to Pro to export
+            </button>
+          )}
+        </div>
+
+        {!isPro && (
+          <div className="mt-4 rounded-xl border border-line bg-paper p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-wash text-muted">
+                <IconLock width={18} height={18} />
+              </span>
+              <div>
+                <p className="text-sm font-semibold text-ink">Data export is locked on the Free tier</p>
+                <p className="text-xs text-muted">
+                  Upgrade to Pro to download CSV spreadsheets of your active inventory, wishlist, offloaded items, and full JSON database backups anytime.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleSubscribe("premium", subInterval)}
+              disabled={subBusy}
+              className="btn-secondary text-xs shrink-0"
+            >
+              Unlock with Pro
+            </button>
           </div>
         )}
 
-        <form onSubmit={handleUpdateProfile} className="mt-5 space-y-4 max-w-lg">
-          <div>
-            <label className="label" htmlFor="user-name">
-              Display Name
-            </label>
-            <input
-              id="user-name"
-              type="text"
-              className="input"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Tom"
-            />
-          </div>
-
-          <div>
-            <label className="label" htmlFor="user-email">
-              Email Address
-            </label>
-            <input
-              id="user-email"
-              type="email"
-              className="input"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-
-          <button type="submit" className="btn-primary" disabled={profileBusy}>
-            <IconCheck width={15} height={15} />
-            {profileBusy ? "Saving…" : "Save profile"}
-          </button>
-        </form>
-      </section>
-
-      {/* Security / Password Card */}
-      <section className="card p-6">
-        <h2 className="display text-lg">Password & security</h2>
-        <p className="mt-1 text-[13px] text-muted">
-          Change your account password to keep your inventory secure.
-        </p>
-
-        {passwordMsg && (
-          <div
-            className={`mt-4 rounded-lg p-3 text-sm ${
-              passwordMsg.type === "success"
-                ? "border border-accent-line bg-accent-soft text-accent"
-                : "border border-danger-line bg-danger-soft text-danger"
-            }`}
-          >
-            {passwordMsg.text}
-          </div>
-        )}
-
-        <form onSubmit={handleChangePassword} className="mt-5 space-y-4 max-w-lg">
-          <div>
-            <label className="label" htmlFor="current-password">
-              Current Password
-            </label>
-            <input
-              id="current-password"
-              type="password"
-              className="input"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              required
-            />
-          </div>
-
-          <div>
-            <label className="label" htmlFor="new-password">
-              New Password
-            </label>
-            <input
-              id="new-password"
-              type="password"
-              className="input"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              minLength={8}
-              required
-            />
-            <p className="mt-1 text-[11px] text-muted">Minimum 8 characters.</p>
-          </div>
-
-          <div>
-            <label className="label" htmlFor="confirm-password">
-              Confirm New Password
-            </label>
-            <input
-              id="confirm-password"
-              type="password"
-              className="input"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              minLength={8}
-              required
-            />
-          </div>
-
-          <button type="submit" className="btn-primary" disabled={passwordBusy}>
-            {passwordBusy ? "Updating…" : "Update password"}
-          </button>
-        </form>
-      </section>
-
-      {/* Export Data Card */}
-      <section className="card p-6">
-        <h2 className="display text-lg">Export data</h2>
-        <p className="mt-1 text-[13px] text-muted">
-          Download your smpl. data as CSV spreadsheets anytime.
-        </p>
-
-        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className={`mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5 ${!isPro ? "opacity-60 pointer-events-none select-none" : ""}`}>
           <a
-            href="/api/export?type=inventory"
+            href={isPro ? "/api/export?type=inventory" : "#"}
             download
             className="flex flex-col rounded-xl border border-line bg-paper p-4 transition hover:border-line-strong hover:shadow-lift"
           >
@@ -730,14 +772,14 @@ export default function AccountClient({ initialUser, stats, initialBackup }: Acc
                 <IconBox width={15} height={15} />
               </span>
             </div>
-            <p className="mt-1 text-[12px] text-muted">All active owned items</p>
+            <p className="mt-1 text-[12px] text-muted">Active owned items</p>
             <span className="mt-3 text-[12px] font-medium text-accent hover:underline">
-              Download CSV ↓
+              {isPro ? "Download CSV ↓" : "Locked (Pro)"}
             </span>
           </a>
 
           <a
-            href="/api/export?type=purgatory"
+            href={isPro ? "/api/export?type=purgatory" : "#"}
             download
             className="flex flex-col rounded-xl border border-line bg-paper p-4 transition hover:border-line-strong hover:shadow-lift"
           >
@@ -747,14 +789,14 @@ export default function AccountClient({ initialUser, stats, initialBackup }: Acc
                 <IconFlame width={15} height={15} />
               </span>
             </div>
-            <p className="mt-1 text-[12px] text-muted">Items staged for offload</p>
+            <p className="mt-1 text-[12px] text-muted">Staged for offload</p>
             <span className="mt-3 text-[12px] font-medium text-clay hover:underline">
-              Download CSV ↓
+              {isPro ? "Download CSV ↓" : "Locked (Pro)"}
             </span>
           </a>
 
           <a
-            href="/api/export?type=wishlist"
+            href={isPro ? "/api/export?type=wishlist" : "#"}
             download
             className="flex flex-col rounded-xl border border-line bg-paper p-4 transition hover:border-line-strong hover:shadow-lift"
           >
@@ -764,14 +806,14 @@ export default function AccountClient({ initialUser, stats, initialBackup }: Acc
                 <IconHeart width={15} height={15} />
               </span>
             </div>
-            <p className="mt-1 text-[12px] text-muted">Aspirational purchases</p>
+            <p className="mt-1 text-[12px] text-muted">Wishlist items & scores</p>
             <span className="mt-3 text-[12px] font-medium text-warn hover:underline">
-              Download CSV ↓
+              {isPro ? "Download CSV ↓" : "Locked (Pro)"}
             </span>
           </a>
 
           <a
-            href="/api/export?type=offloaded"
+            href={isPro ? "/api/export?type=offloaded" : "#"}
             download
             className="flex flex-col rounded-xl border border-line bg-paper p-4 transition hover:border-line-strong hover:shadow-lift"
           >
@@ -783,146 +825,49 @@ export default function AccountClient({ initialUser, stats, initialBackup }: Acc
             </div>
             <p className="mt-1 text-[12px] text-muted">Disposed, sold & donated</p>
             <span className="mt-3 text-[12px] font-medium text-ink hover:underline">
-              Download CSV ↓
+              {isPro ? "Download CSV ↓" : "Locked (Pro)"}
+            </span>
+          </a>
+
+          <a
+            href={isPro ? "/api/export?type=json" : "#"}
+            download
+            className="flex flex-col rounded-xl border border-line bg-paper p-4 transition hover:border-line-strong hover:shadow-lift"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[13px] font-semibold text-ink">JSON Archive</span>
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand/10 text-brand">
+                <IconBox width={15} height={15} />
+              </span>
+            </div>
+            <p className="mt-1 text-[12px] text-muted">Complete raw backup</p>
+            <span className="mt-3 text-[12px] font-medium text-brand hover:underline">
+              {isPro ? "Download JSON ↓" : "Locked (Pro)"}
             </span>
           </a>
         </div>
       </section>
 
-      {/* Cloudflare R2 Cloud Backup */}
-      <section className="card p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="display text-lg">Cloudflare R2 Backups</h2>
-              {backupStatus?.configured ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-accent-soft px-2.5 py-0.5 text-[11px] font-semibold text-accent">
-                  <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
-                  Connected ({backupStatus.bucket || "R2 Bucket"})
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-wash px-2.5 py-0.5 text-[11px] font-medium text-muted">
-                  Local Only (R2 Not Configured)
-                </span>
-              )}
-            </div>
-            <p className="mt-1 text-[13px] text-muted">
-              Automatic, continuous off-site snapshots of your SQLite database and complete JSON data archive to Cloudflare R2.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleManualBackup}
-            disabled={backupBusy}
-            className="btn-secondary self-start sm:self-auto shrink-0 flex items-center gap-2 text-[13px]"
-          >
-            <IconCloud width={16} height={16} />
-            {backupBusy ? "Backing up…" : "Backup to Cloudflare now"}
-          </button>
+      {/* Account Footer with Sign Out & Theme Toggle */}
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-line bg-card p-4">
+        <div className="text-[13px] text-muted">
+          Member since: <span className="text-ink font-medium">{user.createdAt?.slice(0, 10) || "—"}</span>
         </div>
-
-        {backupMsg && (
-          <div
-            className={`mt-4 rounded-lg p-3 text-[13px] ${
-              backupMsg.type === "success"
-                ? "border border-accent-soft bg-accent-soft/40 text-accent"
-                : "border border-clay-soft bg-clay-soft/40 text-clay"
-            }`}
-          >
-            {backupMsg.text}
-          </div>
-        )}
-
-        <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-line pt-4">
-          <div className="rounded-xl border border-line bg-paper p-3">
-            <span className="eyebrow flex items-center gap-1">
-              <IconCloud width={13} height={13} />
-              Last Cloud Backup
-            </span>
-            <div className="mt-1 text-[13px] font-medium text-ink tabular">
-              {backupStatus?.lastBackupTime
-                ? new Date(backupStatus.lastBackupTime).toLocaleString()
-                : "No cloud backup yet"}
-            </div>
-          </div>
-          <div className="rounded-xl border border-line bg-paper p-3">
-            <span className="eyebrow flex items-center gap-1">
-              <IconDatabase width={13} height={13} />
-              Database Snapshot
-            </span>
-            <div className="mt-1 text-[13px] font-medium text-ink tabular">
-              {backupStatus?.sqliteSize
-                ? `${(backupStatus.sqliteSize / 1024).toFixed(1)} KB (.sqlite)`
-                : "Pending snapshot"}
-            </div>
-          </div>
-          <div className="rounded-xl border border-line bg-paper p-3">
-            <span className="eyebrow flex items-center gap-1">
-              <IconBox width={13} height={13} />
-              JSON Data Archive
-            </span>
-            <div className="mt-1 text-[13px] font-medium text-ink tabular">
-              {backupStatus?.jsonSize
-                ? `${(backupStatus.jsonSize / 1024).toFixed(1)} KB (.json)`
-                : "Pending archive"}
-            </div>
-          </div>
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <SignOutButton />
         </div>
+      </div>
 
-        {!backupStatus?.configured && (
-          <p className="mt-4 text-[12px] text-muted border-t border-line pt-3">
-            💡 Tip: To enable cloud sync to Cloudflare R2, set <code className="rounded bg-wash px-1.5 py-0.5 text-ink font-mono text-[11px]">R2_BUCKET</code>, <code className="rounded bg-wash px-1.5 py-0.5 text-ink font-mono text-[11px]">R2_ENDPOINT</code>, <code className="rounded bg-wash px-1.5 py-0.5 text-ink font-mono text-[11px]">R2_ACCESS_KEY_ID</code>, and <code className="rounded bg-wash px-1.5 py-0.5 text-ink font-mono text-[11px]">R2_SECRET_ACCESS_KEY</code> in your environment.
-          </p>
-        )}
-      </section>
-
-      {/* Account Overview Stats */}
-      <section className="card p-6">
-        <h2 className="display text-lg">Account overview</h2>
-        <p className="mt-1 text-[13px] text-muted">Summary of activity on smpl.</p>
-
-        <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <div className="rounded-xl border border-line bg-paper p-4">
-            <span className="eyebrow flex items-center gap-1.5">
-              <IconBox width={13} height={13} />
-              Owned
-            </span>
-            <div className="mt-2 text-2xl font-semibold tabular text-ink">{stats.ownedCount}</div>
-          </div>
-
-          <div className="rounded-xl border border-line bg-paper p-4">
-            <span className="eyebrow flex items-center gap-1.5">
-              <IconFlame width={13} height={13} />
-              Purgatory
-            </span>
-            <div className="mt-2 text-2xl font-semibold tabular text-ink">{stats.purgatoryCount}</div>
-          </div>
-
-          <div className="rounded-xl border border-line bg-paper p-4">
-            <span className="eyebrow flex items-center gap-1.5">
-              <IconHeart width={13} height={13} />
-              Wishlist
-            </span>
-            <div className="mt-2 text-2xl font-semibold tabular text-ink">{stats.wishlistCount}</div>
-          </div>
-
-          <div className="rounded-xl border border-line bg-paper p-4">
-            <span className="eyebrow">Offloaded</span>
-            <div className="mt-2 text-2xl font-semibold tabular text-ink">{stats.offloadedCount}</div>
-          </div>
-        </div>
-
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-line pt-4">
-          <div className="text-[13px] text-muted">
-            Account created: <span className="text-ink">{user.createdAt?.slice(0, 10) || "—"}</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <ThemeToggle />
-            <SignOutButton />
-          </div>
-        </div>
-      </section>
+      <ConfirmDialog
+        open={confirmRemoveAvatar}
+        title="Remove profile picture?"
+        message="Are you sure you want to remove your profile photo? Your avatar will revert to your initials."
+        confirmLabel="Remove photo"
+        busy={avatarBusy}
+        onConfirm={confirmDeleteAvatar}
+        onCancel={() => setConfirmRemoveAvatar(false)}
+      />
     </div>
   );
 }

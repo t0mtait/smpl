@@ -187,7 +187,60 @@ export function getDb(): DatabaseSync {
   db.exec("CREATE INDEX IF NOT EXISTS idx_items_owner ON items(owner_id);");
   adoptOrphans(db);
   backfillBrandAndQuality(db);
+  migrateWishlistPriority(db);
+  consolidateTopQuality(db);
+  consolidateCategories(db);
   return db;
+}
+
+function consolidateCategories(d: DatabaseSync): void {
+  try {
+    d.exec(`
+      UPDATE items SET category = 'electronics' WHERE category IN ('computer', 'phone', 'console');
+      UPDATE items SET category = 'home' WHERE category IN ('furniture', 'appliance', 'christmas');
+      UPDATE items SET category = 'hobbies' WHERE category IN ('hobby', 'toys', 'books', 'entertainment');
+      UPDATE items SET category = 'sports' WHERE category IN ('camping');
+      UPDATE items SET category = 'tools' WHERE category IN ('vehicle');
+      UPDATE items SET category = 'misc' WHERE category IN ('documents', 'jewelry', 'uncategorized');
+
+      UPDATE wishlist_items SET category = 'electronics' WHERE category IN ('computer', 'phone', 'console');
+      UPDATE wishlist_items SET category = 'home' WHERE category IN ('furniture', 'appliance', 'christmas');
+      UPDATE wishlist_items SET category = 'hobbies' WHERE category IN ('hobby', 'toys', 'books', 'entertainment');
+      UPDATE wishlist_items SET category = 'sports' WHERE category IN ('camping', 'health');
+      UPDATE wishlist_items SET category = 'tools' WHERE category IN ('vehicle');
+      UPDATE wishlist_items SET category = 'misc' WHERE category IN ('documents', 'jewelry', 'uncategorized');
+    `);
+  } catch {}
+}
+
+export function normalizeCategory(cat: string | null | undefined): string {
+  if (!cat || !cat.trim()) return "misc";
+  const c = cat.trim().toLowerCase();
+  if (c === "computer" || c === "phone" || c === "console") return "electronics";
+  if (c === "furniture" || c === "appliance" || c === "christmas") return "home";
+  if (c === "hobby" || c === "toys" || c === "books" || c === "entertainment") return "hobbies";
+  if (c === "camping" || c === "health") return "sports";
+  if (c === "vehicle") return "tools";
+  if (c === "documents" || c === "jewelry" || c === "uncategorized") return "misc";
+  return c;
+}
+
+function consolidateTopQuality(d: DatabaseSync): void {
+  try {
+    d.exec("UPDATE items SET quality = 'High' WHERE quality = 'Top' OR quality = 'top';");
+  } catch {}
+}
+
+function migrateWishlistPriority(d: DatabaseSync): void {
+  try {
+    d.exec(`
+      UPDATE wishlist_items SET priority = 80 WHERE priority = 'high';
+      UPDATE wishlist_items SET priority = 50 WHERE priority = 'medium';
+      UPDATE wishlist_items SET priority = 20 WHERE priority = 'low';
+    `);
+  } catch {
+    // Ignore if table does not exist yet or already numeric
+  }
 }
 
 function extractTag(desc: string, tag: string): string {
@@ -240,17 +293,18 @@ function toItem(row: Record<string, unknown>): Item {
     row.subcategory != null && String(row.subcategory).trim()
       ? String(row.subcategory).trim()
       : (extractTag(desc, "Subcategory") || extractTag(desc, "Type"));
-  const quality =
+  const rawQuality =
     row.quality != null && String(row.quality).trim()
       ? String(row.quality).trim()
       : extractTag(desc, "Quality");
+  const quality = rawQuality.toLowerCase() === "top" ? "High" : rawQuality;
 
   return {
     id: Number(row.id),
     ownerId: Number(row.owner_id),
     name: String(row.name),
     brand,
-    category: String(row.category),
+    category: normalizeCategory(String(row.category)),
     subcategory,
     quality,
     description: desc,
@@ -629,6 +683,8 @@ export interface ItemInput {
 }
 
 export function createItem(ownerId: number, input: ItemInput): Item {
+  const rawQuality = (input.quality ?? "").trim();
+  const quality = rawQuality.toLowerCase() === "top" ? "High" : rawQuality;
   const res = getDb()
     .prepare(
       `INSERT INTO items (owner_id, name, brand, category, subcategory, quality, description, location, purchase_date, offloaded_date,
@@ -639,9 +695,9 @@ export function createItem(ownerId: number, input: ItemInput): Item {
       ownerId,
       input.name,
       input.brand ?? "",
-      input.category,
+      normalizeCategory(input.category),
       input.subcategory ?? "",
-      input.quality ?? "",
+      quality,
       input.description,
       input.location,
       input.purchaseDate,
@@ -665,9 +721,12 @@ export function updateItem(ownerId: number, id: number, input: Partial<ItemInput
   const merged: ItemInput = {
     name: input.name ?? existing.name,
     brand: input.brand !== undefined ? input.brand : existing.brand,
-    category: input.category ?? existing.category,
+    category: input.category ? normalizeCategory(input.category) : existing.category,
     subcategory: input.subcategory !== undefined ? input.subcategory : existing.subcategory,
-    quality: input.quality !== undefined ? input.quality : existing.quality,
+    quality:
+      input.quality !== undefined
+        ? (input.quality.trim().toLowerCase() === "top" ? "High" : input.quality.trim())
+        : existing.quality,
     description: input.description ?? existing.description,
     location: input.location ?? existing.location,
     purchaseDate: input.purchaseDate !== undefined ? input.purchaseDate : existing.purchaseDate,
@@ -840,7 +899,7 @@ export interface WishlistItem {
   price: number | null;
   url: string;
   notes: string;
-  priority: "high" | "medium" | "low";
+  priority: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -851,7 +910,24 @@ export interface WishlistInput {
   price?: number | null;
   url?: string;
   notes?: string;
-  priority?: "high" | "medium" | "low";
+  priority?: number | string;
+}
+
+export function parseWishlistPriority(val: unknown): number {
+  if (typeof val === "number" && Number.isFinite(val)) {
+    return Math.min(100, Math.max(0, Math.round(val)));
+  }
+  if (typeof val === "string") {
+    const trimmed = val.trim().toLowerCase();
+    if (trimmed === "high") return 80;
+    if (trimmed === "medium") return 50;
+    if (trimmed === "low") return 20;
+    const n = Number(trimmed);
+    if (Number.isFinite(n)) {
+      return Math.min(100, Math.max(0, Math.round(n)));
+    }
+  }
+  return 50;
 }
 
 function toWishlistItem(row: Record<string, unknown>): WishlistItem {
@@ -859,11 +935,11 @@ function toWishlistItem(row: Record<string, unknown>): WishlistItem {
     id: Number(row.id),
     ownerId: Number(row.owner_id),
     name: String(row.name),
-    category: String(row.category ?? "misc"),
+    category: normalizeCategory(String(row.category ?? "misc")),
     price: row.price === null || row.price === undefined ? null : Number(row.price),
     url: String(row.url ?? ""),
     notes: String(row.notes ?? ""),
-    priority: (String(row.priority ?? "medium") as "high" | "medium" | "low") || "medium",
+    priority: parseWishlistPriority(row.priority),
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
   };
@@ -884,6 +960,7 @@ export function getWishlistItem(ownerId: number, id: number): WishlistItem | nul
 }
 
 export function createWishlistItem(ownerId: number, input: WishlistInput): WishlistItem {
+  const priority = input.priority !== undefined ? parseWishlistPriority(input.priority) : 50;
   const res = getDb()
     .prepare(
       `INSERT INTO wishlist_items (owner_id, name, category, price, url, notes, priority)
@@ -892,11 +969,11 @@ export function createWishlistItem(ownerId: number, input: WishlistInput): Wishl
     .run(
       ownerId,
       input.name.trim(),
-      (input.category ?? "misc").trim() || "misc",
+      normalizeCategory(input.category),
       input.price === null || input.price === undefined ? null : Number(input.price),
       (input.url ?? "").trim(),
       (input.notes ?? "").trim(),
-      input.priority ?? "medium"
+      priority
     );
   const item = getWishlistItem(ownerId, Number(res.lastInsertRowid))!;
   scheduleAutoBackup();
@@ -913,11 +990,11 @@ export function updateWishlistItem(
 
   const merged = {
     name: input.name !== undefined ? input.name.trim() : existing.name,
-    category: input.category !== undefined ? input.category.trim() || "misc" : existing.category,
+    category: input.category !== undefined ? normalizeCategory(input.category) : existing.category,
     price: input.price !== undefined ? (input.price === null ? null : Number(input.price)) : existing.price,
     url: input.url !== undefined ? input.url.trim() : existing.url,
     notes: input.notes !== undefined ? input.notes.trim() : existing.notes,
-    priority: input.priority !== undefined ? input.priority : existing.priority,
+    priority: input.priority !== undefined ? parseWishlistPriority(input.priority) : existing.priority,
   };
 
   getDb()

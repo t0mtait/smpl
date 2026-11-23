@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { deleteWishlistItem, getWishlistItem, updateWishlistItem } from "@/lib/db";
+import { deleteWishlistItem, getWishlistItem, parseWishlistPriority, updateWishlistItem } from "@/lib/db";
 import type { WishlistInput } from "@/lib/db";
 import { apiUser } from "@/lib/auth";
 
@@ -69,9 +69,7 @@ export async function PATCH(
     patch.notes = typeof body.notes === "string" ? body.notes.trim() : "";
   }
   if (body.priority !== undefined) {
-    if (["high", "medium", "low"].includes(body.priority)) {
-      patch.priority = body.priority as "high" | "medium" | "low";
-    }
+    patch.priority = parseWishlistPriority(body.priority);
   }
 
   const updated = updateWishlistItem(user.id, numId, patch);

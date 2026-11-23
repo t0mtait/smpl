@@ -104,7 +104,7 @@ CREATE TABLE IF NOT EXISTS wishlist_items (
   price       REAL,
   url         TEXT    NOT NULL DEFAULT '',
   notes       TEXT    NOT NULL DEFAULT '',
-  priority    TEXT    NOT NULL DEFAULT 'medium',
+  priority    INTEGER NOT NULL DEFAULT 50,
   created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
   updated_at  TEXT    NOT NULL DEFAULT (datetime('now'))
 );

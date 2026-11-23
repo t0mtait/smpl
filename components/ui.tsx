@@ -59,6 +59,83 @@ export function ScoreRing({
 }
 
 /* ------------------------------------------------------------------
+   Priority ring — a circular bar for the 0-100 wishlist priority.
+   ------------------------------------------------------------------ */
+
+export function PriorityRing({
+  priority,
+  size = 36,
+  stroke = 3.5,
+  showLabel = false,
+}: {
+  priority: number;
+  size?: number;
+  stroke?: number;
+  showLabel?: boolean;
+}) {
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const val = Math.max(0, Math.min(100, Math.round(priority)));
+  const offset = c * (1 - val / 100);
+
+  // Tone follows priority value:
+  // 70-100: clay (warm/urgent priority)
+  // 40-69: warn (amber/medium)
+  // 0-39: ink-soft / muted
+  const strokeClass =
+    val >= 70 ? "stroke-clay" : val >= 40 ? "stroke-warn" : "stroke-ink-soft";
+
+  return (
+    <div
+      className="relative inline-flex shrink-0 items-center justify-center select-none"
+      style={{ width: size, height: size }}
+      title={`Priority: ${val}/100`}
+    >
+      <svg width={size} height={size} className="-rotate-90" aria-hidden="true">
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          strokeWidth={stroke}
+          className="stroke-line"
+        />
+        {val > 0 && (
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={r}
+            fill="none"
+            className={strokeClass}
+            strokeWidth={stroke}
+            strokeLinecap="round"
+            strokeDasharray={c}
+            strokeDashoffset={offset}
+            style={{ transition: "stroke-dashoffset 400ms cubic-bezier(0.22, 1, 0.36, 1)" }}
+          />
+        )}
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+        <span
+          className={`tabular font-semibold leading-none text-ink ${
+            size >= 44
+              ? "text-sm"
+              : val === 100
+              ? "text-[10px]"
+              : "text-[11px]"
+          }`}
+        >
+          {val}
+        </span>
+        {showLabel && (
+          <span className="text-[8px] font-medium text-muted">/100</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------
    Stat tile
    ------------------------------------------------------------------ */
 

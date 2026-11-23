@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createWishlistItem, listWishlist } from "@/lib/db";
+import { createWishlistItem, listWishlist, parseWishlistPriority } from "@/lib/db";
 import type { WishlistInput } from "@/lib/db";
 import { apiUser } from "@/lib/auth";
 
@@ -28,9 +28,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Item name is required" }, { status: 400 });
   }
 
-  const priority = ["high", "medium", "low"].includes(body.priority)
-    ? (body.priority as "high" | "medium" | "low")
-    : "medium";
+  const priority = body.priority !== undefined ? parseWishlistPriority(body.priority) : 50;
 
   const input: WishlistInput = {
     name,

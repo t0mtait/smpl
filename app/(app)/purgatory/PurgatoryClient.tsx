@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { Item } from "@/lib/db";
 import { formatDate, formatMoney, formatQuarter } from "@/lib/format";
@@ -152,6 +152,51 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
   const [offloadingItem, setOffloadingItem] = useState<Item | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
 
+  type PurgatorySortKey = "name" | "category" | "value" | "acquired" | "purgatoryDate";
+  type SortDirection = "asc" | "desc";
+
+  const [sort, setSort] = useState<{ key: PurgatorySortKey; direction: SortDirection }>({
+    key: "purgatoryDate",
+    direction: "desc",
+  });
+
+  const toggleSort = (key: PurgatorySortKey) => {
+    setSort((curr) => {
+      if (curr.key === key) {
+        return { key, direction: curr.direction === "asc" ? "desc" : "asc" };
+      }
+      return { key, direction: key === "purgatoryDate" || key === "value" ? "desc" : "asc" };
+    });
+  };
+
+  const sortedItems = useMemo(() => {
+    const dir = sort.direction === "asc" ? 1 : -1;
+    return [...items].sort((a, b) => {
+      if (sort.key === "purgatoryDate") {
+        const tA = a.purgatoryDate ? new Date(a.purgatoryDate).getTime() : 0;
+        const tB = b.purgatoryDate ? new Date(b.purgatoryDate).getTime() : 0;
+        return (tA - tB) * dir;
+      }
+      if (sort.key === "name") {
+        return a.name.localeCompare(b.name) * dir;
+      }
+      if (sort.key === "category") {
+        return a.category.localeCompare(b.category) * dir;
+      }
+      if (sort.key === "value") {
+        const vA = a.currentValue ?? -1;
+        const vB = b.currentValue ?? -1;
+        return (vA - vB) * dir;
+      }
+      if (sort.key === "acquired") {
+        const dA = a.purchaseDate ?? "";
+        const dB = b.purchaseDate ?? "";
+        return dA.localeCompare(dB) * dir;
+      }
+      return 0;
+    });
+  }, [items, sort]);
+
   const restore = async (item: Item) => {
     setBusyId(item.id);
     try {
@@ -228,16 +273,82 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
             <table className="w-full min-w-[640px] border-collapse text-left">
               <thead>
                 <tr className="border-b border-line text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
-                  <th scope="col" className="px-4 py-3">Item</th>
-                  <th scope="col" className="px-4 py-3">Category</th>
-                  <th scope="col" className="px-4 py-3 text-right">Value</th>
-                  <th scope="col" className="px-4 py-3 text-right">Acquired</th>
-                  <th scope="col" className="px-4 py-3 text-right">Moved to Purgatory</th>
+                  <th scope="col" className="px-4 py-3">
+                    <button
+                      type="button"
+                      onClick={() => toggleSort("name")}
+                      className={`inline-flex items-center gap-1.5 rounded transition-colors hover:text-ink ${
+                        sort.key === "name" ? "text-ink" : "text-muted"
+                      }`}
+                    >
+                      Item
+                      <span className={`text-[9px] leading-none ${sort.key === "name" ? "opacity-100" : "opacity-0"}`}>
+                        {sort.direction === "asc" ? "▲" : "▼"}
+                      </span>
+                    </button>
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    <button
+                      type="button"
+                      onClick={() => toggleSort("category")}
+                      className={`inline-flex items-center gap-1.5 rounded transition-colors hover:text-ink ${
+                        sort.key === "category" ? "text-ink" : "text-muted"
+                      }`}
+                    >
+                      Category
+                      <span className={`text-[9px] leading-none ${sort.key === "category" ? "opacity-100" : "opacity-0"}`}>
+                        {sort.direction === "asc" ? "▲" : "▼"}
+                      </span>
+                    </button>
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-right">
+                    <button
+                      type="button"
+                      onClick={() => toggleSort("value")}
+                      className={`inline-flex items-center gap-1.5 rounded transition-colors hover:text-ink ${
+                        sort.key === "value" ? "text-ink" : "text-muted"
+                      }`}
+                    >
+                      Value
+                      <span className={`text-[9px] leading-none ${sort.key === "value" ? "opacity-100" : "opacity-0"}`}>
+                        {sort.direction === "asc" ? "▲" : "▼"}
+                      </span>
+                    </button>
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-right">
+                    <button
+                      type="button"
+                      onClick={() => toggleSort("acquired")}
+                      className={`inline-flex items-center gap-1.5 rounded transition-colors hover:text-ink ${
+                        sort.key === "acquired" ? "text-ink" : "text-muted"
+                      }`}
+                    >
+                      Acquired
+                      <span className={`text-[9px] leading-none ${sort.key === "acquired" ? "opacity-100" : "opacity-0"}`}>
+                        {sort.direction === "asc" ? "▲" : "▼"}
+                      </span>
+                    </button>
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-right">
+                    <button
+                      type="button"
+                      onClick={() => toggleSort("purgatoryDate")}
+                      className={`inline-flex items-center gap-1.5 rounded transition-colors hover:text-ink ${
+                        sort.key === "purgatoryDate" ? "text-ink" : "text-muted"
+                      }`}
+                      title="Sort by date added to purgatory"
+                    >
+                      Added to Purgatory Date
+                      <span className={`text-[9px] leading-none ${sort.key === "purgatoryDate" ? "opacity-100" : "opacity-0"}`}>
+                        {sort.direction === "asc" ? "▲" : "▼"}
+                      </span>
+                    </button>
+                  </th>
                   <th scope="col" className="px-4 py-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {items.map((item) => (
+                {sortedItems.map((item) => (
                   <tr
                     key={item.id}
                     className="border-b border-line-soft transition-colors last:border-0 hover:bg-paper"

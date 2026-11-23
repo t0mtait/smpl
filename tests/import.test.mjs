@@ -186,7 +186,7 @@ function row(overrides = {}) {
   eq("a blank category still gets a category", categoryFor("Mystery", "", ""), "misc");
   check("the fallback is never empty", categoryFor("Mystery", "", "").length > 0);
   check("clothing maps to clothing", categoryFor("Shirt", "Clothing", "").startsWith("clothing"));
-  eq("an override wins", categoryFor("Nintendo Switch 2", "Electronics", "Gaming"), "console");
+  eq("an override wins", categoryFor("Nintendo Switch 2", "Electronics", "Gaming"), "electronics");
 }
 
 /* ----------------------------------------------------------- duplicates */

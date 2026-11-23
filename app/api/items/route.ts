@@ -78,6 +78,17 @@ export async function POST(req: Request) {
   if (!body.name || typeof body.name !== "string" || !body.name.trim()) {
     return NextResponse.json({ error: "name is required" }, { status: 400 });
   }
+
+  if (user.plan === "free") {
+    const currentCount = listItems(user.id).length;
+    if (currentCount >= 100) {
+      return NextResponse.json(
+        { error: "Free plan limit reached (100 items). Please upgrade to Pro to add more items." },
+        { status: 403 }
+      );
+    }
+  }
+
   const item = createItem(user.id, parseInput(body));
   return NextResponse.json({ item }, { status: 201 });
 }

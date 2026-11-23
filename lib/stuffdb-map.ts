@@ -172,47 +172,47 @@ const SUBCATEGORY_TO_CATEGORY: Record<string, Record<string, string>> = {
   Electronics: { _default: "electronics" },
   Household: {
     Kitchen: "kitchen",
-    Furniture: "furniture",
-    Equipment: "furniture",
+    Furniture: "home",
+    Equipment: "home",
     Utility: "tools",
     Accessories: "misc",
-    _default: "misc",
+    _default: "home",
   },
   Personal: {
     Equipment: "sports",
-    Furniture: "furniture",
-    Health: "misc",
+    Furniture: "home",
+    Health: "sports",
     "Hygiene & Grooming": "misc",
     Accessories: "misc",
     _default: "misc",
   },
-  Health: { Equipment: "sports", _default: "misc" },
+  Health: { Equipment: "sports", _default: "sports" },
   _default: { _default: "misc" },
 };
 
 /** A handful of items the generic mapping gets wrong. */
 const ITEM_CATEGORY_OVERRIDES: Record<string, string> = {
-  "iphone 17": "phone",
-  "mac mini": "computer",
-  "homelab": "computer",
-  "gaming pc": "computer",
-  "ipad pro 13 inch": "computer",
-  "msi pro z790-p wifi mobo": "computer",
-  "intel core i7 14700kf": "computer",
-  "msi liquid cooler": "computer",
-  "nintendo switch 2": "console",
-  "ps5 pro": "console",
-  "gameboy color": "console",
-  "psp-3000": "console",
-  "nintendo ds lite": "console",
-  "dsi xl": "console",
-  "gameboy games": "toys",
-  "pacifica 112v electric guitar": "hobby",
-  "champion 2 25 amp": "hobby",
-  "corolla 2015": "vehicle",
-  "books": "books",
-  "dinosaur car toy": "toys",
-  "groot toy": "toys",
+  "iphone 17": "electronics",
+  "mac mini": "electronics",
+  "homelab": "electronics",
+  "gaming pc": "electronics",
+  "ipad pro 13 inch": "electronics",
+  "msi pro z790-p wifi mobo": "electronics",
+  "intel core i7 14700kf": "electronics",
+  "msi liquid cooler": "electronics",
+  "nintendo switch 2": "electronics",
+  "ps5 pro": "electronics",
+  "gameboy color": "electronics",
+  "psp-3000": "electronics",
+  "nintendo ds lite": "electronics",
+  "dsi xl": "electronics",
+  "gameboy games": "hobbies",
+  "pacifica 112v electric guitar": "hobbies",
+  "champion 2 25 amp": "hobbies",
+  "corolla 2015": "tools",
+  "books": "hobbies",
+  "dinosaur car toy": "hobbies",
+  "groot toy": "hobbies",
   "lifting straps": "sports",
   "lifting wraps": "sports",
   "lifting wraps, straps": "sports",
@@ -279,7 +279,8 @@ export function buildDescription(
   const brand = text(row, "Brand");
   const category = text(row, "Category");
   const subcategory = text(row, "Subcategory");
-  const quality = text(row, "Quality");
+  let quality = text(row, "Quality");
+  if (quality.trim().toLowerCase() === "top") quality = "High";
   const acquisition = text(row, "Acquisition");
   const eol = quarterEnd(text(row, "EOL"));
   const notes = text(row, "Notes");

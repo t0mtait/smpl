@@ -27,12 +27,38 @@ export async function GET(req: Request) {
   const user = await apiUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
 
+  // Export is paywalled: Pro members only
+  if (user.plan !== "premium") {
+    return NextResponse.json(
+      { error: "Exporting data to CSV and JSON is a Pro feature. Please upgrade to Pro to download your data." },
+      { status: 403 }
+    );
+  }
+
   const url = new URL(req.url);
   const type = url.searchParams.get("type") || "inventory";
+  const format = url.searchParams.get("format");
   const dateStr = new Date().toISOString().slice(0, 10);
 
   const allItems = listItems(user.id);
   const wishlistItems = listWishlist(user.id);
+
+  if (type === "json" || format === "json") {
+    const exportData = {
+      exportedAt: new Date().toISOString(),
+      user: { name: user.name, email: user.email },
+      items: allItems,
+      wishlist: wishlistItems,
+    };
+    return new NextResponse(JSON.stringify(exportData, null, 2), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+        "Content-Disposition": `attachment; filename="smpl-backup-${dateStr}.json"`,
+        "Cache-Control": "no-store",
+      },
+    });
+  }
 
   let filename = `smpl-${type}-${dateStr}.csv`;
   let csvContent = "";

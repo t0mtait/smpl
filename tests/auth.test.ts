@@ -133,6 +133,10 @@ const d = db.getDb();
 
   check("wishlist items are scoped to owner", db.listWishlist(alice.id).length === 1);
   check("owner sees their wishlist item", db.listWishlist(alice.id)[0].name === "Alice's dream teapot");
+  check("legacy high priority converts to numeric 80", aWish.priority === 80);
+  check("legacy medium priority converts to numeric 50", bWish.priority === 50);
+  const updatedBWish = db.updateWishlistItem(bob.id, bWish.id, { priority: 95 });
+  check("wishlist priority updates to number out of 100", updatedBWish?.priority === 95);
   check("cross-account getWishlistItem denied", db.getWishlistItem(bob.id, aWish.id) === null);
   check(
     "cross-account updateWishlistItem denied",
