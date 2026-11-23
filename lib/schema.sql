@@ -110,3 +110,15 @@ CREATE TABLE IF NOT EXISTS wishlist_items (
 );
 
 CREATE INDEX IF NOT EXISTS idx_wishlist_owner ON wishlist_items(owner_id);
+
+CREATE TABLE IF NOT EXISTS user_categories (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  category    TEXT    NOT NULL,
+  subcategory TEXT    NOT NULL DEFAULT '',
+  created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(user_id, category, subcategory)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_categories_user ON user_categories(user_id);
+

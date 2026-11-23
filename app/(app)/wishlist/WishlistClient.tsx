@@ -82,6 +82,18 @@ export default function WishlistClient() {
   // Inline cell edit state
   const [editingCell, setEditingCell] = useState<{ itemId: number; field: string } | null>(null);
   const [inlinePriority, setInlinePriority] = useState<number>(50);
+  const [userCategories, setUserCategories] = useState<string[]>(COMMON_CATEGORIES);
+
+  useEffect(() => {
+    fetch("/api/user/categories")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.categories?.length) {
+          setUserCategories(data.categories.map((c: { category: string }) => c.category));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Convert to inventory modal state
   const [convertingItem, setConvertingItem] = useState<WishlistItem | null>(null);
@@ -471,7 +483,7 @@ export default function WishlistClient() {
                 onChange={(e) => setAddCategory(e.target.value)}
               />
               <datalist id="category-suggestions">
-                {COMMON_CATEGORIES.map((c) => (
+                {userCategories.map((c) => (
                   <option key={c} value={c} />
                 ))}
               </datalist>
@@ -480,7 +492,7 @@ export default function WishlistClient() {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="label mb-0" htmlFor="add-priority">Priority</label>
-                <span className="text-xs font-semibold tabular text-muted">{addPriority} / 100</span>
+                <span className="text-xs font-semibold tabular text-muted">{addPriority}</span>
               </div>
               <div className="flex items-center gap-3">
                 <PriorityRing priority={addPriority} size={38} stroke={3.5} />
@@ -714,7 +726,7 @@ export default function WishlistClient() {
                   return (
                     <tr
                       key={item.id}
-                      className="border-b border-line-soft transition-colors last:border-0 hover:bg-paper"
+                      className="border-b border-line-soft transition-colors last:border-0 even:bg-shell/70 hover:bg-paper"
                     >
                       {/* Item Name (click to open general edit popup) */}
                       <th scope="row" className="px-4 py-3 text-left font-normal">
@@ -773,9 +785,6 @@ export default function WishlistClient() {
                             title="Click to edit priority (0–100)"
                           >
                             <PriorityRing priority={item.priority} size={32} stroke={3} />
-                            <span className="text-xs text-muted font-medium tabular group-hover:text-ink">
-                              /100
-                            </span>
                           </button>
                         )}
                       </td>
@@ -790,7 +799,7 @@ export default function WishlistClient() {
                             onBlur={() => setEditingCell(null)}
                             className="input py-0.5 px-2 text-xs h-7"
                           >
-                            {COMMON_CATEGORIES.map((c) => (
+                            {userCategories.map((c) => (
                               <option key={c} value={c}>
                                 {formatCategory(c)}
                               </option>
@@ -1013,7 +1022,7 @@ export default function WishlistClient() {
                   onChange={(e) => setEditCategory(e.target.value)}
                 />
                 <datalist id="edit-category-suggestions">
-                  {COMMON_CATEGORIES.map((c) => (
+                  {userCategories.map((c) => (
                     <option key={c} value={c} />
                   ))}
                 </datalist>
@@ -1022,7 +1031,7 @@ export default function WishlistClient() {
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="label mb-0" htmlFor="edit-priority">Priority</label>
-                  <span className="text-xs font-semibold tabular text-muted">{editPriority} / 100</span>
+                  <span className="text-xs font-semibold tabular text-muted">{editPriority}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <PriorityRing priority={editPriority} size={38} stroke={3.5} />

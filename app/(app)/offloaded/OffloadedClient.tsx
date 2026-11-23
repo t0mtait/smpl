@@ -219,7 +219,7 @@ export default function OffloadedClient({ initialItems }: { initialItems: Item[]
                   return (
                     <tr
                       key={item.id}
-                      className="border-b border-line-soft transition-colors last:border-0 hover:bg-paper"
+                      className="border-b border-line-soft transition-colors last:border-0 even:bg-shell/70 hover:bg-paper"
                     >
                       <th scope="row" className="px-4 py-3 text-left font-normal">
                         <Link

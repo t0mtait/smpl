@@ -17,9 +17,11 @@ import {
   IconFlame,
   IconHeart,
   IconLock,
+  IconPlus,
   IconSparkles,
   IconTrash,
 } from "@/components/icons";
+import { formatCategory, getCategoryStyle } from "@/lib/format";
 
 interface AccountStats {
   totalItems?: number;
@@ -29,17 +31,42 @@ interface AccountStats {
   wishlistCount?: number;
 }
 
+export interface UserCategoryData {
+  category: string;
+  subcategories: string[];
+}
+
 interface AccountClientProps {
   initialUser: User;
+  initialCategories?: UserCategoryData[];
   stats?: AccountStats;
   initialBackup?: unknown;
 }
 
-export default function AccountClient({ initialUser }: AccountClientProps) {
+export default function AccountClient({ initialUser, initialCategories = [] }: AccountClientProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [user, setUser] = useState<User>(initialUser);
+  const [categories, setCategories] = useState<UserCategoryData[]>(initialCategories);
+  const [catBusy, setCatBusy] = useState(false);
+  const [catError, setCatError] = useState<string | null>(null);
+
+  // New category input
+  const [newCatName, setNewCatName] = useState("");
+  // Editing category
+  const [editingCat, setEditingCat] = useState<string | null>(null);
+  const [editCatName, setEditCatName] = useState("");
+
+  // Subcategory inputs keyed by category
+  const [newSubcatNames, setNewSubcatNames] = useState<Record<string, string>>({});
+  // Editing subcategory: { category: string, oldSub: string }
+  const [editingSubcat, setEditingSubcat] = useState<{ category: string; oldSub: string } | null>(null);
+  const [editSubcatName, setEditSubcatName] = useState("");
+
+  // Confirmation dialogs
+  const [catToDelete, setCatToDelete] = useState<string | null>(null);
+  const [subcatToDelete, setSubcatToDelete] = useState<{ category: string; sub: string } | null>(null);
   const [name, setName] = useState(initialUser.name || "");
   const [email, setEmail] = useState(initialUser.email || "");
 
@@ -61,6 +88,91 @@ export default function AccountClient({ initialUser }: AccountClientProps) {
   );
   const [subBusy, setSubBusy] = useState(false);
   const [subMsg, setSubMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  const mutateCategories = async (body: Record<string, unknown>) => {
+    setCatBusy(true);
+    setCatError(null);
+    try {
+      const res = await fetch("/api/user/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update category");
+      setCategories(data.categories);
+      router.refresh();
+      return true;
+    } catch (err: unknown) {
+      setCatError(err instanceof Error ? err.message : "Failed to update category");
+      return false;
+    } finally {
+      setCatBusy(false);
+    }
+  };
+
+  const handleAddCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCatName.trim()) return;
+    const ok = await mutateCategories({ action: "add_category", category: newCatName.trim() });
+    if (ok) setNewCatName("");
+  };
+
+  const handleRenameCategory = async (oldCategory: string) => {
+    if (!editCatName.trim() || editCatName.trim().toLowerCase() === oldCategory.toLowerCase()) {
+      setEditingCat(null);
+      return;
+    }
+    const ok = await mutateCategories({
+      action: "rename_category",
+      oldCategory,
+      newCategory: editCatName.trim(),
+    });
+    if (ok) setEditingCat(null);
+  };
+
+  const handleConfirmDeleteCategory = async () => {
+    if (!catToDelete) return;
+    await mutateCategories({ action: "delete_category", category: catToDelete });
+    setCatToDelete(null);
+  };
+
+  const handleAddSubcategory = async (category: string) => {
+    const sub = (newSubcatNames[category] || "").trim();
+    if (!sub) return;
+    const ok = await mutateCategories({
+      action: "add_subcategory",
+      category,
+      subcategory: sub,
+    });
+    if (ok) {
+      setNewSubcatNames((prev) => ({ ...prev, [category]: "" }));
+    }
+  };
+
+  const handleRenameSubcategory = async (category: string, oldSub: string) => {
+    if (!editSubcatName.trim() || editSubcatName.trim() === oldSub) {
+      setEditingSubcat(null);
+      return;
+    }
+    const ok = await mutateCategories({
+      action: "rename_subcategory",
+      category,
+      oldSubcategory: oldSub,
+      newSubcategory: editSubcatName.trim(),
+    });
+    if (ok) setEditingSubcat(null);
+  };
+
+  const handleConfirmDeleteSubcategory = async () => {
+    if (!subcatToDelete) return;
+    await mutateCategories({
+      action: "delete_subcategory",
+      category: subcatToDelete.category,
+      subcategory: subcatToDelete.sub,
+    });
+    setSubcatToDelete(null);
+  };
 
   const handleSubscribe = async (targetPlan: "free" | "premium", targetInterval: "monthly" | "yearly" = subInterval) => {
     setSubBusy(true);
@@ -705,6 +817,237 @@ export default function AccountClient({ initialUser }: AccountClientProps) {
         </div>
       </section>
 
+      {/* Categories & Subcategories Customization */}
+      <section className="card p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="display text-lg">Categories & Subcategories</h2>
+            <p className="mt-1 text-[13px] text-muted">
+              Customize the categories and subcategories you use to organize your possessions.
+            </p>
+          </div>
+          <form onSubmit={handleAddCategory} className="flex items-center gap-2">
+            <input
+              type="text"
+              placeholder="New category name…"
+              value={newCatName}
+              onChange={(e) => setNewCatName(e.target.value)}
+              className="input py-1.5 px-3 text-xs h-9 w-48 sm:w-60"
+            />
+            <button
+              type="submit"
+              disabled={catBusy || !newCatName.trim()}
+              className="btn-primary text-xs h-9 flex items-center gap-1.5 shrink-0"
+            >
+              <IconPlus width={13} height={13} />
+              Add Category
+            </button>
+          </form>
+        </div>
+
+        {catError && (
+          <div className="mt-4 rounded-lg border border-danger-line bg-danger-soft p-3 text-sm text-danger">
+            {catError}
+          </div>
+        )}
+
+        <div className="mt-6 space-y-4">
+          {categories.length === 0 ? (
+            <p className="text-xs text-muted">No categories configured yet.</p>
+          ) : (
+            categories.map((c) => {
+              const isEditing = editingCat === c.category;
+              const style = getCategoryStyle(c.category);
+
+              return (
+                <div
+                  key={c.category}
+                  className="rounded-xl border border-line bg-paper p-4 transition-all"
+                >
+                  {/* Category Header Row */}
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5">
+                      {isEditing ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            autoFocus
+                            value={editCatName}
+                            onChange={(e) => setEditCatName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleRenameCategory(c.category);
+                              if (e.key === "Escape") setEditingCat(null);
+                            }}
+                            className="input py-1 px-2 text-xs h-8 w-44"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRenameCategory(c.category)}
+                            disabled={catBusy}
+                            className="btn-primary text-xs py-1 px-2.5 h-8"
+                          >
+                            Save
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditingCat(null)}
+                            className="btn-secondary text-xs py-1 px-2.5 h-8"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`inline-flex items-center rounded-md px-2.5 py-1 text-xs font-semibold ${style}`}
+                          >
+                            {formatCategory(c.category)}
+                          </span>
+                          <span className="text-[11px] text-muted">
+                            ({c.subcategories.length}{" "}
+                            {c.subcategories.length === 1 ? "subcategory" : "subcategories"})
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {!isEditing && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingCat(c.category);
+                            setEditCatName(c.category);
+                          }}
+                          className="text-xs font-medium text-muted hover:text-ink transition-colors cursor-pointer"
+                        >
+                          Rename
+                        </button>
+                        <span className="text-line">•</span>
+                        <button
+                          type="button"
+                          onClick={() => setCatToDelete(c.category)}
+                          className="text-xs font-medium text-danger/80 hover:text-danger transition-colors cursor-pointer"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Subcategories List and Adder */}
+                  <div className="mt-3.5 pt-3 border-t border-line-soft">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {c.subcategories.map((sub) => {
+                        const isEditingSub =
+                          editingSubcat?.category === c.category && editingSubcat?.oldSub === sub;
+
+                        return (
+                          <div
+                            key={sub}
+                            className="inline-flex items-center rounded-lg border border-line bg-card py-1 px-2 text-xs"
+                          >
+                            {isEditingSub ? (
+                              <div className="flex items-center gap-1.5">
+                                <input
+                                  type="text"
+                                  autoFocus
+                                  value={editSubcatName}
+                                  onChange={(e) => setEditSubcatName(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") handleRenameSubcategory(c.category, sub);
+                                    if (e.key === "Escape") setEditingSubcat(null);
+                                  }}
+                                  className="input py-0.5 px-1.5 text-xs h-6 w-28"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleRenameSubcategory(c.category, sub)}
+                                  disabled={catBusy}
+                                  className="text-[11px] font-semibold text-accent hover:underline"
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingSubcat(null)}
+                                  className="text-[11px] text-muted hover:text-ink"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ) : (
+                              <>
+                                <span className="font-medium text-ink">{sub}</span>
+                                <div className="ml-2 flex items-center gap-1.5 text-muted/70">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditingSubcat({ category: c.category, oldSub: sub });
+                                      setEditSubcatName(sub);
+                                    }}
+                                    className="hover:text-ink transition-colors cursor-pointer text-[10px]"
+                                    title="Rename subcategory"
+                                  >
+                                    ✎
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setSubcatToDelete({ category: c.category, sub })
+                                    }
+                                    className="hover:text-danger transition-colors cursor-pointer text-[10px]"
+                                    title="Delete subcategory"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        );
+                      })}
+
+                      {/* Add Subcategory Inline Input */}
+                      <div className="inline-flex items-center gap-1.5">
+                        <input
+                          type="text"
+                          placeholder="+ Subcategory"
+                          value={newSubcatNames[c.category] || ""}
+                          onChange={(e) =>
+                            setNewSubcatNames((prev) => ({
+                              ...prev,
+                              [c.category]: e.target.value,
+                            }))
+                          }
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              handleAddSubcategory(c.category);
+                            }
+                          }}
+                          className="input py-1 px-2 text-xs h-7 w-32 bg-card/60 focus:bg-card"
+                        />
+                        {(newSubcatNames[c.category] || "").trim() && (
+                          <button
+                            type="button"
+                            onClick={() => handleAddSubcategory(c.category)}
+                            disabled={catBusy}
+                            className="btn-primary py-0.5 px-2 text-xs h-7"
+                          >
+                            Add
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </section>
+
       {/* Export Data Card — Paywalled for Pro */}
       <section className="card p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -867,6 +1210,26 @@ export default function AccountClient({ initialUser }: AccountClientProps) {
         busy={avatarBusy}
         onConfirm={confirmDeleteAvatar}
         onCancel={() => setConfirmRemoveAvatar(false)}
+      />
+
+      <ConfirmDialog
+        open={Boolean(catToDelete)}
+        title={`Delete category "${formatCategory(catToDelete)}"?`}
+        message={`Are you sure you want to delete this category? Any items or wishlist entries currently assigned to "${formatCategory(catToDelete)}" will be reassigned to "Misc".`}
+        confirmLabel="Delete Category"
+        busy={catBusy}
+        onConfirm={handleConfirmDeleteCategory}
+        onCancel={() => setCatToDelete(null)}
+      />
+
+      <ConfirmDialog
+        open={Boolean(subcatToDelete)}
+        title={`Delete subcategory "${subcatToDelete?.sub}"?`}
+        message={`Are you sure you want to delete "${subcatToDelete?.sub}" from ${formatCategory(subcatToDelete?.category)}? Items using this subcategory will have their subcategory cleared.`}
+        confirmLabel="Delete Subcategory"
+        busy={catBusy}
+        onConfirm={handleConfirmDeleteSubcategory}
+        onCancel={() => setSubcatToDelete(null)}
       />
     </div>
   );

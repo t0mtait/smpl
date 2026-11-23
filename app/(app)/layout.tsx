@@ -23,6 +23,7 @@ const NAV = [
   { href: "/", label: "Dashboard", icon: <IconHouse width={17} height={17} /> },
   { href: "/items", label: "Inventory", icon: <IconBox width={17} height={17} /> },
   { href: "/purgatory", label: "Purgatory", icon: <IconFlame width={17} height={17} /> },
+  { href: "/advisor", label: "AI Advisor", icon: <IconSparkles width={17} height={17} /> },
   { href: "/offloaded", label: "Offloaded", icon: <IconArchive width={17} height={17} /> },
   { href: "/wishlist", label: "Wishlist", icon: <IconHeart width={17} height={17} /> },
 ];

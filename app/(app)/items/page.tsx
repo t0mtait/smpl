@@ -52,6 +52,16 @@ function InventoryInner() {
 
   // Inline cell edit state: clicking on individual column values
   const [editingCell, setEditingCell] = useState<{ itemId: number; field: string } | null>(null);
+  const [userCategories, setUserCategories] = useState<{ category: string; subcategories: string[] }[]>([]);
+
+  useEffect(() => {
+    fetch("/api/user/categories")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.categories?.length) setUserCategories(data.categories);
+      })
+      .catch(() => {});
+  }, []);
 
   const load = async () => {
     try {
@@ -401,7 +411,7 @@ function InventoryInner() {
                   return (
                     <tr
                       key={item.id}
-                      className="border-b border-line-soft transition-colors last:border-0 hover:bg-paper"
+                      className="border-b border-line-soft transition-colors last:border-0 even:bg-shell/70 hover:bg-paper"
                     >
                       {/* Item Name: clicking opens general edit popup */}
                       <th scope="row" className="px-4 py-3 text-left font-normal">
@@ -461,7 +471,7 @@ function InventoryInner() {
                             onBlur={() => setEditingCell(null)}
                             className="input py-0.5 px-2 text-xs h-7"
                           >
-                            {CATEGORIES.map((c) => (
+                            {(userCategories.length > 0 ? userCategories.map((u) => u.category) : CATEGORIES).map((c) => (
                               <option key={c} value={c}>
                                 {formatCategory(c)}
                               </option>
@@ -753,7 +763,7 @@ function InventoryInner() {
                   value={editCategory}
                   onChange={(e) => setEditCategory(e.target.value)}
                 >
-                  {CATEGORIES.map((c) => (
+                  {(userCategories.length > 0 ? userCategories.map((u) => u.category) : CATEGORIES).map((c) => (
                     <option key={c} value={c}>
                       {formatCategory(c)}
                     </option>
@@ -767,10 +777,16 @@ function InventoryInner() {
                 </label>
                 <input
                   id="edit-item-subcat"
+                  list="edit-subcat-suggestions"
                   className="input"
                   value={editSubcategory}
                   onChange={(e) => setEditSubcategory(e.target.value)}
                 />
+                <datalist id="edit-subcat-suggestions">
+                  {(userCategories.find((u) => u.category === editCategory)?.subcategories || []).map((s) => (
+                    <option key={s} value={s} />
+                  ))}
+                </datalist>
               </div>
 
               <div>

@@ -39,6 +39,13 @@ export interface Stats {
   currentQuarterAcquired: number;
   currentQuarterOffloaded: number;
   possessionsOverTime: { quarter: string; count: number }[];
+  quarterlyChange: {
+    quarter: string;
+    itemsCount: number;
+    itemsChangePct: number;
+    totalValue: number;
+    valueChangePct: number;
+  }[];
 }
 
 function monthKey(date: string): string {
@@ -121,7 +128,8 @@ export function computeStats(items: Item[], disposals: Disposal[], now: Date = n
       const dispDate = dispMap.get(item.id);
       offloadOrder = quarterToOrder(item.offloadedDate) ?? (dispDate ? quarterToOrder(dispDate) : null);
     }
-    return { acqOrder, offloadOrder };
+    const val = item.currentValue ?? item.purchasePrice ?? 0;
+    return { acqOrder, offloadOrder, val };
   });
 
   let currentQuarterAcquired = 0;
@@ -137,19 +145,51 @@ export function computeStats(items: Item[], disposals: Disposal[], now: Date = n
   const currentQuarterNet = currentQuarterAcquired - currentQuarterOffloaded;
 
   const possessionsOverTime: { quarter: string; count: number }[] = [];
+  const rawQuarterSeries: { quarter: string; count: number; value: number }[] = [];
   for (let i = 7; i >= 0; i--) {
     const ord = curOrder - i;
     const quarterLabel = orderToQuarter(ord);
-    const count = timeline.filter((t) => {
+    const active = timeline.filter((t) => {
       if (t.acqOrder !== null && t.acqOrder > ord) return false;
       if (t.offloadOrder !== null) {
         const effectiveOffload = Math.min(t.offloadOrder, curOrder);
         if (effectiveOffload <= ord) return false;
       }
       return true;
-    }).length;
+    });
+    const count = active.length;
+    const value = active.reduce((acc, cur) => acc + cur.val, 0);
     possessionsOverTime.push({ quarter: quarterLabel, count });
+    rawQuarterSeries.push({ quarter: quarterLabel, count, value });
   }
+
+  const quarterlyChange = rawQuarterSeries.map((curr, idx) => {
+    if (idx === 0) {
+      return {
+        quarter: curr.quarter,
+        itemsCount: curr.count,
+        itemsChangePct: 0,
+        totalValue: curr.value,
+        valueChangePct: 0,
+      };
+    }
+    const prev = rawQuarterSeries[idx - 1];
+    const itemsChangePct =
+      prev.count === 0
+        ? curr.count > 0 ? 100 : 0
+        : Math.round(((curr.count - prev.count) / prev.count) * 1000) / 10;
+    const valueChangePct =
+      prev.value === 0
+        ? curr.value > 0 ? 100 : 0
+        : Math.round(((curr.value - prev.value) / prev.value) * 1000) / 10;
+    return {
+      quarter: curr.quarter,
+      itemsCount: curr.count,
+      itemsChangePct,
+      totalValue: curr.value,
+      valueChangePct,
+    };
+  });
 
   const breakdownMap = new Map<string, { count: number; amount: number }>();
   for (const d of disposals) {
@@ -216,6 +256,7 @@ export function computeStats(items: Item[], disposals: Disposal[], now: Date = n
     currentQuarterAcquired,
     currentQuarterOffloaded,
     possessionsOverTime,
+    quarterlyChange,
   };
 }
 

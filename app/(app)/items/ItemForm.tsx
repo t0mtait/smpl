@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { Item, Priority, UseFrequency } from "@/lib/db";
 import { CATEGORIES, FREQUENCY_LABELS, formatCategory } from "@/lib/format";
@@ -14,6 +14,16 @@ export default function ItemForm({ item }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [priority, setPriority] = useState<Priority>(item?.priority ?? "auto");
+  const [userCategories, setUserCategories] = useState<{ category: string; subcategories: string[] }[]>([]);
+
+  useEffect(() => {
+    fetch("/api/user/categories")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.categories) setUserCategories(data.categories);
+      })
+      .catch(() => {});
+  }, []);
 
   const [form, setForm] = useState({
     name: item?.name ?? "",
@@ -121,7 +131,7 @@ export default function ItemForm({ item }: Props) {
               Category
             </label>
             <select id="category" className="input" value={form.category} onChange={set("category")}>
-              {CATEGORIES.map((c) => (
+              {(userCategories.length > 0 ? userCategories.map((u) => u.category) : CATEGORIES).map((c) => (
                 <option key={c} value={c}>
                   {formatCategory(c)}
                 </option>
@@ -134,11 +144,17 @@ export default function ItemForm({ item }: Props) {
             </label>
             <input
               id="subcategory"
+              list="item-subcategories-list"
               className="input"
               value={form.subcategory}
               onChange={set("subcategory")}
               placeholder="e.g. Entertainment, Audio, Tools"
             />
+            <datalist id="item-subcategories-list">
+              {(userCategories.find((u) => u.category === form.category)?.subcategories || []).map((s) => (
+                <option key={s} value={s} />
+              ))}
+            </datalist>
           </div>
           <div>
             <label className="label" htmlFor="quality">

@@ -89,7 +89,7 @@ export function PriorityRing({
     <div
       className="relative inline-flex shrink-0 items-center justify-center select-none"
       style={{ width: size, height: size }}
-      title={`Priority: ${val}/100`}
+      title={`Priority: ${val}`}
     >
       <svg width={size} height={size} className="-rotate-90" aria-hidden="true">
         <circle
@@ -247,15 +247,15 @@ function formatMonthLabel(m: string): string {
 export function EarningsChart({ data }: { data: { month: string; amount: number }[] }) {
   if (!data.length) {
     return (
-      <div className="flex h-48 items-center justify-center text-sm text-muted">
+      <div className="flex h-36 items-center justify-center text-sm text-muted">
         No sales yet — the chart fills in as things find new homes.
       </div>
     );
   }
 
   const w = 640;
-  const h = 240;
-  const pad = { top: 20, right: 12, bottom: 28, left: 52 };
+  const h = 160;
+  const pad = { top: 16, right: 12, bottom: 24, left: 52 };
   const max = Math.max(...data.map((d) => d.amount), 1);
   const innerW = w - pad.left - pad.right;
   const innerH = h - pad.top - pad.bottom;
@@ -356,15 +356,15 @@ function formatQuarterLabel(q: string): string {
 export function PossessionsChart({ data }: { data: { quarter: string; count: number }[] }) {
   if (!data.length || data.every((d) => d.count === 0)) {
     return (
-      <div className="flex h-48 items-center justify-center text-sm text-muted">
+      <div className="flex h-36 items-center justify-center text-sm text-muted">
         No possession history yet — the chart fills in as you track your items.
       </div>
     );
   }
 
   const w = 640;
-  const h = 240;
-  const pad = { top: 20, right: 16, bottom: 28, left: 44 };
+  const h = 160;
+  const pad = { top: 16, right: 16, bottom: 24, left: 44 };
   const max = Math.max(...data.map((d) => d.count), 1);
   const innerW = w - pad.left - pad.right;
   const innerH = h - pad.top - pad.bottom;
@@ -436,6 +436,184 @@ export function PossessionsChart({ data }: { data: { quarter: string; count: num
             <text
               x={x(i)}
               y={h - 8}
+              textAnchor="middle"
+              fontSize="11"
+              className="fill-chart-ink"
+            >
+              {formatQuarterLabel(d.quarter)}
+            </text>
+          </g>
+        ))}
+      </svg>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------
+   Quarterly Change Double Plot Chart (% Value vs % Items)
+   ------------------------------------------------------------------ */
+
+export function QuarterlyChangeChart({
+  data,
+}: {
+  data: {
+    quarter: string;
+    itemsCount: number;
+    itemsChangePct: number;
+    totalValue: number;
+    valueChangePct: number;
+  }[];
+}) {
+  if (!data || data.length === 0) {
+    return (
+      <div className="flex h-36 items-center justify-center text-sm text-muted">
+        No quarterly trend data available yet.
+      </div>
+    );
+  }
+
+  const w = 640;
+  const h = 180;
+  const pad = { top: 20, right: 24, bottom: 28, left: 52 };
+  const innerW = w - pad.left - pad.right;
+  const innerH = h - pad.top - pad.bottom;
+
+  // Determine min and max percentage across both series
+  let allPcts = data.flatMap((d) => [d.itemsChangePct, d.valueChangePct]);
+  if (allPcts.length === 0) allPcts = [0];
+  let minPct = Math.min(...allPcts, -10);
+  let maxPct = Math.max(...allPcts, 10);
+  // Add some breathing room
+  minPct = Math.floor(minPct / 10) * 10;
+  maxPct = Math.ceil(maxPct / 10) * 10;
+  if (minPct === maxPct) {
+    minPct -= 10;
+    maxPct += 10;
+  }
+  const range = maxPct - minPct;
+
+  const x = (i: number) =>
+    pad.left + (data.length === 1 ? innerW / 2 : (i / (data.length - 1)) * innerW);
+  const y = (pct: number) => pad.top + innerH - ((pct - minPct) / range) * innerH;
+
+  const zeroY = y(0);
+
+  const itemsLine = data
+    .map((d, i) => `${i === 0 ? "M" : "L"} ${x(i).toFixed(1)} ${y(d.itemsChangePct).toFixed(1)}`)
+    .join(" ");
+
+  const valueLine = data
+    .map((d, i) => `${i === 0 ? "M" : "L"} ${x(i).toFixed(1)} ${y(d.valueChangePct).toFixed(1)}`)
+    .join(" ");
+
+  const ticks = [minPct, Math.round(minPct + range * 0.5), maxPct];
+
+  return (
+    <div className="w-full overflow-hidden">
+      {/* Legend */}
+      <div className="mb-2 flex items-center justify-end gap-5 text-xs">
+        <div className="flex items-center gap-1.5">
+          <span className="inline-block h-2.5 w-2.5 rounded-full bg-accent" />
+          <span className="font-medium text-ink-soft">Items owned (% chg)</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="inline-block h-2.5 w-2.5 rounded-full bg-clay" />
+          <span className="font-medium text-ink-soft">Inventory value (% chg)</span>
+        </div>
+      </div>
+
+      <svg
+        viewBox={`0 0 ${w} ${h}`}
+        className="w-full select-none"
+        role="img"
+        aria-label="Quarterly change in inventory value and items count"
+      >
+        {/* Zero baseline */}
+        {zeroY >= pad.top && zeroY <= pad.top + innerH && (
+          <line
+            x1={pad.left}
+            x2={w - pad.right}
+            y1={zeroY}
+            y2={zeroY}
+            className="stroke-line-strong"
+            strokeWidth="1.5"
+            strokeDasharray="4 4"
+          />
+        )}
+
+        {/* Ticks */}
+        {ticks.map((t, i) => (
+          <g key={i}>
+            <line
+              x1={pad.left}
+              x2={w - pad.right}
+              y1={y(t)}
+              y2={y(t)}
+              className="stroke-line"
+              strokeWidth="1"
+            />
+            <text
+              x={pad.left - 8}
+              y={y(t) + 4}
+              textAnchor="end"
+              fontSize="10"
+              className="tabular fill-chart-ink"
+            >
+              {t > 0 ? `+${t}%` : `${t}%`}
+            </text>
+          </g>
+        ))}
+
+        {/* Items Line (Moss / Accent) */}
+        <path
+          d={itemsLine}
+          fill="none"
+          className="stroke-accent"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+
+        {/* Value Line (Clay / Terracotta) */}
+        <path
+          d={valueLine}
+          fill="none"
+          className="stroke-clay"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+
+        {/* Data points & X-axis labels */}
+        {data.map((d, i) => (
+          <g key={i}>
+            <circle
+              cx={x(i)}
+              cy={y(d.itemsChangePct)}
+              r="4"
+              className="fill-card stroke-accent"
+              strokeWidth="2"
+            >
+              <title>
+                {d.quarter} Items: {d.itemsCount} ({d.itemsChangePct > 0 ? `+${d.itemsChangePct}%` : `${d.itemsChangePct}%`})
+              </title>
+            </circle>
+
+            <circle
+              cx={x(i)}
+              cy={y(d.valueChangePct)}
+              r="4"
+              className="fill-card stroke-clay"
+              strokeWidth="2"
+            >
+              <title>
+                {d.quarter} Value: ${d.totalValue.toFixed(0)} ({d.valueChangePct > 0 ? `+${d.valueChangePct}%` : `${d.valueChangePct}%`})
+              </title>
+            </circle>
+
+            <text
+              x={x(i)}
+              y={h - 6}
               textAnchor="middle"
               fontSize="11"
               className="fill-chart-ink"

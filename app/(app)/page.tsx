@@ -3,7 +3,13 @@ import { getStats } from "@/lib/stats";
 import { listDisposals, listItems } from "@/lib/db";
 import { formatCategory, formatMoney, formatQuarter } from "@/lib/format";
 import { requireUser } from "@/lib/auth";
-import { BarRow, EarningsChart, PossessionsChart, StatTile } from "@/components/ui";
+import {
+  BarRow,
+  EarningsChart,
+  PossessionsChart,
+  QuarterlyChangeChart,
+  StatTile,
+} from "@/components/ui";
 import { UserAvatar } from "@/components/UserAvatar";
 import {
   IconBox,
@@ -76,11 +82,10 @@ export default async function DashboardPage() {
       </header>
 
       {/* ---------------- Stat tiles ---------------- */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         <StatTile
           label="Items owned"
           value={<span className="text-3xl font-semibold leading-none">{stats.ownedItems}</span>}
-          sub={`${stats.totalItems} tracked all-time`}
           icon={<IconBox width={15} height={15} />}
           href="/items?status=owned"
         />
@@ -97,16 +102,24 @@ export default async function DashboardPage() {
           href="/items?status=owned"
         />
         <StatTile
-          label="Net items"
+          label={`Net items (${stats.currentQuarter})`}
           value={
             <span className="tabular text-3xl font-semibold leading-none">
               {stats.currentQuarterNet > 0 ? `+${stats.currentQuarterNet}` : stats.currentQuarterNet}
             </span>
           }
-          sub={`${stats.currentQuarterAcquired} in · ${stats.currentQuarterOffloaded} out (${stats.currentQuarter})`}
+          sub={`${stats.currentQuarterAcquired} in · ${stats.currentQuarterOffloaded} out`}
           icon={<IconChart width={15} height={15} />}
           tone={stats.currentQuarterNet > 0 ? "clay" : stats.currentQuarterNet < 0 ? "moss" : "neutral"}
           href="/items"
+        />
+        <StatTile
+          label="In purgatory"
+          value={<span className="text-3xl font-semibold leading-none">{purgatoryItems.length}</span>}
+          sub={formatMoney(purgatoryValue)}
+          icon={<IconFlame width={15} height={15} />}
+          tone="clay"
+          href="/purgatory"
         />
         <StatTile
           label="Lifetime sales"
@@ -118,7 +131,6 @@ export default async function DashboardPage() {
         <StatTile
           label="Decluttered"
           value={<span className="text-3xl font-semibold leading-none">{goneCount}</span>}
-          sub="items offloaded"
           icon={<IconRecycle width={15} height={15} />}
           tone="clay"
           href="/items"
@@ -133,11 +145,11 @@ export default async function DashboardPage() {
               <h2 className="display text-xl">Possessions over time</h2>
               <span className="text-xs text-muted">last 8 quarters</span>
             </div>
-            <p className="mb-4 text-[13px] text-muted">
+            <p className="mb-3 text-[13px] text-muted">
               {stats.ownedItems} items owned today · {stats.currentQuarterNet > 0 ? `+${stats.currentQuarterNet}` : stats.currentQuarterNet} net in {stats.currentQuarter}
             </p>
           </div>
-          <div className="mt-auto pt-4">
+          <div className="mt-auto pt-2">
             <PossessionsChart data={stats.possessionsOverTime} />
           </div>
         </section>
@@ -147,12 +159,12 @@ export default async function DashboardPage() {
             <h2 className="display text-xl">Where the value sits</h2>
             <span className="text-xs text-muted">owned</span>
           </div>
-          <p className="mb-5 text-[13px] text-muted">by category</p>
+          <p className="mb-3 text-[13px] text-muted">by category</p>
           {stats.byCategory.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted">Nothing tracked yet.</p>
+            <p className="py-6 text-center text-sm text-muted">Nothing tracked yet.</p>
           ) : (
-            <div className="space-y-3.5">
-              {stats.byCategory.slice(0, 7).map((cat, i) => (
+            <div className="space-y-2.5">
+              {stats.byCategory.slice(0, 6).map((cat, i) => (
                 <BarRow
                   key={cat.category}
                   label={formatCategory(cat.category)}
@@ -167,6 +179,20 @@ export default async function DashboardPage() {
         </section>
       </div>
 
+      {/* ---------------- Quarterly Change (% Value vs % Items) ---------------- */}
+      <section className="card p-6">
+        <div className="mb-1 flex items-baseline justify-between gap-3">
+          <h2 className="display text-xl">Quarterly inventory & value growth (%)</h2>
+          <span className="text-xs text-muted">last 8 quarters</span>
+        </div>
+        <p className="mb-3 text-[13px] text-muted">
+          Quarter-over-quarter percentage change in total estimated value ($) and item count.
+        </p>
+        <div className="pt-2">
+          <QuarterlyChangeChart data={stats.quarterlyChange} />
+        </div>
+      </section>
+
       {/* ---------------- Earnings & Disposals ---------------- */}
       <div className="grid gap-5 lg:grid-cols-5">
         <section className="card flex flex-col justify-between p-6 lg:col-span-3">
@@ -175,11 +201,11 @@ export default async function DashboardPage() {
               <h2 className="display text-xl">Sales earnings</h2>
               <span className="text-xs text-muted">last 12 months</span>
             </div>
-            <p className="mb-4 text-[13px] text-muted">
+            <p className="mb-3 text-[13px] text-muted">
               {formatMoney(stats.lifetimeSalesEarnings)} earned all-time
             </p>
           </div>
-          <div className="mt-auto pt-4">
+          <div className="mt-auto pt-2">
             <EarningsChart data={stats.earningsByMonth} />
           </div>
         </section>
@@ -190,20 +216,20 @@ export default async function DashboardPage() {
               <h2 className="display text-xl">Offloaded items</h2>
               <span className="text-xs text-muted">{goneCount} total</span>
             </div>
-            <p className="mb-5 text-[13px] text-muted">Sales proceeds and decluttered goods</p>
+            <p className="mb-3 text-[13px] text-muted">Sales proceeds and decluttered goods</p>
           </div>
-          <div className="grid grid-cols-1 gap-3.5">
+          <div className="grid grid-cols-1 gap-2.5">
             <Link
               href="/items?status=sold"
-              className="group flex items-center gap-4 rounded-xl border border-line p-4 transition-all hover:border-line-strong hover:shadow-lift"
+              className="group flex items-center gap-3.5 rounded-xl border border-line p-3 transition-all hover:border-line-strong hover:shadow-lift"
             >
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
-                <IconCash width={18} height={18} />
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
+                <IconCash width={16} height={16} />
               </span>
               <div className="min-w-0">
-                <p className="text-[13px] font-medium text-ink">Sold for return</p>
-                <p className="tabular text-2xl font-semibold leading-tight text-ink">{soldForReturnCount}</p>
-                <p className="tabular mt-0.5 text-xs text-accent">
+                <p className="text-[12px] font-medium text-ink">Sold for return</p>
+                <p className="tabular text-xl font-semibold leading-tight text-ink">{soldForReturnCount}</p>
+                <p className="tabular text-[11px] text-accent">
                   {formatMoney(soldForReturnTotal)} total proceeds
                 </p>
               </div>
@@ -211,15 +237,15 @@ export default async function DashboardPage() {
 
             <Link
               href="/items"
-              className="group flex items-center gap-4 rounded-xl border border-line p-4 transition-all hover:border-line-strong hover:shadow-lift"
+              className="group flex items-center gap-3.5 rounded-xl border border-line p-3 transition-all hover:border-line-strong hover:shadow-lift"
             >
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-clay-soft text-clay">
-                <IconRecycle width={18} height={18} />
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-clay-soft text-clay">
+                <IconRecycle width={16} height={16} />
               </span>
               <div className="min-w-0">
-                <p className="text-[13px] font-medium text-ink">No return</p>
-                <p className="tabular text-2xl font-semibold leading-tight text-ink">{noReturnCount}</p>
-                <p className="tabular mt-0.5 text-xs text-muted">
+                <p className="text-[12px] font-medium text-ink">No return</p>
+                <p className="tabular text-xl font-semibold leading-tight text-ink">{noReturnCount}</p>
+                <p className="tabular text-[11px] text-muted">
                   Donated, disposed, or $0 return
                 </p>
               </div>
@@ -227,60 +253,6 @@ export default async function DashboardPage() {
           </div>
         </section>
       </div>
-
-      {/* ---------------- Purgatory summary ---------------- */}
-      <section className="card overflow-hidden">
-        <div className="flex items-center justify-between gap-3 border-b border-line px-6 py-5">
-          <div className="flex items-center gap-3">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-clay-soft text-clay">
-              <IconFlame width={18} height={18} />
-            </span>
-            <div>
-              <h2 className="display text-xl">Purgatory summary</h2>
-              <p className="mt-0.5 text-[13px] text-muted">
-                {purgatoryItems.length} item{purgatoryItems.length === 1 ? "" : "s"} staged for offloading · {formatMoney(purgatoryValue)} estimated value
-              </p>
-            </div>
-          </div>
-          <Link
-            href="/purgatory"
-            className="btn-clay shrink-0 text-[13px]"
-          >
-            Open Purgatory
-            <IconFlame width={15} height={15} />
-          </Link>
-        </div>
-
-        {purgatoryItems.length === 0 ? (
-          <p className="px-6 py-12 text-center text-sm text-muted">
-            No items in purgatory. Click the <strong>X</strong> icon on any inventory item to stage it for offloading.
-          </p>
-        ) : (
-          <ul className="divide-y divide-line">
-            {purgatoryItems.slice(0, 5).map((item) => (
-              <li key={item.id}>
-                <Link
-                  href={`/items/${item.id}`}
-                  className="group flex items-center justify-between px-6 py-4 transition-colors hover:bg-paper"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium text-ink group-hover:text-accent">
-                      {item.name}
-                    </p>
-                    <p className="mt-0.5 truncate text-[13px] capitalize text-muted">
-                      {item.category} {item.location ? `· ${item.location}` : ""}
-                    </p>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    <p className="tabular text-sm font-medium text-ink">{formatMoney(item.currentValue)}</p>
-                    <p className="text-xs text-muted">Acquired {formatQuarter(item.purchaseDate)}</p>
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
     </div>
   );
 }

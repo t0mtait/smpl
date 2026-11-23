@@ -190,7 +190,24 @@ export function getDb(): DatabaseSync {
   migrateWishlistPriority(db);
   consolidateTopQuality(db);
   consolidateCategories(db);
+  initUserCategoriesTable(db);
   return db;
+}
+
+function initUserCategoriesTable(d: DatabaseSync): void {
+  try {
+    d.exec(`
+      CREATE TABLE IF NOT EXISTS user_categories (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        category    TEXT    NOT NULL,
+        subcategory TEXT    NOT NULL DEFAULT '',
+        created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
+        UNIQUE(user_id, category, subcategory)
+      );
+      CREATE INDEX IF NOT EXISTS idx_user_categories_user ON user_categories(user_id);
+    `);
+  } catch {}
 }
 
 function consolidateCategories(d: DatabaseSync): void {
@@ -1055,3 +1072,175 @@ export function convertWishlistItemToInventory(
   deleteWishlistItem(ownerId, id);
   return newItem;
 }
+
+/* -------------------------------------------------- user categories & subcategories */
+
+export interface UserCategoryRow {
+  id: number;
+  userId: number;
+  category: string;
+  subcategory: string;
+  createdAt: string;
+}
+
+export function listUserCategories(userId: number): { category: string; subcategories: string[] }[] {
+  const d = getDb();
+  const rows = d
+    .prepare("SELECT id, category, subcategory FROM user_categories WHERE user_id = ? ORDER BY category ASC, subcategory ASC")
+    .all(userId) as { id: number; category: string; subcategory: string }[];
+
+  const map = new Map<string, Set<string>>();
+
+  // Also collect any categories currently used on the user's items and wishlist
+  const itemRows = d
+    .prepare("SELECT DISTINCT category, subcategory FROM items WHERE owner_id = ?")
+    .all(userId) as { category: string; subcategory: string }[];
+  for (const r of itemRows) {
+    if (r.category && r.category.trim()) {
+      const cat = r.category.trim().toLowerCase();
+      if (!map.has(cat)) map.set(cat, new Set());
+      if (r.subcategory && r.subcategory.trim()) {
+        map.get(cat)!.add(r.subcategory.trim());
+      }
+    }
+  }
+
+  const wishRows = d
+    .prepare("SELECT DISTINCT category FROM wishlist_items WHERE owner_id = ?")
+    .all(userId) as { category: string }[];
+  for (const r of wishRows) {
+    if (r.category && r.category.trim()) {
+      const cat = r.category.trim().toLowerCase();
+      if (!map.has(cat)) map.set(cat, new Set());
+    }
+  }
+
+  // If user has custom rows recorded, merge them in
+  for (const r of rows) {
+    const cat = r.category.trim().toLowerCase();
+    if (!map.has(cat)) map.set(cat, new Set());
+    if (r.subcategory && r.subcategory.trim()) {
+      map.get(cat)!.add(r.subcategory.trim());
+    }
+  }
+
+  // If map is completely empty (brand new user with no items), seed with default 8 categories
+  if (map.size === 0) {
+    const defaults = ["clothing", "electronics", "home", "kitchen", "sports", "hobbies", "tools", "misc"];
+    for (const def of defaults) {
+      map.set(def, new Set());
+    }
+  }
+
+  return Array.from(map.entries())
+    .map(([category, subs]) => ({
+      category,
+      subcategories: Array.from(subs).sort((a, b) => a.localeCompare(b)),
+    }))
+    .sort((a, b) => a.category.localeCompare(b.category));
+}
+
+export function addUserCategory(userId: number, category: string, subcategory: string = ""): void {
+  const cat = category.trim().toLowerCase();
+  const sub = subcategory.trim();
+  if (!cat) return;
+  getDb()
+    .prepare(
+      "INSERT OR IGNORE INTO user_categories (user_id, category, subcategory) VALUES (?, ?, ?)"
+    )
+    .run(userId, cat, sub);
+  scheduleAutoBackup();
+}
+
+export function renameUserCategory(userId: number, oldCategory: string, newCategory: string): void {
+  const oldCat = oldCategory.trim().toLowerCase();
+  const newCat = newCategory.trim().toLowerCase();
+  if (!oldCat || !newCat || oldCat === newCat) return;
+
+  const d = getDb();
+  // 1. Update items
+  d.prepare("UPDATE items SET category = ? WHERE owner_id = ? AND category = ?").run(newCat, userId, oldCat);
+  // 2. Update wishlist
+  d.prepare("UPDATE wishlist_items SET category = ? WHERE owner_id = ? AND category = ?").run(newCat, userId, oldCat);
+  // 3. Update user_categories
+  const rows = d
+    .prepare("SELECT subcategory FROM user_categories WHERE user_id = ? AND category = ?")
+    .all(userId, oldCat) as { subcategory: string }[];
+  
+  d.prepare("DELETE FROM user_categories WHERE user_id = ? AND category = ?").run(userId, oldCat);
+  for (const r of rows) {
+    d.prepare("INSERT OR IGNORE INTO user_categories (user_id, category, subcategory) VALUES (?, ?, ?)").run(
+      userId,
+      newCat,
+      r.subcategory
+    );
+  }
+  // Ensure the new category itself is stored if rows was empty
+  d.prepare("INSERT OR IGNORE INTO user_categories (user_id, category, subcategory) VALUES (?, ?, '')").run(
+    userId,
+    newCat
+  );
+  scheduleAutoBackup();
+}
+
+export function deleteUserCategory(userId: number, category: string): void {
+  const cat = category.trim().toLowerCase();
+  if (!cat) return;
+  const d = getDb();
+  // Items in deleted category move to 'misc'
+  d.prepare("UPDATE items SET category = 'misc' WHERE owner_id = ? AND category = ?").run(userId, cat);
+  d.prepare("UPDATE wishlist_items SET category = 'misc' WHERE owner_id = ? AND category = ?").run(userId, cat);
+  d.prepare("DELETE FROM user_categories WHERE user_id = ? AND category = ?").run(userId, cat);
+  scheduleAutoBackup();
+}
+
+export function addUserSubcategory(userId: number, category: string, subcategory: string): void {
+  const cat = category.trim().toLowerCase();
+  const sub = subcategory.trim();
+  if (!cat || !sub) return;
+  const d = getDb();
+  d.prepare("INSERT OR IGNORE INTO user_categories (user_id, category, subcategory) VALUES (?, ?, '')").run(userId, cat);
+  d.prepare("INSERT OR IGNORE INTO user_categories (user_id, category, subcategory) VALUES (?, ?, ?)").run(userId, cat, sub);
+  scheduleAutoBackup();
+}
+
+export function renameUserSubcategory(
+  userId: number,
+  category: string,
+  oldSubcategory: string,
+  newSubcategory: string
+): void {
+  const cat = category.trim().toLowerCase();
+  const oldSub = oldSubcategory.trim();
+  const newSub = newSubcategory.trim();
+  if (!cat || !oldSub || !newSub || oldSub.toLowerCase() === newSub.toLowerCase()) return;
+
+  const d = getDb();
+  d.prepare(
+    "UPDATE items SET subcategory = ? WHERE owner_id = ? AND category = ? AND subcategory = ?"
+  ).run(newSub, userId, cat, oldSub);
+
+  d.prepare(
+    "DELETE FROM user_categories WHERE user_id = ? AND category = ? AND subcategory = ?"
+  ).run(userId, cat, oldSub);
+
+  d.prepare(
+    "INSERT OR IGNORE INTO user_categories (user_id, category, subcategory) VALUES (?, ?, ?)"
+  ).run(userId, cat, newSub);
+  scheduleAutoBackup();
+}
+
+export function deleteUserSubcategory(userId: number, category: string, subcategory: string): void {
+  const cat = category.trim().toLowerCase();
+  const sub = subcategory.trim();
+  if (!cat || !sub) return;
+  const d = getDb();
+  d.prepare(
+    "UPDATE items SET subcategory = '' WHERE owner_id = ? AND category = ? AND subcategory = ?"
+  ).run(userId, cat, sub);
+  d.prepare(
+    "DELETE FROM user_categories WHERE user_id = ? AND category = ? AND subcategory = ?"
+  ).run(userId, cat, sub);
+  scheduleAutoBackup();
+}
+

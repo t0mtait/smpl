@@ -1,5 +1,5 @@
 import { requireUser } from "@/lib/auth";
-import { getUserById } from "@/lib/db";
+import { getUserById, listUserCategories } from "@/lib/db";
 import AccountClient from "./AccountClient";
 
 export const dynamic = "force-dynamic";
@@ -7,6 +7,7 @@ export const dynamic = "force-dynamic";
 export default async function AccountPage() {
   const user = await requireUser("/account");
   const freshUser = getUserById(user.id) ?? user;
+  const initialCategories = listUserCategories(user.id);
 
-  return <AccountClient initialUser={freshUser} />;
+  return <AccountClient initialUser={freshUser} initialCategories={initialCategories} />;
 }

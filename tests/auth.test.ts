@@ -223,5 +223,39 @@ const d = db.getDb();
   check("cancelled user has no interval", cancelled?.subscriptionInterval === null);
 }
 
+/* ---------------------------------------------------- user categories */
+
+{
+  const catUser = db.createUser("categories@example.com", "CatUser", hashPassword("password123"));
+  const initialCats = db.listUserCategories(catUser.id);
+  check("new user has default categories", initialCats.length >= 8);
+
+  db.addUserCategory(catUser.id, "photography");
+  db.addUserSubcategory(catUser.id, "photography", "Lenses");
+  let updatedCats = db.listUserCategories(catUser.id);
+  const photoCat = updatedCats.find((c) => c.category === "photography");
+  check("custom category added", Boolean(photoCat));
+  check("custom subcategory added", photoCat?.subcategories.includes("Lenses") === true);
+
+  db.renameUserCategory(catUser.id, "photography", "camera gear");
+  updatedCats = db.listUserCategories(catUser.id);
+  const renamed = updatedCats.find((c) => c.category === "camera gear");
+  check("category renamed", Boolean(renamed));
+  check("subcategories preserved on category rename", renamed?.subcategories.includes("Lenses") === true);
+
+  db.renameUserSubcategory(catUser.id, "camera gear", "Lenses", "Prime Lenses");
+  updatedCats = db.listUserCategories(catUser.id);
+  const updatedSub = updatedCats.find((c) => c.category === "camera gear");
+  check("subcategory renamed", updatedSub?.subcategories.includes("Prime Lenses") === true);
+
+  db.deleteUserSubcategory(catUser.id, "camera gear", "Prime Lenses");
+  updatedCats = db.listUserCategories(catUser.id);
+  check("subcategory deleted", updatedCats.find((c) => c.category === "camera gear")?.subcategories.includes("Prime Lenses") === false);
+
+  db.deleteUserCategory(catUser.id, "camera gear");
+  updatedCats = db.listUserCategories(catUser.id);
+  check("category deleted", !updatedCats.some((c) => c.category === "camera gear"));
+}
+
 console.log(`\n${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);
