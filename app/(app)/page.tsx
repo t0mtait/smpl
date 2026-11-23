@@ -1,22 +1,18 @@
 import Link from "next/link";
 import { getStats } from "@/lib/stats";
-import { listDisposals, listItems } from "@/lib/db";
-import { formatCategory, formatMoney, formatQuarter } from "@/lib/format";
+import { listItems } from "@/lib/db";
+import { formatCategory, formatMoney } from "@/lib/format";
 import { requireUser } from "@/lib/auth";
 import {
   BarRow,
-  EarningsChart,
-  PossessionsChart,
   QuarterlyChangeChart,
   StatTile,
 } from "@/components/ui";
 import { UserAvatar } from "@/components/UserAvatar";
 import {
   IconBox,
-  IconCash,
   IconChart,
   IconFlame,
-  IconLeaf,
   IconRecycle,
   IconSparkles,
 } from "@/components/icons";
@@ -35,14 +31,6 @@ export default async function DashboardPage() {
   const maxCatValue = Math.max(1, ...stats.byCategory.map((c) => c.value));
   const goneCount =
     stats.soldItems + stats.donatedItems + stats.disposedItems + stats.closedItems;
-
-  const disposals = listDisposals(user.id);
-  const soldForReturn = disposals.filter(
-    (d) => d.disposition === "sold" && d.amount !== null && d.amount > 0
-  );
-  const soldForReturnCount = soldForReturn.length;
-  const soldForReturnTotal = soldForReturn.reduce((sum, d) => sum + (d.amount ?? 0), 0);
-  const noReturnCount = Math.max(0, goneCount - soldForReturnCount);
 
   return (
     <div className="space-y-10">
@@ -82,23 +70,18 @@ export default async function DashboardPage() {
       </header>
 
       {/* ---------------- Stat tiles ---------------- */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatTile
           label="Items owned"
-          value={<span className="text-3xl font-semibold leading-none">{stats.ownedItems}</span>}
-          icon={<IconBox width={15} height={15} />}
-          href="/items?status=owned"
-        />
-        <StatTile
-          label="Value owned"
-          value={<span className="text-3xl font-semibold leading-none">{formatMoney(stats.totalValueOwned)}</span>}
-          sub={
-            stats.ownedWithoutValue > 0
-              ? `${stats.ownedItems - stats.ownedWithoutValue} of ${stats.ownedItems} items valued`
-              : `avg ${formatMoney(stats.averageOwnedValue)} per item`
+          value={
+            <div className="flex items-baseline gap-2.5">
+              <span className="tabular text-3xl font-semibold leading-none">{stats.ownedItems}</span>
+              <span className="tabular text-xs font-medium text-moss" title="Total estimated value">
+                {formatMoney(stats.totalValueOwned)}
+              </span>
+            </div>
           }
-          icon={<IconLeaf width={15} height={15} />}
-          tone="moss"
+          icon={<IconBox width={15} height={15} />}
           href="/items?status=owned"
         />
         <StatTile
@@ -154,20 +137,20 @@ export default async function DashboardPage() {
         />
       </div>
 
-      {/* ---------------- Possessions over time & Category breakdown ---------------- */}
+      {/* ---------------- Quarterly Change & Category breakdown ---------------- */}
       <div className="grid gap-5 lg:grid-cols-5">
         <section className="card flex flex-col justify-between p-6 lg:col-span-3">
           <div>
             <div className="mb-1 flex items-baseline justify-between gap-3">
-              <h2 className="display text-xl">Possessions over time</h2>
+              <h2 className="display text-xl">Quarterly inventory & value growth (%)</h2>
               <span className="text-xs text-muted">last 8 quarters</span>
             </div>
             <p className="mb-3 text-[13px] text-muted">
-              {stats.ownedItems} items owned today · {stats.currentQuarterNet > 0 ? `+${stats.currentQuarterNet}` : stats.currentQuarterNet} net in {stats.currentQuarter}
+              Quarter-over-quarter percentage change in total estimated value ($) and item count.
             </p>
           </div>
           <div className="mt-auto pt-2">
-            <PossessionsChart data={stats.possessionsOverTime} />
+            <QuarterlyChangeChart data={stats.quarterlyChange} />
           </div>
         </section>
 
@@ -193,81 +176,6 @@ export default async function DashboardPage() {
               ))}
             </div>
           )}
-        </section>
-      </div>
-
-      {/* ---------------- Quarterly Change (% Value vs % Items) ---------------- */}
-      <section className="card p-6">
-        <div className="mb-1 flex items-baseline justify-between gap-3">
-          <h2 className="display text-xl">Quarterly inventory & value growth (%)</h2>
-          <span className="text-xs text-muted">last 8 quarters</span>
-        </div>
-        <p className="mb-3 text-[13px] text-muted">
-          Quarter-over-quarter percentage change in total estimated value ($) and item count.
-        </p>
-        <div className="pt-2">
-          <QuarterlyChangeChart data={stats.quarterlyChange} />
-        </div>
-      </section>
-
-      {/* ---------------- Earnings & Disposals ---------------- */}
-      <div className="grid gap-5 lg:grid-cols-5">
-        <section className="card flex flex-col justify-between p-6 lg:col-span-3">
-          <div>
-            <div className="mb-1 flex items-baseline justify-between gap-3">
-              <h2 className="display text-xl">Sales earnings</h2>
-              <span className="text-xs text-muted">last 12 months</span>
-            </div>
-            <p className="mb-3 text-[13px] text-muted">
-              {formatMoney(stats.lifetimeSalesEarnings)} earned all-time
-            </p>
-          </div>
-          <div className="mt-auto pt-2">
-            <EarningsChart data={stats.earningsByMonth} />
-          </div>
-        </section>
-
-        <section className="card flex flex-col justify-between p-6 lg:col-span-2">
-          <div>
-            <div className="mb-1 flex items-baseline justify-between gap-3">
-              <h2 className="display text-xl">Offloaded items</h2>
-              <span className="text-xs text-muted">{goneCount} total</span>
-            </div>
-            <p className="mb-3 text-[13px] text-muted">Sales proceeds and decluttered goods</p>
-          </div>
-          <div className="grid grid-cols-1 gap-2.5">
-            <Link
-              href="/items?status=sold"
-              className="group flex items-center gap-3.5 rounded-xl border border-line p-3 transition-all hover:border-line-strong hover:shadow-lift"
-            >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
-                <IconCash width={16} height={16} />
-              </span>
-              <div className="min-w-0">
-                <p className="text-[12px] font-medium text-ink">Sold for return</p>
-                <p className="tabular text-xl font-semibold leading-tight text-ink">{soldForReturnCount}</p>
-                <p className="tabular text-[11px] text-accent">
-                  {formatMoney(soldForReturnTotal)} total proceeds
-                </p>
-              </div>
-            </Link>
-
-            <Link
-              href="/items"
-              className="group flex items-center gap-3.5 rounded-xl border border-line p-3 transition-all hover:border-line-strong hover:shadow-lift"
-            >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-clay-soft text-clay">
-                <IconRecycle width={16} height={16} />
-              </span>
-              <div className="min-w-0">
-                <p className="text-[12px] font-medium text-ink">No return</p>
-                <p className="tabular text-xl font-semibold leading-tight text-ink">{noReturnCount}</p>
-                <p className="tabular text-[11px] text-muted">
-                  Donated, disposed, or $0 return
-                </p>
-              </div>
-            </Link>
-          </div>
         </section>
       </div>
     </div>
