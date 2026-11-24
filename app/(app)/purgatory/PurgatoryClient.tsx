@@ -297,7 +297,7 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
 
   return (
     <div className="space-y-7">
-      <header className="animate-rise flex flex-wrap items-end justify-between gap-4">
+      <header className="animate-rise flex flex-wrap items-center justify-between gap-6">
         <div>
           <div className="flex items-center gap-2">
             <span className="flex h-6 w-6 items-center justify-center rounded-md bg-clay-soft text-clay">
@@ -306,29 +306,20 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
             <p className="eyebrow">Purgatory</p>
           </div>
           <h1 className="display mt-2 text-4xl leading-[1.1] sm:text-5xl">Staged for offloading</h1>
-          <p className="mt-2 text-[15px] text-muted">
-            Items you have marked to get rid of. Offload them with a return amount and date.
-          </p>
         </div>
-        <Link href="/items" className="btn-secondary">
-          <IconArrowLeft width={15} height={15} />
-          Back to inventory
-        </Link>
-      </header>
 
-      {/* Summary card */}
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="card p-5">
-          <span className="eyebrow">Items in purgatory</span>
-          <div className="mt-2 text-3xl font-semibold tabular text-ink">{items.length}</div>
-          <div className="mt-1 text-[13px] text-muted">Staged for removal from your life</div>
+        {/* Summary tiles beside header */}
+        <div className="flex flex-wrap items-center gap-3 sm:ml-auto">
+          <div className="card px-5 py-3 min-w-[130px]">
+            <span className="eyebrow text-[10px]">In purgatory</span>
+            <div className="mt-1 text-2xl font-bold tabular text-ink">{items.length}</div>
+          </div>
+          <div className="card px-5 py-3 min-w-[140px]">
+            <span className="eyebrow text-[10px]">Estimated value</span>
+            <div className="mt-1 text-2xl font-bold tabular text-clay">{formatMoney(totalValue)}</div>
+          </div>
         </div>
-        <div className="card p-5">
-          <span className="eyebrow">Estimated total value</span>
-          <div className="mt-2 text-3xl font-semibold tabular text-ink">{formatMoney(totalValue)}</div>
-          <div className="mt-1 text-[13px] text-muted">Potential return upon offloading</div>
-        </div>
-      </div>
+      </header>
 
       {/* Items list */}
       {items.length === 0 ? (

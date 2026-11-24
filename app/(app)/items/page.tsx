@@ -238,13 +238,7 @@ function InventoryInner() {
         <div>
           <p className="eyebrow">Inventory</p>
           <h1 className="display mt-2 text-4xl leading-[1.1] sm:text-5xl">Everything you own</h1>
-          <p className="mt-2 text-[15px] text-muted">
-            {items === null
-              ? "Loading…"
-              : filtered.length === items.length
-                ? `${items.length} item${items.length === 1 ? "" : "s"}`
-                : `${filtered.length} of ${items.length} item${items.length === 1 ? "" : "s"}`}
-          </p>
+
         </div>
         {/* Search & filters */}
         <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end xl:w-auto xl:flex-1 xl:justify-end">
@@ -314,7 +308,7 @@ function InventoryInner() {
               onChange={(e) => setSubcategory(e.target.value)}
             >
               <option value="all">
-                {category === "all" ? "Select category first" : "All subcategories"}
+                {category === "all" ? "—" : "All subcategories"}
               </option>
               {subcategories.map((sub) => (
                 <option key={sub} value={sub}>

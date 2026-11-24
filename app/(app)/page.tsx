@@ -81,10 +81,10 @@ export default async function DashboardPage() {
         </div>
         <Link
           href="/items/advisor"
-          className="btn-secondary px-5 py-3 text-base font-semibold sm:ml-auto"
+          className="btn-secondary px-6 py-3.5 text-lg font-bold sm:ml-auto shadow-sm hover:shadow"
         >
-          <IconRobot width={22} height={22} />
-          AI Advisor
+          <IconRobot width={26} height={26} />
+          <span>AI Advisor</span>
           {user.plan !== "premium" && (
             <span className="rounded bg-accent-soft px-1.5 py-0.5 text-[9px] font-bold text-accent">PRO</span>
           )}
@@ -215,9 +215,6 @@ export default async function DashboardPage() {
       </div>
 
 
-      <p className="pb-2 text-center text-[12px] text-muted">
-        iOS &amp; Android apps coming soon.
-      </p>
     </div>
   );
 }
