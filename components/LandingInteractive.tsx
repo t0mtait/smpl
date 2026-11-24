@@ -809,6 +809,10 @@ const FAQS = [
     a: "The Free tier is free forever and includes unlimited items tracking, possession analytics, 30-day purgatory, and up to 5 categories with subcategories. Pro ($3.49/mo or $24.99/yr) unlocks the AI Declutter Advisor, Wishlist cooldown tracker, unlimited custom categories, and complete CSV/JSON data exports.",
   },
   {
+    q: "What is your refund policy?",
+    a: "We offer a 14-day, 100% money-back guarantee on all Pro memberships. If smpl. isn't right for you, simply email support@gosmpl.app within 14 days of upgrade or renewal for a full refund with no questions asked. You can also cancel your subscription anytime with a single click.",
+  },
+  {
     q: "How do I install smpl. on my phone?",
     a: "smpl. is built as a Progressive Web App (PWA). Open gosmpl.app in Safari on iOS and tap 'Share → Add to Home Screen', or tap the menu in Chrome on Android and select 'Install app'. It opens full-screen like a native app.",
   },

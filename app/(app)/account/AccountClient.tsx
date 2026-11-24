@@ -1107,6 +1107,23 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
               </div>
             </div>
           </div>
+
+          {/* Refund Policy */}
+          <div className="mt-3.5 border-t border-line-soft pt-3">
+            <div className="flex items-start gap-2 text-[11px] text-muted leading-relaxed">
+              <span className="font-semibold text-ink shrink-0">Refund Policy:</span>
+              <span>
+                14-day 100% money-back guarantee. If smpl. isn&apos;t for you, email{" "}
+                <a
+                  href="mailto:support@gosmpl.app?subject=smpl.%20Refund%20Request"
+                  className="font-medium text-accent hover:underline"
+                >
+                  support@gosmpl.app
+                </a>{" "}
+                within 14 days of upgrade or renewal for a full refund, no questions asked. Subscriptions can be cancelled at any time with a single click.
+              </span>
+            </div>
+          </div>
         </div>
       </section>
       </div>
