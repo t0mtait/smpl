@@ -184,7 +184,7 @@ export default function OffloadedClient({
                   <th scope="col" className="hidden sm:table-cell px-4 py-2.5 align-middle">Brand</th>
                   <th scope="col" className="px-3 sm:px-4 py-2.5 align-middle">Category</th>
                   <th scope="col" className="hidden sm:table-cell px-4 py-2.5 align-middle">Status</th>
-                  <th scope="col" className="px-3 sm:px-4 py-2.5 align-middle text-right">Return ($)</th>
+                  <th scope="col" className="px-3 sm:px-4 py-2.5 align-middle text-right">Return</th>
                   <th scope="col" className="hidden sm:table-cell px-4 py-2.5 align-middle text-right">Acquired</th>
                   <th scope="col" className="hidden sm:table-cell px-4 py-2.5 align-middle text-right">Offloaded</th>
                   <th scope="col" className="hidden sm:table-cell px-4 py-2.5 align-middle text-right">Actions</th>

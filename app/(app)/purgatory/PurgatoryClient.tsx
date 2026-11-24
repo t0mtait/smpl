@@ -403,7 +403,7 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
             <table className="w-full min-w-full sm:min-w-[960px] border-collapse text-left">
               <thead>
                 <tr className="h-11 border-b border-line text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
-                  <th scope="col" className="px-3 sm:px-4 py-2.5 align-middle">
+                  <th scope="col" className="px-3 sm:px-4 py-2.5 align-middle w-full sm:w-auto">
                     <button
                       type="button"
                       onClick={() => toggleSort("name")}
@@ -473,16 +473,16 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                       </span>
                     </button>
                   </th>
-                  <th scope="col" className="px-3 sm:px-4 py-2.5 align-middle text-right">
+                  <th scope="col" className="px-2 sm:px-4 py-2.5 align-middle text-right whitespace-nowrap w-16 sm:w-28">
                     <button
                       type="button"
                       onClick={() => toggleSort("purgatoryDate")}
                       className={`inline-flex items-center gap-1.5 rounded transition-colors hover:text-ink ${
                         sort.key === "purgatoryDate" ? "text-ink" : "text-muted"
                       }`}
-                      title="Sort by days in purgatory"
+                      title="Sort by age"
                     >
-                      Days in Purgatory
+                      Age
                       <span className={`text-[9px] leading-none ${sort.key === "purgatoryDate" ? "opacity-100" : "opacity-0"}`}>
                         {sort.direction === "asc" ? "▲" : "▼"}
                       </span>
@@ -624,7 +624,7 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                         </span>
                       )}
                     </td>
-                    <td className="tabular px-3 sm:px-4 py-2 sm:py-2.5 align-middle text-right text-[13px] text-muted">
+                    <td className="tabular px-2 sm:px-4 py-2 sm:py-2.5 align-middle text-right text-[13px] text-muted whitespace-nowrap w-16 sm:w-28">
                       <DaysRing days={daysSinceDate(item.purgatoryDate)} />
                     </td>
                     <td className="hidden sm:table-cell px-4 py-2 sm:py-2.5 align-middle text-right">
