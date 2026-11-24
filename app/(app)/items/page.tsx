@@ -12,7 +12,7 @@ import {
   getItemStatusInfo,
   getYearStyle,
 } from "@/lib/format";
-import { CategoryTag, QualityIcon, StatusTag } from "@/components/ui";
+import { CategoryTag, Pagination, QualityIcon, StatusTag } from "@/components/ui";
 import { IconBox, IconFlame, IconPlus, IconSearch } from "@/components/icons";
 import {
   DEFAULT_SORT,
@@ -31,6 +31,7 @@ function InventoryInner() {
   const [status, setStatus] = useState(params.get("status") ?? "all");
   const [category, setCategory] = useState("all");
   const [subcategory, setSubcategory] = useState("all");
+  const [page, setPage] = useState(1);
   const [sort, setSort] = useState<SortState>(DEFAULT_SORT);
   const [error, setError] = useState<string | null>(null);
 
@@ -122,6 +123,14 @@ function InventoryInner() {
   );
 
   const sorted = useMemo(() => sortItems(filtered, sort), [filtered, sort]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [query, status, category, subcategory]);
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / 10));
+  const safePage = Math.min(page, totalPages);
+  const paginatedItems = sorted.slice((safePage - 1) * 10, safePage * 10);
 
   const onSort = (key: SortKey) => setSort((current) => toggleSort(current, key));
 
@@ -408,7 +417,7 @@ function InventoryInner() {
                 </tr>
               </thead>
               <tbody>
-                {sorted.map((item) => {
+                {paginatedItems.map((item) => {
                   const statusInfo = getItemStatusInfo(item);
                   return (
                     <tr
@@ -679,6 +688,12 @@ function InventoryInner() {
               </tbody>
             </table>
           </div>
+          <Pagination
+            currentPage={safePage}
+            totalItems={sorted.length}
+            pageSize={10}
+            onPageChange={setPage}
+          />
         </div>
       ) : null}
 

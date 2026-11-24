@@ -14,6 +14,12 @@ import {
   IconRecycle,
   IconSearch,
 } from "@/components/icons";
+import {
+  FaqAccordion,
+  InteractivePreviewWidget,
+  MobileAppShowcase,
+  TestimonialsSection,
+} from "@/components/LandingInteractive";
 
 export const dynamic = "force-dynamic";
 
@@ -71,51 +77,6 @@ function Check({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** A purely decorative miniature of the dashboard. */
-function Preview() {
-  const bars = [78, 54, 41, 27, 16];
-  return (
-    <div className="card relative mx-auto w-full max-w-xl p-4 shadow-lg sm:p-5" aria-hidden="true">
-      <div className="mb-3 flex items-center gap-1.5">
-        <span className="h-2.5 w-2.5 rounded-full bg-line-strong" />
-        <span className="h-2.5 w-2.5 rounded-full bg-line-strong" />
-        <span className="h-2.5 w-2.5 rounded-full bg-line-strong" />
-        <span className="ml-3 text-[11px] text-muted">gosmpl.app</span>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        {[
-          ["Items owned", "128", "$14,820"],
-          ["In purgatory", "9", "$640"],
-          ["Net this quarter", "-6", "11 in · 17 out"],
-          ["Decluttered", "42", "$2,825"],
-        ].map(([label, big, small]) => (
-          <div key={label} className="rounded-xl border border-line bg-shell p-3">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted">{label}</div>
-            <div className="mt-1 flex items-baseline gap-2">
-              <span className="tabular text-2xl font-semibold leading-none text-ink">{big}</span>
-              <span className="tabular text-[11px] font-medium text-accent">{small}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="mt-3 rounded-xl border border-line bg-shell p-3">
-        <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted">
-          Where the value sits
-        </div>
-        <div className="space-y-1.5">
-          {bars.map((w, i) => (
-            <div key={i} className="h-2 rounded-full bg-wash">
-              <div
-                className={`h-2 rounded-full ${i === 0 ? "bg-clay" : "bg-accent"}`}
-                style={{ width: `${w}%` }}
-              />
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export default async function WelcomePage() {
   // Signed-in visitors belong in the app.
@@ -137,8 +98,17 @@ export default async function WelcomePage() {
             <a href="#features" className="hidden text-sm text-ink-soft hover:text-ink sm:inline">
               Features
             </a>
+            <a href="#mobile" className="hidden text-sm text-ink-soft hover:text-ink md:inline">
+              Mobile
+            </a>
+            <a href="#stories" className="hidden text-sm text-ink-soft hover:text-ink md:inline">
+              Stories
+            </a>
             <a href="#pricing" className="hidden text-sm text-ink-soft hover:text-ink sm:inline">
               Pricing
+            </a>
+            <a href="#faq" className="hidden text-sm text-ink-soft hover:text-ink sm:inline">
+              FAQ
             </a>
             <ThemeToggle variant="icon" />
             <Link href="/auth/login" className="btn-secondary px-3 py-1.5 text-[13px]">
@@ -152,7 +122,7 @@ export default async function WelcomePage() {
       </header>
 
       <main>
-        {/* ---------- Hero ---------- */}
+        {/* ---------- Hero with Interactive Preview Sandbox ---------- */}
         <section className="mx-auto grid max-w-6xl items-center gap-12 px-4 pb-16 pt-14 sm:px-6 lg:grid-cols-2 lg:pb-24 lg:pt-20">
           <div className="animate-rise">
             <p className="eyebrow">Mindful inventory &amp; decluttering</p>
@@ -174,10 +144,10 @@ export default async function WelcomePage() {
               </Link>
             </div>
             <p className="mt-4 text-[13px] text-muted">
-              Free forever for tracking. iOS &amp; Android apps coming soon.
+              Free forever for tracking. PWA ready for iOS &amp; Android.
             </p>
           </div>
-          <Preview />
+          <InteractivePreviewWidget />
         </section>
 
         {/* ---------- How it works ---------- */}
@@ -218,6 +188,16 @@ export default async function WelcomePage() {
             ))}
           </div>
         </section>
+
+        {/* ---------- Mobile App Showcase Illustration ---------- */}
+        <div id="mobile" className="scroll-mt-16">
+          <MobileAppShowcase />
+        </div>
+
+        {/* ---------- Customer Stories & Testimonials ---------- */}
+        <div id="stories" className="scroll-mt-16">
+          <TestimonialsSection />
+        </div>
 
         {/* ---------- Pricing ---------- */}
         <section id="pricing" className="scroll-mt-16 border-y border-line bg-shell">
@@ -262,6 +242,11 @@ export default async function WelcomePage() {
             </div>
           </div>
         </section>
+
+        {/* ---------- FAQ Accordion ---------- */}
+        <div id="faq" className="scroll-mt-16">
+          <FaqAccordion />
+        </div>
 
         {/* ---------- Final CTA ---------- */}
         <section className="mx-auto max-w-3xl px-4 py-16 text-center sm:px-6 lg:py-24">

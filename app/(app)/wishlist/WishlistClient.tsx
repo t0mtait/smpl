@@ -5,7 +5,7 @@ import Link from "next/link";
 import type { WishlistItem } from "@/lib/db";
 import { formatMoney, formatCategory, CATEGORIES } from "@/lib/format";
 import { daysSinceDate } from "@/lib/dates";
-import { CategoryTag, PriorityRing } from "@/components/ui";
+import { CategoryTag, Pagination, PriorityRing } from "@/components/ui";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import {
   IconCheck,
@@ -92,6 +92,7 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [subcategoryFilter, setSubcategoryFilter] = useState<string>("all");
+  const [page, setPage] = useState(1);
   const [sort, setSort] = useState<WishlistSortState>({ key: "waiting", direction: "desc" });
 
   // Add form toggle
@@ -252,6 +253,14 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
       return 0;
     });
   }, [items, query, priorityFilter, categoryFilter, subcategoryFilter, sort]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [query, priorityFilter, categoryFilter, subcategoryFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / 10));
+  const safePage = Math.min(page, totalPages);
+  const paginatedItems = filteredItems.slice((safePage - 1) * 10, safePage * 10);
 
   const toggleSort = (key: WishlistSortKey) => {
     setSort((curr) => {
@@ -829,7 +838,7 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                 </tr>
               </thead>
               <tbody>
-                {filteredItems.map((item) => {
+                {paginatedItems.map((item) => {
                   const daysWaiting = daysSinceDate(item.createdAt.slice(0, 10)) ?? 0;
                   const cooldownPassed = daysWaiting >= 30;
 
@@ -1077,6 +1086,12 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
               </tbody>
             </table>
           </div>
+          <Pagination
+            currentPage={safePage}
+            totalItems={filteredItems.length}
+            pageSize={10}
+            onPageChange={setPage}
+          />
         </div>
       )}
 

@@ -5,7 +5,7 @@ import Link from "next/link";
 import type { Item } from "@/lib/db";
 import { CATEGORIES, formatCategory, formatMoney, formatQuarter } from "@/lib/format";
 import { currentQuarter, daysSinceDate } from "@/lib/dates";
-import { CategoryTag } from "@/components/ui";
+import { CategoryTag, Pagination } from "@/components/ui";
 import { IconArrowLeft, IconBox, IconCheck,
   IconSearch, IconFlame, IconUndo } from "@/components/icons";
 
@@ -194,6 +194,7 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
 
   const [query, setQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [page, setPage] = useState(1);
 
   const filteredItems = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -296,7 +297,15 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
       }
       return 0;
     });
-  }, [items, sort]);
+  }, [filteredItems, sort]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [query, categoryFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedItems.length / 10));
+  const safePage = Math.min(page, totalPages);
+  const paginatedItems = sortedItems.slice((safePage - 1) * 10, safePage * 10);
 
   const restore = async (item: Item) => {
     setBusyId(item.id);
@@ -482,7 +491,7 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                 </tr>
               </thead>
               <tbody>
-                {sortedItems.map((item) => (
+                {paginatedItems.map((item) => (
                   <tr
                     key={item.id}
                     className="border-b border-line-soft transition-colors last:border-0 even:bg-wash/60 dark:even:bg-shell/70 hover:bg-wash dark:hover:bg-wash/40"
@@ -633,6 +642,12 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
               </tbody>
             </table>
           </div>
+          <Pagination
+            currentPage={safePage}
+            totalItems={sortedItems.length}
+            pageSize={10}
+            onPageChange={setPage}
+          />
         </div>
       )}
 

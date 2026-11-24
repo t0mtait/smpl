@@ -401,10 +401,10 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
               )}
             </div>
 
-            {/* Inputs grid: stacked name & email on left, old & new password on right */}
-            <div className="grid flex-1 gap-4 sm:grid-cols-2">
-              {/* Left column: Display Name & Email */}
-              <div className="space-y-3">
+            {/* Inputs: Display Name and Email on top line, Current Password and New Password on bottom line */}
+            <div className="flex-1 space-y-4">
+              {/* Top line: Display Name & Email Address */}
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className="label text-xs" htmlFor="user-name">
                     Display Name
@@ -433,8 +433,8 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                 </div>
               </div>
 
-              {/* Right column: Old Password & New Password */}
-              <div className="space-y-3">
+              {/* Bottom line: Current Password & New Password */}
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className="label text-xs" htmlFor="current-password">
                     Current Password
@@ -459,6 +459,7 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                     </button>
                   </div>
                 </div>
+
                 <div>
                   <label className="label text-xs" htmlFor="new-password">
                     New Password
@@ -523,12 +524,155 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
             </button>
           </div>
         </form>
+
+        {/* Data Export inside Account Settings Card */}
+        <div className="border-t border-line-soft pt-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="display text-base">Export data</h2>
+                <span className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-2 py-0.5 text-[10px] font-bold text-accent uppercase tracking-wider">
+                  <IconSparkles width={10} height={10} />
+                  Pro Feature
+                </span>
+              </div>
+              <p className="mt-0.5 text-xs text-muted">
+                Download your smpl. data as CSV spreadsheets and JSON archives.
+              </p>
+            </div>
+
+            {!isPro && (
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById("subscription");
+                  el?.scrollIntoView({ behavior: "smooth" });
+                }}
+                className="btn-primary text-xs flex items-center gap-1.5 py-1 px-2.5"
+              >
+                <IconLock width={12} height={12} />
+                Upgrade to Pro to export
+              </button>
+            )}
+          </div>
+
+          {!isPro && (
+            <div className="mt-3 rounded-lg border border-line bg-paper p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-wash text-muted">
+                  <IconLock width={15} height={15} />
+                </span>
+                <div>
+                  <p className="text-xs font-semibold text-ink">Data export is locked on the Free tier</p>
+                  <p className="text-[11px] text-muted">
+                    Upgrade to Pro to download CSV spreadsheets and full JSON database backups anytime.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleSubscribe("premium", subInterval)}
+                disabled={subBusy}
+                className="btn-secondary text-xs shrink-0 py-1 px-2.5"
+              >
+                Unlock with Pro
+              </button>
+            </div>
+          )}
+
+          <div className={`mt-3.5 grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-5 ${!isPro ? "opacity-60 pointer-events-none select-none" : ""}`}>
+            <a
+              href={isPro ? "/api/export?type=inventory" : "#"}
+              download
+              className="flex flex-col rounded-lg border border-line bg-paper p-3 transition hover:border-line-strong hover:shadow-sm"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-ink">Inventory CSV</span>
+                <span className="flex h-6 w-6 items-center justify-center rounded-md bg-accent-soft text-accent">
+                  <IconBox width={13} height={13} />
+                </span>
+              </div>
+              <p className="mt-0.5 text-[11px] text-muted">Active owned items</p>
+              <span className="mt-2 text-[11px] font-medium text-accent hover:underline">
+                {isPro ? "Download CSV ↓" : "Locked (Pro)"}
+              </span>
+            </a>
+
+            <a
+              href={isPro ? "/api/export?type=purgatory" : "#"}
+              download
+              className="flex flex-col rounded-lg border border-line bg-paper p-3 transition hover:border-line-strong hover:shadow-sm"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-ink">Purgatory CSV</span>
+                <span className="flex h-6 w-6 items-center justify-center rounded-md bg-clay-soft text-clay">
+                  <IconFlame width={13} height={13} />
+                </span>
+              </div>
+              <p className="mt-0.5 text-[11px] text-muted">Staged for offload</p>
+              <span className="mt-2 text-[11px] font-medium text-clay hover:underline">
+                {isPro ? "Download CSV ↓" : "Locked (Pro)"}
+              </span>
+            </a>
+
+            <a
+              href={isPro ? "/api/export?type=wishlist" : "#"}
+              download
+              className="flex flex-col rounded-lg border border-line bg-paper p-3 transition hover:border-line-strong hover:shadow-sm"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-ink">Wishlist CSV</span>
+                <span className="flex h-6 w-6 items-center justify-center rounded-md bg-warn-soft text-warn">
+                  <IconHeart width={13} height={13} />
+                </span>
+              </div>
+              <p className="mt-0.5 text-[11px] text-muted">Wishlist & scores</p>
+              <span className="mt-2 text-[11px] font-medium text-warn hover:underline">
+                {isPro ? "Download CSV ↓" : "Locked (Pro)"}
+              </span>
+            </a>
+
+            <a
+              href={isPro ? "/api/export?type=offloaded" : "#"}
+              download
+              className="flex flex-col rounded-lg border border-line bg-paper p-3 transition hover:border-line-strong hover:shadow-sm"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-ink">Offloaded CSV</span>
+                <span className="flex h-6 w-6 items-center justify-center rounded-md bg-wash text-ink-soft">
+                  <IconArchive width={13} height={13} />
+                </span>
+              </div>
+              <p className="mt-0.5 text-[11px] text-muted">Disposed, sold & donated</p>
+              <span className="mt-2 text-[11px] font-medium text-ink hover:underline">
+                {isPro ? "Download CSV ↓" : "Locked (Pro)"}
+              </span>
+            </a>
+
+            <a
+              href={isPro ? "/api/export?type=json" : "#"}
+              download
+              className="flex flex-col rounded-lg border border-line bg-paper p-3 transition hover:border-line-strong hover:shadow-sm"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-ink">JSON Archive</span>
+                <span className="flex h-6 w-6 items-center justify-center rounded-md bg-brand/10 text-brand">
+                  <IconBox width={13} height={13} />
+                </span>
+              </div>
+              <p className="mt-0.5 text-[11px] text-muted">Complete raw backup</p>
+              <span className="mt-2 text-[11px] font-medium text-brand hover:underline">
+                {isPro ? "Download JSON ↓" : "Locked (Pro)"}
+              </span>
+            </a>
+          </div>
+        </div>
       </section>
 
       {/* Categories & Membership Side by Side */}
       <div className="grid gap-6 lg:grid-cols-2 items-stretch">
         {/* Categories & Subcategories Customization */}
-      <section className="card p-5 sm:p-6 flex flex-col justify-between">
+      <section className="card p-5 flex flex-col justify-between">
         <div>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
@@ -570,8 +714,8 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
             </div>
           )}
 
-          {/* Scrollable compact categories list with fixed max-height to match subscription tile */}
-          <div className="mt-4 space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+          {/* Scrollable compact categories list with reduced max-height */}
+          <div className="mt-4 space-y-2 max-h-[260px] overflow-y-auto pr-1">
             {categories.length === 0 ? (
               <p className="text-xs text-muted py-6 text-center">No categories configured yet.</p>
             ) : (
@@ -770,322 +914,173 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
         </div>
       </section>
         {/* Membership & Subscription Card */}
-      <section id="subscription" className="card p-6 scroll-mt-6">
-        <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <div>
+      <section id="subscription" className="card p-5 scroll-mt-6 flex flex-col justify-between">
+        <div>
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
             <div className="flex items-center gap-2">
               <h2 className="display text-lg">Membership & plan</h2>
               {isPro ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-accent">
-                  <IconSparkles width={11} height={11} />
+                <span className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-accent">
+                  <IconSparkles width={10} height={10} />
                   Pro Active
                 </span>
               ) : (
-                <span className="inline-flex items-center rounded-full bg-wash px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider text-muted">
+                <span className="inline-flex items-center rounded-full bg-wash px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-muted">
                   Free Tier
                 </span>
               )}
             </div>
-            <p className="mt-1 text-[13px] text-muted">
-              {isPro
-                ? `You have unlocked smpl. Pro on a ${user.subscriptionInterval || "monthly"} plan${user.subscriptionRenewsAt ? ` (renews on ${user.subscriptionRenewsAt})` : ""}.`
-                : "Free tier includes unlimited items tracking with essential declutter tools. Upgrade to Pro to unlock the AI Advisor, Wishlist & cooldown tracker, and unlimited categories."}
-            </p>
+
+            {isPro && (
+              <button
+                type="button"
+                onClick={() => handleSubscribe("free")}
+                disabled={subBusy}
+                className="text-[11px] text-muted underline hover:text-danger transition-colors"
+              >
+                Cancel subscription
+              </button>
+            )}
           </div>
 
-          {isPro && (
-            <button
-              type="button"
-              onClick={() => handleSubscribe("free")}
-              disabled={subBusy}
-              className="text-[12px] text-muted underline hover:text-danger transition-colors"
-            >
-              Cancel subscription
-            </button>
-          )}
-        </div>
+          <p className="mt-1 text-xs text-muted">
+            {isPro
+              ? `Unlocked on a ${user.subscriptionInterval || "monthly"} plan${user.subscriptionRenewsAt ? ` (renews on ${user.subscriptionRenewsAt})` : ""}.`
+              : "Upgrade to unlock AI Advisor, Wishlist cooldown tracker, and unlimited categories."}
+          </p>
 
-        {subMsg && (
-          <div
-            className={`mt-4 rounded-lg p-3 text-sm ${
-              subMsg.type === "success"
-                ? "border border-accent-line bg-accent-soft text-accent"
-                : "border border-danger-line bg-danger-soft text-danger"
-            }`}
-          >
-            {subMsg.text}
-          </div>
-        )}
-
-        {/* Pricing selector */}
-        <div className="mt-6 flex items-center justify-center">
-          <div className="inline-flex rounded-xl border border-line bg-paper p-1 shadow-sm">
-            <button
-              type="button"
-              onClick={() => setSubInterval("monthly")}
-              className={`rounded-lg px-4 py-1.5 text-[13px] font-medium transition-all ${
-                subInterval === "monthly"
-                  ? "bg-brand text-brand-fg shadow-sm"
-                  : "text-muted hover:text-ink"
+          {subMsg && (
+            <div
+              className={`mt-3 rounded-lg p-2.5 text-xs ${
+                subMsg.type === "success"
+                  ? "border border-accent-line bg-accent-soft text-accent"
+                  : "border border-danger-line bg-danger-soft text-danger"
               }`}
             >
-              Monthly ($3.49/mo)
-            </button>
-            <button
-              type="button"
-              onClick={() => setSubInterval("yearly")}
-              className={`flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-[13px] font-medium transition-all ${
-                subInterval === "yearly"
-                  ? "bg-brand text-brand-fg shadow-sm"
-                  : "text-muted hover:text-ink"
-              }`}
-            >
-              <span>Yearly ($24.99/yr)</span>
-              <span className="rounded-full bg-accent-soft px-1.5 py-0.5 text-[10px] font-bold text-accent">
-                Save 40%
-              </span>
-            </button>
-          </div>
-        </div>
-
-        {/* Pro Tier Card */}
-        <div className="mt-5">
-          <div
-            className={`flex flex-col justify-between rounded-xl border p-5 transition-all ${
-              isPro
-                ? "border-accent bg-accent-soft/20 ring-1 ring-accent"
-                : "border-accent/40 bg-paper shadow-sm"
-            }`}
-          >
-            <div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <h3 className="font-semibold text-ink">Pro Plan</h3>
-                  <IconSparkles width={14} height={14} className="text-accent" />
-                </div>
-                {isPro ? (
-                  <span className="rounded bg-accent-soft px-2 py-0.5 text-[11px] font-bold text-accent">
-                    Active Plan
-                  </span>
-                ) : (
-                  <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-accent">
-                    Upgrade
-                  </span>
-                )}
-              </div>
-              <div className="mt-2 flex items-baseline gap-1.5">
-                <span className="display text-3xl font-semibold text-ink">
-                  {subInterval === "yearly" ? "$24.99" : "$3.49"}
-                </span>
-                <span className="text-xs text-muted">
-                  {subInterval === "yearly" ? "USD / year ($2.08/mo)" : "USD / month"}
-                </span>
-              </div>
-              <p className="mt-2 text-[12px] text-muted">
-                Complete possession analytics, unlimited items, and full CSV & JSON data exports
-              </p>
-
-              <ul className="mt-4 space-y-2 text-[13px] text-ink-soft">
-                <li className="flex items-center gap-2">
-                  <IconCheck width={14} height={14} className="text-accent shrink-0" />
-                  <strong>AI Advisor & offload recommendations</strong>
-                </li>
-                <li className="flex items-center gap-2">
-                  <IconCheck width={14} height={14} className="text-accent shrink-0" />
-                  <strong>Wishlist & 30-day cooldown tracker</strong>
-                </li>
-                <li className="flex items-center gap-2">
-                  <IconCheck width={14} height={14} className="text-accent shrink-0" />
-                  <strong>Unlimited custom categories & subcategories</strong>
-                </li>
-                <li className="flex items-center gap-2">
-                  <IconCheck width={14} height={14} className="text-accent shrink-0" />
-                  <span>Complete CSV & JSON data backups and exports</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <IconCheck width={14} height={14} className="text-accent shrink-0" />
-                  <span>PRO badge across dashboard and profile</span>
-                </li>
-              </ul>
+              {subMsg.text}
             </div>
+          )}
 
-            <div className="mt-6">
-              {isPro ? (
-                user.subscriptionInterval !== subInterval ? (
+          {/* Pricing selector */}
+          <div className="mt-3.5 flex items-center justify-center">
+            <div className="inline-flex rounded-xl border border-line bg-paper p-0.5 shadow-sm">
+              <button
+                type="button"
+                onClick={() => setSubInterval("monthly")}
+                className={`rounded-lg px-3 py-1 text-xs font-medium transition-all ${
+                  subInterval === "monthly"
+                    ? "bg-brand text-brand-fg shadow-sm"
+                    : "text-muted hover:text-ink"
+                }`}
+              >
+                Monthly ($3.49/mo)
+              </button>
+              <button
+                type="button"
+                onClick={() => setSubInterval("yearly")}
+                className={`flex items-center gap-1 rounded-lg px-3 py-1 text-xs font-medium transition-all ${
+                  subInterval === "yearly"
+                    ? "bg-brand text-brand-fg shadow-sm"
+                    : "text-muted hover:text-ink"
+                }`}
+              >
+                <span>Yearly ($24.99/yr)</span>
+                <span className="rounded-full bg-accent-soft px-1.5 py-0.2 text-[9px] font-bold text-accent">
+                  -40%
+                </span>
+              </button>
+            </div>
+          </div>
+
+          {/* Pro Tier Card */}
+          <div className="mt-3.5">
+            <div
+              className={`flex flex-col justify-between rounded-xl border p-4 transition-all ${
+                isPro
+                  ? "border-accent bg-accent-soft/20 ring-1 ring-accent"
+                  : "border-accent/40 bg-paper shadow-sm"
+              }`}
+            >
+              <div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="text-xs font-semibold text-ink">Pro Plan</h3>
+                    <IconSparkles width={13} height={13} className="text-accent" />
+                  </div>
+                  {isPro ? (
+                    <span className="rounded bg-accent-soft px-1.5 py-0.5 text-[10px] font-bold text-accent">
+                      Active
+                    </span>
+                  ) : (
+                    <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-accent">
+                      Upgrade
+                    </span>
+                  )}
+                </div>
+                <div className="mt-1 flex items-baseline gap-1.5">
+                  <span className="display text-2xl font-semibold text-ink">
+                    {subInterval === "yearly" ? "$24.99" : "$3.49"}
+                  </span>
+                  <span className="text-[11px] text-muted">
+                    {subInterval === "yearly" ? "USD / yr ($2.08/mo)" : "USD / month"}
+                  </span>
+                </div>
+
+                <ul className="mt-2.5 space-y-1.5 text-xs text-ink-soft">
+                  <li className="flex items-center gap-1.5">
+                    <IconCheck width={13} height={13} className="text-accent shrink-0" />
+                    <span>AI Advisor & offload recommendations</span>
+                  </li>
+                  <li className="flex items-center gap-1.5">
+                    <IconCheck width={13} height={13} className="text-accent shrink-0" />
+                    <span>Wishlist & 30-day cooldown tracker</span>
+                  </li>
+                  <li className="flex items-center gap-1.5">
+                    <IconCheck width={13} height={13} className="text-accent shrink-0" />
+                    <span>Unlimited categories & subcategories</span>
+                  </li>
+                  <li className="flex items-center gap-1.5">
+                    <IconCheck width={13} height={13} className="text-accent shrink-0" />
+                    <span>Complete CSV & JSON data exports</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="mt-3.5">
+                {isPro ? (
+                  user.subscriptionInterval !== subInterval ? (
+                    <button
+                      type="button"
+                      onClick={() => handleSubscribe("premium", subInterval)}
+                      disabled={subBusy}
+                      className="btn-primary w-full text-xs py-1.5"
+                    >
+                      {subBusy ? "Updating…" : `Switch to ${subInterval === "yearly" ? "Yearly ($24.99/yr)" : "Monthly ($3.49/mo)"}`}
+                    </button>
+                  ) : (
+                    <div className="rounded-lg bg-accent-soft py-1.5 text-center text-xs font-semibold text-accent">
+                      Active Subscription
+                    </div>
+                  )
+                ) : (
                   <button
                     type="button"
                     onClick={() => handleSubscribe("premium", subInterval)}
                     disabled={subBusy}
-                    className="btn-primary w-full"
+                    className="btn-primary w-full text-xs py-1.5 shadow-sm"
                   >
-                    {subBusy ? "Updating…" : `Switch to ${subInterval === "yearly" ? "Yearly ($24.99/yr)" : "Monthly ($3.49/mo)"}`}
+                    <IconSparkles width={13} height={13} />
+                    {subBusy
+                      ? "Upgrading…"
+                      : `Upgrade to Pro — ${subInterval === "yearly" ? "$24.99/yr" : "$3.49/mo"}`}
                   </button>
-                ) : (
-                  <div className="rounded-lg bg-accent-soft py-2 text-center text-[13px] font-semibold text-accent">
-                    Active Subscription
-                  </div>
-                )
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => handleSubscribe("premium", subInterval)}
-                  disabled={subBusy}
-                  className="btn-primary w-full shadow-sm"
-                >
-                  <IconSparkles width={15} height={15} />
-                  {subBusy
-                    ? "Upgrading…"
-                    : `Upgrade to Pro — ${subInterval === "yearly" ? "$24.99/yr" : "$3.49/mo"}`}
-                </button>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>
       </section>
       </div>
-
-      {/* Export Data Card — Paywalled for Pro */}
-      <section className="card p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="display text-lg">Export data</h2>
-              <span className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-bold text-accent uppercase tracking-wider">
-                <IconSparkles width={10} height={10} />
-                Pro Feature
-              </span>
-            </div>
-            <p className="mt-1 text-[13px] text-muted">
-              Download your smpl. data as CSV spreadsheets and JSON archives.
-            </p>
-          </div>
-
-          {!isPro && (
-            <button
-              type="button"
-              onClick={() => {
-                const el = document.getElementById("subscription");
-                el?.scrollIntoView({ behavior: "smooth" });
-              }}
-              className="btn-primary text-xs flex items-center gap-1.5"
-            >
-              <IconLock width={13} height={13} />
-              Upgrade to Pro to export
-            </button>
-          )}
-        </div>
-
-        {!isPro && (
-          <div className="mt-4 rounded-xl border border-line bg-paper p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-wash text-muted">
-                <IconLock width={18} height={18} />
-              </span>
-              <div>
-                <p className="text-sm font-semibold text-ink">Data export is locked on the Free tier</p>
-                <p className="text-xs text-muted">
-                  Upgrade to Pro to download CSV spreadsheets of your active inventory, wishlist, offloaded items, and full JSON database backups anytime.
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => handleSubscribe("premium", subInterval)}
-              disabled={subBusy}
-              className="btn-secondary text-xs shrink-0"
-            >
-              Unlock with Pro
-            </button>
-          </div>
-        )}
-
-        <div className={`mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5 ${!isPro ? "opacity-60 pointer-events-none select-none" : ""}`}>
-          <a
-            href={isPro ? "/api/export?type=inventory" : "#"}
-            download
-            className="flex flex-col rounded-xl border border-line bg-paper p-4 transition hover:border-line-strong hover:shadow-lift"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-[13px] font-semibold text-ink">Inventory CSV</span>
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent-soft text-accent">
-                <IconBox width={15} height={15} />
-              </span>
-            </div>
-            <p className="mt-1 text-[12px] text-muted">Active owned items</p>
-            <span className="mt-3 text-[12px] font-medium text-accent hover:underline">
-              {isPro ? "Download CSV ↓" : "Locked (Pro)"}
-            </span>
-          </a>
-
-          <a
-            href={isPro ? "/api/export?type=purgatory" : "#"}
-            download
-            className="flex flex-col rounded-xl border border-line bg-paper p-4 transition hover:border-line-strong hover:shadow-lift"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-[13px] font-semibold text-ink">Purgatory CSV</span>
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-clay-soft text-clay">
-                <IconFlame width={15} height={15} />
-              </span>
-            </div>
-            <p className="mt-1 text-[12px] text-muted">Staged for offload</p>
-            <span className="mt-3 text-[12px] font-medium text-clay hover:underline">
-              {isPro ? "Download CSV ↓" : "Locked (Pro)"}
-            </span>
-          </a>
-
-          <a
-            href={isPro ? "/api/export?type=wishlist" : "#"}
-            download
-            className="flex flex-col rounded-xl border border-line bg-paper p-4 transition hover:border-line-strong hover:shadow-lift"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-[13px] font-semibold text-ink">Wishlist CSV</span>
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-warn-soft text-warn">
-                <IconHeart width={15} height={15} />
-              </span>
-            </div>
-            <p className="mt-1 text-[12px] text-muted">Wishlist items & scores</p>
-            <span className="mt-3 text-[12px] font-medium text-warn hover:underline">
-              {isPro ? "Download CSV ↓" : "Locked (Pro)"}
-            </span>
-          </a>
-
-          <a
-            href={isPro ? "/api/export?type=offloaded" : "#"}
-            download
-            className="flex flex-col rounded-xl border border-line bg-paper p-4 transition hover:border-line-strong hover:shadow-lift"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-[13px] font-semibold text-ink">Offloaded CSV</span>
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-wash text-ink-soft">
-                <IconArchive width={15} height={15} />
-              </span>
-            </div>
-            <p className="mt-1 text-[12px] text-muted">Disposed, sold & donated</p>
-            <span className="mt-3 text-[12px] font-medium text-ink hover:underline">
-              {isPro ? "Download CSV ↓" : "Locked (Pro)"}
-            </span>
-          </a>
-
-          <a
-            href={isPro ? "/api/export?type=json" : "#"}
-            download
-            className="flex flex-col rounded-xl border border-line bg-paper p-4 transition hover:border-line-strong hover:shadow-lift"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-[13px] font-semibold text-ink">JSON Archive</span>
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand/10 text-brand">
-                <IconBox width={15} height={15} />
-              </span>
-            </div>
-            <p className="mt-1 text-[12px] text-muted">Complete raw backup</p>
-            <span className="mt-3 text-[12px] font-medium text-brand hover:underline">
-              {isPro ? "Download JSON ↓" : "Locked (Pro)"}
-            </span>
-          </a>
-        </div>
-      </section>
 
 
 

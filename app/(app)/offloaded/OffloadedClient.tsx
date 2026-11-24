@@ -1,11 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Item } from "@/lib/db";
 import { formatCategory, formatMoney, formatQuarter, getItemStatusInfo } from "@/lib/format";
-import { CategoryTag, StatusTag } from "@/components/ui";
+import { CategoryTag, Pagination, StatusTag } from "@/components/ui";
 import {
   IconArchive,
   IconBox,
@@ -27,6 +27,7 @@ export default function OffloadedClient({
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [page, setPage] = useState(1);
   const [busyId, setBusyId] = useState<number | null>(null);
 
   const categories = useMemo(() => {
@@ -50,6 +51,14 @@ export default function OffloadedClient({
       );
     });
   }, [items, query, statusFilter, categoryFilter]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [query, statusFilter, categoryFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / 10));
+  const safePage = Math.min(page, totalPages);
+  const paginated = filtered.slice((safePage - 1) * 10, safePage * 10);
 
   const soldItems = useMemo(
     () => items.filter((i) => i.status === "sold" && (saleAmounts[i.id] ?? 0) > 0),
@@ -180,7 +189,7 @@ export default function OffloadedClient({
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((item) => {
+                {paginated.map((item) => {
                   const statusInfo = getItemStatusInfo(item);
                   return (
                     <tr
@@ -229,6 +238,12 @@ export default function OffloadedClient({
               </tbody>
             </table>
           </div>
+          <Pagination
+            currentPage={safePage}
+            totalItems={filtered.length}
+            pageSize={10}
+            onPageChange={setPage}
+          />
         </div>
       )}
     </div>
