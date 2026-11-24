@@ -511,7 +511,7 @@ export function InteractivePreviewWidget() {
                 </div>
                 <h4 className="font-semibold text-ink text-base">Audit your possession clutter</h4>
                 <p className="text-xs text-muted max-w-md mx-auto">
-                  smpl. analyzes days since acquisition, logged usage frequency, category density, and estimated depreciation to nudge you when an item is sitting idle.
+                  smpl. analyzes idle time, usage frequency, seasonal timing, depreciation, categorical distribution, and duplicates to highlight the top items you should consider parting with.
                 </p>
                 <button
                   type="button"
@@ -797,7 +797,7 @@ export function TestimonialsSection() {
 const FAQS = [
   {
     q: "How is smpl. different from a spreadsheet or Notion template?",
-    a: "Spreadsheets don't nudge you when an item has sat unused in a closet for 11 months. smpl. is purpose-built for possession lifecycle: tracking usage frequency, calculating item depreciation, enforcing a 30-day purgatory decision clock, and providing an impulse-buy wishlist with cooldown tracking.",
+    a: "Spreadsheets don't nudge you when an item has sat unused in a closet for 11 months. smpl. is purpose-built for possession lifecycle: tracking usage frequency, calculating item depreciation, enforcing a 30-day purgatory decision clock, and providing an impulse-buy wishlist with a 30-day cooldown tracker.",
   },
   {
     q: "How does the 30-day Purgatory work?",
@@ -813,11 +813,11 @@ const FAQS = [
   },
   {
     q: "What is included in the Free tier vs. Pro?",
-    a: "The Free tier is free forever and includes unlimited items tracking, possession analytics, 30-day purgatory, and limited custom categories. Pro ($4.29/mo or $34.99/yr, including a 14-day free trial) unlocks the AI Declutter Advisor, Wishlist cooldown tracker, unlimited custom categories, and complete CSV/JSON data exports.",
+    a: "The Free tier is free forever and includes unlimited items tracking, possession analytics, 30-day purgatory, and limited custom categories. Pro ($4.29/mo or $34.99/yr, including a 14-day free trial) unlocks the AI Declutter Advisor, Wishlist (track items you don't yet own with a 30-day cooldown tracker), unlimited custom categories & subcategories, and complete CSV & JSON data exporting.",
   },
   {
     q: "Is there a free trial for Pro?",
-    a: "Yes! We offer a full 14-day free trial on smpl. Pro with zero upfront commitment. You can explore the AI Declutter Advisor, Wishlist cooldown tracker, unlimited custom categories, and CSV/JSON backups completely free for 14 days. You can cancel anytime with a single click.",
+    a: "Yes! We offer a full 14-day free trial on smpl. Pro with zero upfront commitment. You can explore the AI Declutter Advisor, Wishlist cooldown tracker, unlimited custom categories, and complete CSV & JSON data exporting completely free for 14 days. You can cancel anytime with a single click.",
   },
   {
     q: "How do I install smpl. on my phone?",

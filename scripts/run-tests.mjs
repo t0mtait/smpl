@@ -42,6 +42,7 @@ const tsc = spawnSync(
     "tests/sort.test.ts",
     "tests/stats.test.ts",
     "tests/backup.test.ts",
+    "tests/lifecycle.test.ts",
     "lib/scoring.ts",
     "lib/db.ts",
     "lib/password.ts",
@@ -97,6 +98,7 @@ runSuite("dates", [path.join(OUT, "tests", "dates.test.js")]);
 runSuite("sort", [path.join(OUT, "tests", "sort.test.js")]);
 runSuite("stats", [path.join(OUT, "tests", "stats.test.js")]);
 runSuite("backup", [path.join(OUT, "tests", "backup.test.js")]);
+runSuite("lifecycle", [path.join(OUT, "tests", "lifecycle.test.js")]);
 runSuite("import", [path.join(ROOT, "tests", "import.test.mjs")]);
 
 fs.rmSync(OUT, { recursive: true, force: true });

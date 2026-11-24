@@ -42,8 +42,8 @@ const FEATURES = [
   },
   {
     icon: <IconRobot width={20} height={20} />,
-    title: "An AI advisor that nudges you",
-    body: "smpl. looks at how often you use things, their value and how long they've sat idle, then suggests what to sell, donate or keep.",
+    title: "AI Advisor: Data-driven recommendations",
+    body: "Analyzes idle time, usage frequency, seasonal timing, depreciation, categorical distribution, and duplicates to suggest what to sell, donate, or keep.",
   },
   {
     icon: <IconChart width={20} height={20} />,
@@ -57,8 +57,8 @@ const FEATURES = [
   },
   {
     icon: <IconHeart width={20} height={20} />,
-    title: "A wishlist to curb impulse buys",
-    body: "Park the things you want before you buy them. If you still want it later, it's a considered purchase.",
+    title: "Wishlist with 30-day cooldown",
+    body: "Track items you don't yet own with a 30-day cooldown tracker. If you still want it after the cooldown, it's a considered purchase.",
   },
 ];
 
@@ -233,10 +233,10 @@ export default async function WelcomePage() {
                   <p className="text-[13px] text-muted">or $34.99 / year • includes 14-day free trial</p>
                   <ul className="mt-5 space-y-2.5">
                     <Check>Everything in Free</Check>
-                    <Check>AI advisor suggestions</Check>
-                    <Check>Wishlist</Check>
-                    <Check>Unlimited categories &amp; subcategories</Check>
-                    <Check>Data export</Check>
+                    <Check>AI Advisor: Data-driven offload recommendations</Check>
+                    <Check>Wishlist: Track items you don&apos;t yet own, with a 30-day cooldown tracker</Check>
+                    <Check>Unlimited custom categories &amp; subcategories</Check>
+                    <Check>Complete CSV &amp; JSON data exporting</Check>
                   </ul>
                 </div>
                 <div className="mt-7">
