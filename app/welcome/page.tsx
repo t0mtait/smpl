@@ -94,7 +94,7 @@ export default async function WelcomePage() {
             </span>
             <span className="display text-[19px] leading-none tracking-[-0.01em]">smpl.</span>
           </Link>
-          <nav className="flex items-center gap-2 sm:gap-3">
+          <nav className="flex items-center gap-3 sm:gap-6">
             <a href="#features" className="hidden text-sm text-ink-soft hover:text-ink sm:inline">
               Features
             </a>
@@ -111,10 +111,10 @@ export default async function WelcomePage() {
               FAQ
             </a>
             <ThemeToggle variant="icon" />
-            <Link href="/auth/login" className="btn-secondary px-3 py-1.5 text-[13px]">
+            <Link href="/auth/login" className="btn-secondary px-3.5 py-1.5 text-[13px]">
               Sign in
             </Link>
-            <Link href="/auth/register" className="btn-primary px-3 py-1.5 text-[13px]">
+            <Link href="/auth/register" className="btn-primary px-3.5 py-1.5 text-[13px]">
               Get started
             </Link>
           </nav>
@@ -126,14 +126,14 @@ export default async function WelcomePage() {
         <section className="mx-auto grid max-w-6xl items-center gap-12 px-4 pb-16 pt-14 sm:px-6 lg:grid-cols-2 lg:pb-24 lg:pt-20">
           <div className="animate-rise">
             <p className="eyebrow">Mindful inventory &amp; decluttering</p>
-            <h1 className="display mt-3 text-4xl leading-[1.05] tracking-[-0.02em] sm:text-6xl">
-              Know what you own.
-              <br />
-              <span className="text-accent">Let go of what you don&apos;t.</span>
+            <h1 className="display mt-3 text-3xl sm:text-5xl lg:text-[52px] leading-[1.1] tracking-[-0.02em]">
+              <span className="block whitespace-nowrap">Know what you own.</span>
+              <span className="block whitespace-nowrap text-accent">Let go of what you don&apos;t.</span>
             </h1>
-            <p className="mt-5 max-w-lg text-[17px] leading-relaxed text-muted">
-              smpl. is a calm, simple place to keep track of your things, see what&apos;s quietly sitting unused, and
-              decide what to sell, donate or keep. Less clutter, clearer numbers.
+            <p className="mt-5 max-w-lg text-[16px] sm:text-[17px] leading-relaxed text-muted space-y-1">
+              <span className="block">smpl. is a calm, simple place to keep track of your things.</span>
+              <span className="block">See what&apos;s quietly sitting unused, and decide what to sell, donate, or keep.</span>
+              <span className="block font-medium text-ink">Less clutter, clearer numbers.</span>
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link href="/auth/register" className="btn-primary px-6 py-3 text-base">
@@ -143,9 +143,6 @@ export default async function WelcomePage() {
                 Sign in
               </Link>
             </div>
-            <p className="mt-4 text-[13px] text-muted">
-              Free forever for tracking. PWA ready for iOS &amp; Android.
-            </p>
           </div>
           <InteractivePreviewWidget />
         </section>
@@ -204,40 +201,49 @@ export default async function WelcomePage() {
           <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:py-24">
             <h2 className="display text-center text-3xl sm:text-4xl">Simple pricing</h2>
             <p className="mt-3 text-center text-[16px] text-muted">Start free. Upgrade when you want more.</p>
-            <div className="mt-10 grid gap-5 md:grid-cols-2">
-              <div className="card p-7">
-                <h3 className="text-lg font-semibold">Free</h3>
-                <div className="mt-2 display text-4xl">$0</div>
-                <ul className="mt-5 space-y-2.5">
-                  <Check>Unlimited tracked items</Check>
-                  <Check>Dashboard &amp; analytics</Check>
-                  <Check>Purgatory &amp; offload tracking</Check>
-                  <Check>5 categories, 2 subcategories each</Check>
-                </ul>
-                <Link href="/auth/register" className="btn-secondary mt-7 w-full">
-                  Get started
-                </Link>
+            <div className="mt-10 grid gap-5 md:grid-cols-2 items-stretch">
+              <div className="card flex flex-col justify-between p-7">
+                <div>
+                  <h3 className="text-lg font-semibold">Free</h3>
+                  <div className="mt-2 display text-4xl">$0</div>
+                  <p className="text-[13px] text-muted">&nbsp;</p>
+                  <ul className="mt-5 space-y-2.5">
+                    <Check>Unlimited tracked items</Check>
+                    <Check>Dashboard &amp; analytics</Check>
+                    <Check>Purgatory &amp; offload tracking</Check>
+                    <Check>Limited custom categories</Check>
+                  </ul>
+                </div>
+                <div className="mt-7">
+                  <Link href="/auth/register" className="btn-secondary w-full">
+                    Get started
+                  </Link>
+                </div>
               </div>
-              <div className="card relative border-accent/40 p-7 ring-1 ring-accent/20">
+              <div className="card relative border-accent/40 p-7 ring-1 ring-accent/20 flex flex-col justify-between">
                 <span className="absolute right-5 top-5 rounded-full bg-accent-soft px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-accent">
                   Pro
                 </span>
-                <h3 className="text-lg font-semibold">Pro</h3>
-                <div className="mt-2 flex items-baseline gap-2">
-                  <span className="display text-4xl">$4.29</span>
-                  <span className="text-sm text-muted">/ month</span>
+                <div>
+                  <h3 className="text-lg font-semibold">Pro</h3>
+                  <div className="mt-2 flex items-baseline gap-2">
+                    <span className="display text-4xl">$4.29</span>
+                    <span className="text-sm text-muted">/ month</span>
+                  </div>
+                  <p className="text-[13px] text-muted">or $34.99 / year • includes 14-day free trial</p>
+                  <ul className="mt-5 space-y-2.5">
+                    <Check>Everything in Free</Check>
+                    <Check>AI advisor suggestions</Check>
+                    <Check>Wishlist</Check>
+                    <Check>Unlimited categories &amp; subcategories</Check>
+                    <Check>Data export</Check>
+                  </ul>
                 </div>
-                <p className="text-[13px] text-muted">or $34.99 / year • includes 14-day free trial</p>
-                <ul className="mt-5 space-y-2.5">
-                  <Check>Everything in Free</Check>
-                  <Check>AI advisor suggestions</Check>
-                  <Check>Wishlist</Check>
-                  <Check>Unlimited categories &amp; subcategories</Check>
-                  <Check>Data export</Check>
-                </ul>
-                <Link href="/auth/register" className="btn-primary mt-7 w-full">
-                  Start with Pro
-                </Link>
+                <div className="mt-7">
+                  <Link href="/auth/register" className="btn-primary w-full">
+                    Free Trial
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
@@ -260,24 +266,12 @@ export default async function WelcomePage() {
           <Link href="/auth/register" className="btn-primary mt-7 px-7 py-3 text-base">
             Create your free account
           </Link>
-          <p className="mt-5 inline-flex items-center gap-2 text-[13px] text-muted">
-            <IconSearch width={14} height={14} />
-            iOS &amp; Android apps coming soon
-          </p>
         </section>
       </main>
 
       <footer className="border-t border-line">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-[13px] text-muted sm:px-6">
+        <div className="mx-auto flex max-w-6xl items-center justify-center px-4 py-6 text-[13px] text-muted sm:px-6">
           <span>© {new Date().getFullYear()} smpl.</span>
-          <span className="flex gap-4">
-            <Link href="/auth/login" className="hover:text-ink">
-              Sign in
-            </Link>
-            <Link href="/auth/register" className="hover:text-ink">
-              Create account
-            </Link>
-          </span>
         </div>
       </footer>
     </div>

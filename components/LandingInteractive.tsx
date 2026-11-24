@@ -203,7 +203,7 @@ export function InteractivePreviewWidget() {
                     <th className="px-3 py-2">Item</th>
                     <th className="px-3 py-2">Category</th>
                     <th className="px-3 py-2 text-right">Value</th>
-                    <th className="px-3 py-2">Usage (Click to change)</th>
+                    <th className="px-3 py-2">Usage</th>
                     <th className="px-3 py-2 text-right">Purgatory</th>
                   </tr>
                 </thead>
@@ -225,20 +225,17 @@ export function InteractivePreviewWidget() {
                           ${it.price}
                         </td>
                         <td className="px-3 py-2.5">
-                          <button
-                            type="button"
-                            onClick={() => cycleUsage(it.id)}
-                            className={`rounded px-2 py-0.5 text-[11px] font-medium transition-colors cursor-pointer ${
+                          <span
+                            className={`inline-block rounded px-2 py-0.5 text-[11px] font-medium ${
                               it.usage === "Heavy"
                                 ? "bg-accent-soft text-accent"
                                 : it.usage === "Occasional"
                                 ? "bg-wash text-ink"
                                 : "bg-clay-soft text-clay"
                             }`}
-                            title="Click to cycle usage"
                           >
-                            {it.usage} ↻
-                          </button>
+                            {it.usage}
+                          </span>
                         </td>
                         <td className="px-3 py-2.5 text-right">
                           <button
@@ -258,7 +255,7 @@ export function InteractivePreviewWidget() {
             </div>
 
             <p className="text-[11px] text-muted text-center pt-1">
-              💡 <em>Try typing in the search box, cycling an item's usage, or clicking the flame icon to stage it to Purgatory.</em>
+              💡 <em>Try typing in the search box or clicking the flame icon to stage an item to Purgatory.</em>
             </p>
           </div>
         )}
@@ -679,7 +676,7 @@ export function MobileAppShowcase() {
         <div className="order-1 lg:order-2 space-y-6">
           <p className="eyebrow">Inventory in your pocket</p>
           <h2 className="display text-3xl sm:text-4xl leading-tight">
-            Stop duplicate buys <br className="hidden sm:inline" />
+            Stop needless buys <br className="hidden sm:inline" />
             <span className="text-accent">before you reach the checkout.</span>
           </h2>
           <p className="text-[16px] text-muted leading-relaxed">
@@ -713,7 +710,7 @@ export function MobileAppShowcase() {
               </span>
               <div>
                 <h3 className="font-semibold text-ink text-sm">Fast PWA installation</h3>
-                <p className="text-xs text-muted mt-0.5">Works smoothly as an app on your iOS or Android home screen with zero clutter or ads.</p>
+                <p className="text-xs text-muted mt-0.5">Works smoothly as an app on your iOS or Android phone with zero clutter or ads.</p>
               </div>
             </div>
           </div>
@@ -806,7 +803,7 @@ const FAQS = [
   },
   {
     q: "What is included in the Free tier vs. Pro?",
-    a: "The Free tier is free forever and includes unlimited items tracking, possession analytics, 30-day purgatory, and up to 5 categories with subcategories. Pro ($4.29/mo or $34.99/yr, including a 14-day free trial) unlocks the AI Declutter Advisor, Wishlist cooldown tracker, unlimited custom categories, and complete CSV/JSON data exports.",
+    a: "The Free tier is free forever and includes unlimited items tracking, possession analytics, 30-day purgatory, and limited custom categories. Pro ($4.29/mo or $34.99/yr, including a 14-day free trial) unlocks the AI Declutter Advisor, Wishlist cooldown tracker, unlimited custom categories, and complete CSV/JSON data exports.",
   },
   {
     q: "What is your refund policy?",
