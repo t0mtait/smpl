@@ -75,21 +75,18 @@ const config: Config = {
         "chart-ink": v("chart-ink"),
       },
       fontFamily: {
-        // The latin and latin-ext files are separate @font-face families;
-        // the browser walks the stack per character, so the ext file only
-        // supplies glyphs the latin file is missing.
         sans: [
-          "var(--font-sans)",
-          "var(--font-sans-ext)",
-          "ui-sans-serif",
-          "system-ui",
-          "sans-serif",
-        ],
-        display: [
-          "var(--font-display)",
-          "var(--font-display-ext)",
+          "var(--font-lora)",
           "ui-serif",
           "Georgia",
+          "Cambria",
+          "serif",
+        ],
+        display: [
+          "var(--font-lora)",
+          "ui-serif",
+          "Georgia",
+          "Cambria",
           "serif",
         ],
       },

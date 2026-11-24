@@ -154,8 +154,7 @@
 
   body {
     @apply text-ink;
-    font-family: var(--font-sans), var(--font-sans-ext), ui-sans-serif, system-ui,
-      -apple-system, "Segoe UI", sans-serif;
+    font-family: var(--font-lora), ui-serif, Georgia, Cambria, serif;
     font-feature-settings: "ss01";
     background-color: rgb(var(--c-paper));
     /* A very faint wash keeps the paper from reading as flat grey. The
@@ -212,7 +211,7 @@
   /* Display headings use Fraunces — this is what gives the app a voice
      instead of looking like every other Tailwind dashboard. */
   .display {
-    font-family: var(--font-display), var(--font-display-ext), ui-serif, Georgia, serif;
+    font-family: var(--font-lora), ui-serif, Georgia, Cambria, serif;
     /* Fraunces carries an optical-size axis: the browser picks the
        letterforms that suit the rendered size, so large headings get
        the high-contrast cut and small ones stay sturdy. */

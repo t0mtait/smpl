@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { sansFont, sansFontExt, displayFont, displayFontExt } from "./fonts";
+import { lora } from "./fonts";
 
 export const metadata: Metadata = {
   title: "smpl.",
@@ -57,7 +57,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
-      className={`${sansFont.variable} ${sansFontExt.variable} ${displayFont.variable} ${displayFontExt.variable}`}
+      className={lora.variable}
       // The initializer mutates <html> before React hydrates, so the
       // class and data-theme it sets will not match the server render.
       suppressHydrationWarning
