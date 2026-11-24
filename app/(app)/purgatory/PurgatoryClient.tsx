@@ -308,15 +308,14 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
           <h1 className="display mt-2 text-4xl leading-[1.1] sm:text-5xl">Staged for offloading</h1>
         </div>
 
-        {/* Summary tiles beside header */}
-        <div className="flex flex-wrap items-center gap-3 sm:ml-auto">
-          <div className="card px-5 py-3 min-w-[130px]">
+        {/* Consolidated summary tile beside header */}
+        <div className="sm:ml-auto">
+          <div className="card px-5 py-3">
             <span className="eyebrow text-[10px]">In purgatory</span>
-            <div className="mt-1 text-2xl font-bold tabular text-ink">{items.length}</div>
-          </div>
-          <div className="card px-5 py-3 min-w-[140px]">
-            <span className="eyebrow text-[10px]">Estimated value</span>
-            <div className="mt-1 text-2xl font-bold tabular text-clay">{formatMoney(totalValue)}</div>
+            <div className="mt-1 flex items-baseline gap-2.5">
+              <span className="text-2xl font-bold tabular text-ink">{items.length}</span>
+              <span className="text-sm font-semibold tabular text-clay">{formatMoney(totalValue)}</span>
+            </div>
           </div>
         </div>
       </header>
