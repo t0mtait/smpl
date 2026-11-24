@@ -130,7 +130,9 @@ export default function ItemForm({ item }: Props) {
             <label className="label" htmlFor="category">
               Category
             </label>
-            <select id="category" className="input" value={form.category} onChange={set("category")}>
+            <select id="category" className="input" value={form.category}
+              onChange={(e) => setForm((f) => ({ ...f, category: e.target.value, subcategory: "" }))}
+            >
               {(userCategories.length > 0 ? userCategories.map((u) => u.category) : CATEGORIES).map((c) => (
                 <option key={c} value={c}>
                   {formatCategory(c)}
@@ -142,19 +144,18 @@ export default function ItemForm({ item }: Props) {
             <label className="label" htmlFor="subcategory">
               Subcategory
             </label>
-            <input
-              id="subcategory"
-              list="item-subcategories-list"
-              className="input"
-              value={form.subcategory}
-              onChange={set("subcategory")}
-              placeholder="e.g. Entertainment, Audio, Tools"
-            />
-            <datalist id="item-subcategories-list">
-              {(userCategories.find((u) => u.category === form.category)?.subcategories || []).map((s) => (
-                <option key={s} value={s} />
-              ))}
-            </datalist>
+            <select id="subcategory" className="input" value={form.subcategory} onChange={set("subcategory")}>
+              <option value="">None</option>
+              {(() => {
+                const opts = userCategories.find((u) => u.category === form.category)?.subcategories || [];
+                const all = form.subcategory && !opts.includes(form.subcategory) ? [form.subcategory, ...opts] : opts;
+                return all.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ));
+              })()}
+            </select>
           </div>
           <div>
             <label className="label" htmlFor="quality">

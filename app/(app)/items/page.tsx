@@ -101,6 +101,11 @@ function InventoryInner() {
     return [...set].sort();
   }, [items]);
 
+  const subOptions = (cat: string, current?: string | null) => {
+    const opts = userCategories.find((u) => u.category === cat)?.subcategories || [];
+    return current && !opts.includes(current) ? [current, ...opts] : opts;
+  };
+
   const subcategories = useMemo(() => {
     if (category === "all") return [];
     const set = new Set(
@@ -491,21 +496,20 @@ function InventoryInner() {
                       {/* Subcategory: clicking edits subcategory */}
                       <td className="px-4 py-3 text-[13px] text-ink-soft">
                         {editingCell?.itemId === item.id && editingCell?.field === "subcategory" ? (
-                          <input
-                            type="text"
+                          <select
                             autoFocus
-                            defaultValue={item.subcategory}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                saveInline(item.id, { subcategory: e.currentTarget.value.trim() });
-                              }
-                              if (e.key === "Escape") setEditingCell(null);
-                            }}
-                            onBlur={(e) =>
-                              saveInline(item.id, { subcategory: e.currentTarget.value.trim() })
-                            }
-                            className="input py-0.5 px-2 text-xs h-7 max-w-[120px]"
-                          />
+                            defaultValue={item.subcategory || ""}
+                            onChange={(e) => saveInline(item.id, { subcategory: e.target.value })}
+                            onBlur={() => setEditingCell(null)}
+                            className="input py-0.5 px-2 text-xs h-7 max-w-[140px]"
+                          >
+                            <option value="">None</option>
+                            {subOptions(item.category, item.subcategory).map((s) => (
+                              <option key={s} value={s}>
+                                {s}
+                              </option>
+                            ))}
+                          </select>
                         ) : (
                           <span
                             onClick={() => setEditingCell({ itemId: item.id, field: "subcategory" })}
@@ -761,7 +765,10 @@ function InventoryInner() {
                   id="edit-item-cat"
                   className="input"
                   value={editCategory}
-                  onChange={(e) => setEditCategory(e.target.value)}
+                  onChange={(e) => {
+                    setEditCategory(e.target.value);
+                    setEditSubcategory("");
+                  }}
                 >
                   {(userCategories.length > 0 ? userCategories.map((u) => u.category) : CATEGORIES).map((c) => (
                     <option key={c} value={c}>
@@ -775,18 +782,19 @@ function InventoryInner() {
                 <label className="label" htmlFor="edit-item-subcat">
                   Subcategory
                 </label>
-                <input
+                <select
                   id="edit-item-subcat"
-                  list="edit-subcat-suggestions"
                   className="input"
                   value={editSubcategory}
                   onChange={(e) => setEditSubcategory(e.target.value)}
-                />
-                <datalist id="edit-subcat-suggestions">
-                  {(userCategories.find((u) => u.category === editCategory)?.subcategories || []).map((s) => (
-                    <option key={s} value={s} />
+                >
+                  <option value="">None</option>
+                  {subOptions(editCategory, editSubcategory).map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
                   ))}
-                </datalist>
+                </select>
               </div>
 
               <div>
