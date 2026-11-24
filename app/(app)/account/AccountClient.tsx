@@ -12,8 +12,9 @@ import {
   IconArchive,
   IconArrowLeft,
   IconBox,
-  IconCamera,
   IconCheck,
+  IconEye,
+  IconEyeOff,
   IconChevronRight,
   IconFlame,
   IconHeart,
@@ -74,7 +75,8 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
 
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [confirmRemoveAvatar, setConfirmRemoveAvatar] = useState(false);
@@ -291,76 +293,56 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
     }
   };
 
-  const handleUpdateProfile = async (e: React.FormEvent) => {
+  const handleSaveAccount = async (e: React.FormEvent) => {
     e.preventDefault();
     setProfileBusy(true);
     setProfileMsg(null);
 
+    const payload: { name: string; email: string; currentPassword?: string; newPassword?: string } = {
+      name,
+      email,
+    };
+
+    if (newPassword || currentPassword) {
+      if (!currentPassword) {
+        setProfileMsg({ type: "error", text: "Current password is required to set a new password." });
+        setProfileBusy(false);
+        return;
+      }
+      if (newPassword.length < 8) {
+        setProfileMsg({ type: "error", text: "New password must be at least 8 characters." });
+        setProfileBusy(false);
+        return;
+      }
+      payload.currentPassword = currentPassword;
+      payload.newPassword = newPassword;
+    }
+
     try {
       const res = await fetch("/api/user/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email }),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Failed to update profile");
+        throw new Error(data.error || "Failed to update account");
       }
 
       const data = await res.json();
       setUser(data.user);
-      setProfileMsg({ type: "success", text: "Profile saved successfully." });
+      setCurrentPassword("");
+      setNewPassword("");
+      setProfileMsg({ type: "success", text: "Account updated successfully." });
       router.refresh();
     } catch (err: unknown) {
       setProfileMsg({
         type: "error",
-        text: err instanceof Error ? err.message : "Failed to update profile",
+        text: err instanceof Error ? err.message : "Failed to update account",
       });
     } finally {
       setProfileBusy(false);
-    }
-  };
-
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setPasswordMsg(null);
-
-    if (newPassword.length < 8) {
-      setPasswordMsg({ type: "error", text: "New password must be at least 8 characters" });
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setPasswordMsg({ type: "error", text: "Passwords do not match" });
-      return;
-    }
-
-    setPasswordBusy(true);
-
-    try {
-      const res = await fetch("/api/user/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ currentPassword, newPassword }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Failed to change password");
-      }
-
-      setPasswordMsg({ type: "success", text: "Password changed successfully." });
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-    } catch (err: unknown) {
-      setPasswordMsg({
-        type: "error",
-        text: err instanceof Error ? err.message : "Failed to change password",
-      });
-    } finally {
-      setPasswordBusy(false);
     }
   };
 
@@ -379,15 +361,12 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
         </Link>
       </header>
 
-      {/* Combined Profile, Credentials & Security Card */}
-      <section className="card space-y-4 p-4 sm:p-5">
-        <h2 className="display text-lg">Account settings</h2>
-
-        {/* Photo + profile details on one row */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
-          <div className="flex shrink-0 items-center gap-3">
-            <UserAvatar name={user.name} email={user.email} avatarPath={user.avatarPath} size={48} />
-            <div>
+      {/* Account Settings Card */}
+      <section className="card p-5 sm:p-6">
+        <form onSubmit={handleSaveAccount} className="space-y-6">
+          <div className="flex flex-col gap-6 md:flex-row md:items-center">
+            {/* Clickable Profile Photo */}
+            <div className="flex shrink-0 flex-col items-center gap-2">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -396,162 +375,164 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                 className="hidden"
                 id="avatar-upload-input"
               />
-              <div className="flex items-center gap-1.5">
-                <label
-                  htmlFor="avatar-upload-input"
-                  className={`btn-secondary cursor-pointer px-2.5 py-1 text-xs ${avatarBusy ? "pointer-events-none opacity-50" : ""}`}
-                  title="JPG, PNG, WebP or GIF"
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={avatarBusy}
+                className="group relative cursor-pointer rounded-full p-1 transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-accent"
+                title="Click to change profile picture"
+              >
+                <UserAvatar
+                  name={user.name}
+                  email={user.email}
+                  avatarPath={user.avatarPath}
+                  size={84}
+                  className="ring-2 ring-line transition-opacity group-hover:opacity-85"
+                />
+                <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 transition-opacity group-hover:opacity-100 text-white text-[11px] font-medium">
+                  Change
+                </span>
+              </button>
+
+              {user.avatarPath && (
+                <button
+                  type="button"
+                  onClick={handleRemoveAvatar}
+                  disabled={avatarBusy}
+                  className="text-[11px] text-danger hover:underline"
                 >
-                  <IconCamera width={13} height={13} />
-                  {avatarBusy ? "Uploading…" : "Photo"}
-                </label>
-                {user.avatarPath && (
-                  <button
-                    type="button"
-                    onClick={handleRemoveAvatar}
-                    disabled={avatarBusy}
-                    className="btn-secondary px-2 py-1 text-xs text-danger hover:border-danger-line"
-                    aria-label="Remove photo"
-                    title="Remove photo"
-                  >
-                    <IconTrash width={13} height={13} />
-                  </button>
-                )}
+                  Remove picture
+                </button>
+              )}
+            </div>
+
+            {/* Inputs grid: stacked name & email on left, old & new password on right */}
+            <div className="grid flex-1 gap-4 sm:grid-cols-2">
+              {/* Left column: Display Name & Email */}
+              <div className="space-y-3">
+                <div>
+                  <label className="label text-xs" htmlFor="user-name">
+                    Display Name
+                  </label>
+                  <input
+                    id="user-name"
+                    type="text"
+                    className="input text-sm"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g. Tom"
+                  />
+                </div>
+                <div>
+                  <label className="label text-xs" htmlFor="user-email">
+                    Email Address
+                  </label>
+                  <input
+                    id="user-email"
+                    type="email"
+                    className="input text-sm"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Right column: Old Password & New Password */}
+              <div className="space-y-3">
+                <div>
+                  <label className="label text-xs" htmlFor="current-password">
+                    Current Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="current-password"
+                      type={showOldPassword ? "text" : "password"}
+                      className="input pr-9 text-sm"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      placeholder="Required only to change password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowOldPassword(!showOldPassword)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted hover:text-ink"
+                      tabIndex={-1}
+                      title={showOldPassword ? "Hide password" : "Show password"}
+                    >
+                      {showOldPassword ? <IconEyeOff width={15} height={15} /> : <IconEye width={15} height={15} />}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="label text-xs" htmlFor="new-password">
+                    New Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="new-password"
+                      type={showNewPassword ? "text" : "password"}
+                      className="input pr-9 text-sm"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      minLength={8}
+                      placeholder="Min 8 characters"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted hover:text-ink"
+                      tabIndex={-1}
+                      title={showNewPassword ? "Hide password" : "Show password"}
+                    >
+                      {showNewPassword ? <IconEyeOff width={15} height={15} /> : <IconEye width={15} height={15} />}
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          <form
-            id="profile-form"
-            onSubmit={handleUpdateProfile}
-            className="grid flex-1 gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
-          >
-            <div>
-              <label className="label" htmlFor="user-name">
-                Display name
-              </label>
-              <input
-                id="user-name"
-                type="text"
-                className="input"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Tom"
-              />
+          {avatarMsg && (
+            <div
+              className={`rounded-lg px-3 py-2 text-xs ${
+                avatarMsg.type === "success"
+                  ? "border border-accent-line bg-accent-soft text-accent"
+                  : "border border-danger-line bg-danger-soft text-danger"
+              }`}
+            >
+              {avatarMsg.text}
             </div>
-            <div>
-              <label className="label" htmlFor="user-email">
-                Email
-              </label>
-              <input
-                id="user-email"
-                type="email"
-                className="input"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <button type="submit" className="btn-primary px-3 py-2 text-xs" disabled={profileBusy}>
-              <IconCheck width={14} height={14} />
-              {profileBusy ? "Saving…" : "Save"}
-            </button>
-          </form>
-        </div>
-        {avatarMsg && (
-          <div
-            className={`rounded-lg px-2.5 py-1.5 text-xs ${
-              avatarMsg.type === "success"
-                ? "border border-accent-line bg-accent-soft text-accent"
-                : "border border-danger-line bg-danger-soft text-danger"
-            }`}
-          >
-            {avatarMsg.text}
-          </div>
-        )}
-        {profileMsg && (
-          <div
-            className={`rounded-lg px-2.5 py-1.5 text-xs ${
-              profileMsg.type === "success"
-                ? "border border-accent-line bg-accent-soft text-accent"
-                : "border border-danger-line bg-danger-soft text-danger"
-            }`}
-          >
-            {profileMsg.text}
-          </div>
-        )}
+          )}
 
-        {/* Password */}
-        <div className="border-t border-line pt-4">
-          <h3 className="mb-2 text-sm font-semibold text-ink">Change password</h3>
-          {passwordMsg && (
-          <div
-            className={`rounded-lg px-2.5 py-1.5 text-xs ${
-              passwordMsg.type === "success"
-                ? "border border-accent-line bg-accent-soft text-accent"
-                : "border border-danger-line bg-danger-soft text-danger"
-            }`}
-          >
-            {passwordMsg.text}
-          </div>
-        )}
-          <form
-            id="password-form"
-            onSubmit={handleChangePassword}
-            className="mt-2 grid gap-3 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end"
-          >
-            <div>
-              <label className="label" htmlFor="current-password">
-                Current
-              </label>
-              <input
-                id="current-password"
-                type="password"
-                className="input"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                required
-              />
+          {profileMsg && (
+            <div
+              className={`rounded-lg px-3 py-2 text-xs ${
+                profileMsg.type === "success"
+                  ? "border border-accent-line bg-accent-soft text-accent"
+                  : "border border-danger-line bg-danger-soft text-danger"
+              }`}
+            >
+              {profileMsg.text}
             </div>
-            <div>
-              <label className="label" htmlFor="new-password">
-                New
-              </label>
-              <input
-                id="new-password"
-                type="password"
-                className="input"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                minLength={8}
-                placeholder="Min 8 characters"
-                required
-              />
-            </div>
-            <div>
-              <label className="label" htmlFor="confirm-password">
-                Confirm
-              </label>
-              <input
-                id="confirm-password"
-                type="password"
-                className="input"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                minLength={8}
-                placeholder="Repeat new password"
-                required
-              />
-            </div>
-            <button type="submit" className="btn-secondary px-3 py-2 text-xs" disabled={passwordBusy}>
-              <IconLock width={14} height={14} />
-              {passwordBusy ? "Updating…" : "Update"}
+          )}
+
+          <div className="flex justify-end pt-2 border-t border-line-soft">
+            <button
+              type="submit"
+              className="btn-primary px-5 py-2 text-sm"
+              disabled={profileBusy}
+            >
+              <IconCheck width={15} height={15} />
+              {profileBusy ? "Saving…" : "Save changes"}
             </button>
-          </form>
-        </div>
+          </div>
+        </form>
       </section>
 
-      {/* Categories & Subcategories Customization */}
+      {/* Categories & Membership Side by Side */}
+      <div className="grid gap-6 lg:grid-cols-2 items-start">
+        {/* Categories & Subcategories Customization */}
       <section className="card p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div
@@ -820,8 +801,7 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
         </div>
         </>)}
       </section>
-
-      {/* Membership & Subscription Card */}
+        {/* Membership & Subscription Card */}
       <section id="subscription" className="card p-6 scroll-mt-6">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
           <div>
@@ -900,78 +880,8 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
           </div>
         </div>
 
-        {/* Tier Cards Comparison */}
-        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-          {/* Free Tier */}
-          <div
-            className={`flex flex-col justify-between rounded-xl border p-5 transition-all ${
-              !isPro
-                ? "border-line-strong bg-paper ring-1 ring-line-strong"
-                : "border-line bg-card opacity-80"
-            }`}
-          >
-            <div>
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-ink">Free Plan</h3>
-                {!isPro && (
-                  <span className="rounded bg-wash px-2 py-0.5 text-[11px] font-medium text-muted">
-                    Current plan
-                  </span>
-                )}
-              </div>
-              <div className="mt-2 flex items-baseline gap-1">
-                <span className="display text-3xl font-semibold text-ink">$0</span>
-                <span className="text-xs text-muted">/ forever</span>
-              </div>
-              <p className="mt-2 text-[12px] text-muted">Essential decluttering & basic item tracking</p>
-
-              <ul className="mt-4 space-y-2 text-[13px] text-ink-soft">
-                <li className="flex items-center gap-2">
-                  <IconCheck width={14} height={14} className="text-accent shrink-0" />
-                  <span>Unlimited tracked items</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <IconCheck width={14} height={14} className="text-accent shrink-0" />
-                  <span>Up to 5 categories (2 subcategories each)</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <IconCheck width={14} height={14} className="text-accent shrink-0" />
-                  <span>Purgatory & staging workflow</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <IconCheck width={14} height={14} className="text-accent shrink-0" />
-                  <span>Core declutter scoring engine</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <IconCheck width={14} height={14} className="text-accent shrink-0" />
-                  <span>Light and Dark mode</span>
-                </li>
-              </ul>
-            </div>
-
-            <div className="mt-6">
-              {!isPro ? (
-                <button
-                  type="button"
-                  disabled
-                  className="w-full rounded-lg border border-line py-2 text-[13px] font-medium text-muted"
-                >
-                  Active Plan
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => handleSubscribe("free")}
-                  disabled={subBusy}
-                  className="w-full rounded-lg border border-line py-2 text-[13px] font-medium text-muted hover:border-danger hover:text-danger transition-colors"
-                >
-                  {subBusy ? "Updating…" : "Downgrade to Free"}
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Pro Tier */}
+        {/* Pro Tier Card */}
+        <div className="mt-5">
           <div
             className={`flex flex-col justify-between rounded-xl border p-5 transition-all ${
               isPro
@@ -991,7 +901,7 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                   </span>
                 ) : (
                   <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-accent">
-                    Recommended
+                    Upgrade
                   </span>
                 )}
               </div>
@@ -1064,7 +974,7 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
           </div>
         </div>
       </section>
-
+      </div>
 
       {/* Export Data Card — Paywalled for Pro */}
       <section className="card p-6">
