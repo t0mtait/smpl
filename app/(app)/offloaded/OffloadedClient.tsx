@@ -15,7 +15,13 @@ import {
   IconUndo,
 } from "@/components/icons";
 
-export default function OffloadedClient({ initialItems }: { initialItems: Item[] }) {
+export default function OffloadedClient({
+  initialItems,
+  saleAmounts,
+}: {
+  initialItems: Item[];
+  saleAmounts: Record<number, number>;
+}) {
   const router = useRouter();
   const [items, setItems] = useState<Item[]>(initialItems);
   const [query, setQuery] = useState("");
@@ -46,12 +52,12 @@ export default function OffloadedClient({ initialItems }: { initialItems: Item[]
   }, [items, query, statusFilter, categoryFilter]);
 
   const soldItems = useMemo(
-    () => items.filter((i) => i.status === "sold" && (i.currentValue ?? 0) > 0),
+    () => items.filter((i) => i.status === "sold" && (saleAmounts[i.id] ?? 0) > 0),
     [items]
   );
   const soldTotal = useMemo(
-    () => soldItems.reduce((sum, i) => sum + (i.currentValue ?? 0), 0),
-    [soldItems]
+    () => soldItems.reduce((sum, i) => sum + (saleAmounts[i.id] ?? 0), 0),
+    [soldItems, saleAmounts]
   );
   const noReturnCount = items.length - soldItems.length;
 
@@ -237,7 +243,7 @@ export default function OffloadedClient({ initialItems }: { initialItems: Item[]
                         <StatusTag status={statusInfo} />
                       </td>
                       <td className="tabular px-4 py-3 text-right text-[13px] font-medium text-ink">
-                        {item.status === "sold" ? formatMoney(item.currentValue) : "—"}
+                        {item.status === "sold" ? formatMoney(saleAmounts[item.id] ?? null) : "—"}
                       </td>
                       <td className="tabular px-4 py-3 text-right text-[13px] text-muted">
                         {formatQuarter(item.purchaseDate)}

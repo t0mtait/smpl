@@ -1,4 +1,4 @@
-import { listItems } from "@/lib/db";
+import { listDisposals, listItems } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import OffloadedClient from "./OffloadedClient";
 
@@ -11,5 +11,14 @@ export default async function OffloadedPage() {
     ["sold", "donated", "disposed", "closed"].includes(i.status)
   );
 
-  return <OffloadedClient initialItems={offloadedItems} />;
+  // Sale proceeds live on the disposal record, not on the item's
+  // currentValue — the same source the dashboard totals use.
+  const saleAmounts: Record<number, number> = {};
+  for (const d of listDisposals(user.id)) {
+    if (d.disposition === "sold" && d.amount !== null) {
+      saleAmounts[d.itemId] = (saleAmounts[d.itemId] ?? 0) + d.amount;
+    }
+  }
+
+  return <OffloadedClient initialItems={offloadedItems} saleAmounts={saleAmounts} />;
 }
