@@ -91,72 +91,84 @@ export default async function DashboardPage() {
         </Link>
       </header>
 
-      {/* ---------------- Stat tiles ---------------- */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatTile
-          label="Items owned"
-          value={
-            <div className="flex items-baseline gap-2.5">
-              <span className="tabular text-3xl font-semibold leading-none">{stats.ownedItems}</span>
-              <span className="tabular text-xs font-medium text-moss" title="Total estimated value">
-                {formatMoney(stats.totalValueOwned)}
-              </span>
-            </div>
-          }
-          icon={<IconBox width={15} height={15} />}
-          href="/items?status=owned"
-        />
-        <StatTile
-          label={`Net items (${stats.currentQuarter})`}
-          value={
-            <div className="flex items-baseline gap-2.5">
-              <span className="tabular text-3xl font-semibold leading-none">
-                {stats.currentQuarterNet > 0 ? `+${stats.currentQuarterNet}` : stats.currentQuarterNet}
-              </span>
-              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted tabular">
-                <span className="inline-flex items-center text-clay" title={`${stats.currentQuarterAcquired} acquired`}>
-                  ↑{stats.currentQuarterAcquired}
+      {/* ---------------- Stat tiles (2x2) beside status chart ---------------- */}
+      <div className="grid gap-5 lg:grid-cols-2">
+        <div className="grid grid-cols-2 grid-rows-2 gap-4">
+          <StatTile
+            label="Items owned"
+            value={
+              <div className="flex items-baseline gap-2.5">
+                <span className="tabular text-3xl font-semibold leading-none">{stats.ownedItems}</span>
+                <span className="tabular text-xs font-medium text-moss" title="Total estimated value">
+                  {formatMoney(stats.totalValueOwned)}
                 </span>
-                <span className="inline-flex items-center text-accent" title={`${stats.currentQuarterOffloaded} offloaded`}>
-                  ↓{stats.currentQuarterOffloaded}
+              </div>
+            }
+            icon={<IconBox width={15} height={15} />}
+            href="/items?status=owned"
+          />
+          <StatTile
+            label={`Net items (${stats.currentQuarter})`}
+            value={
+              <div className="flex items-baseline gap-2.5">
+                <span className="tabular text-3xl font-semibold leading-none">
+                  {stats.currentQuarterNet > 0 ? `+${stats.currentQuarterNet}` : stats.currentQuarterNet}
                 </span>
-              </span>
-            </div>
-          }
-          icon={<IconChart width={15} height={15} />}
-          tone={stats.currentQuarterNet > 0 ? "clay" : stats.currentQuarterNet < 0 ? "moss" : "neutral"}
-          href="/items"
-        />
-        <StatTile
-          label="In purgatory"
-          value={
-            <div className="flex items-baseline gap-2.5">
-              <span className="tabular text-3xl font-semibold leading-none">{purgatoryItems.length}</span>
-              {purgatoryValue > 0 && (
-                <span className="tabular text-xs font-medium text-muted">
-                  {formatMoney(purgatoryValue)}
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted tabular">
+                  <span className="inline-flex items-center text-clay" title={`${stats.currentQuarterAcquired} acquired`}>
+                    ↑{stats.currentQuarterAcquired}
+                  </span>
+                  <span className="inline-flex items-center text-accent" title={`${stats.currentQuarterOffloaded} offloaded`}>
+                    ↓{stats.currentQuarterOffloaded}
+                  </span>
                 </span>
-              )}
-            </div>
-          }
-          icon={<IconFlame width={15} height={15} />}
-          tone="clay"
-          href="/purgatory"
-        />
-        <StatTile
-          label="Decluttered"
-          value={
-            <div className="flex items-baseline gap-2.5">
-              <span className="tabular text-3xl font-semibold leading-none">{goneCount}</span>
-              <span className="tabular text-xs font-medium text-accent" title="Total sales proceeds">
-                {formatMoney(stats.lifetimeSalesEarnings)}
-              </span>
-            </div>
-          }
-          icon={<IconRecycle width={15} height={15} />}
-          tone="moss"
-          href="/offloaded"
-        />
+              </div>
+            }
+            icon={<IconChart width={15} height={15} />}
+            tone={stats.currentQuarterNet > 0 ? "clay" : stats.currentQuarterNet < 0 ? "moss" : "neutral"}
+            href="/items"
+          />
+          <StatTile
+            label="In purgatory"
+            value={
+              <div className="flex items-baseline gap-2.5">
+                <span className="tabular text-3xl font-semibold leading-none">{purgatoryItems.length}</span>
+                {purgatoryValue > 0 && (
+                  <span className="tabular text-xs font-medium text-muted">
+                    {formatMoney(purgatoryValue)}
+                  </span>
+                )}
+              </div>
+            }
+            icon={<IconFlame width={15} height={15} />}
+            tone="clay"
+            href="/purgatory"
+          />
+          <StatTile
+            label="Decluttered"
+            value={
+              <div className="flex items-baseline gap-2.5">
+                <span className="tabular text-3xl font-semibold leading-none">{goneCount}</span>
+                <span className="tabular text-xs font-medium text-accent" title="Total sales proceeds">
+                  {formatMoney(stats.lifetimeSalesEarnings)}
+                </span>
+              </div>
+            }
+            icon={<IconRecycle width={15} height={15} />}
+            tone="moss"
+            href="/offloaded"
+          />
+        </div>
+
+        {/* ---------------- Status breakdown ---------------- */}
+        <section className="card flex flex-col p-6">
+          <div className="mb-1 flex items-baseline justify-between gap-3">
+            <h2 className="display text-xl">Where your items stand</h2>
+            <span className="text-xs text-muted">all time</span>
+          </div>
+          <p className="mb-4 text-[13px] text-muted">Every item you have tracked, by current status.</p>
+          <StatusDonut slices={statusSlices} />
+        </section>
       </div>
 
       {/* ---------------- Quarterly Change & Category breakdown ---------------- */}
@@ -202,15 +214,6 @@ export default async function DashboardPage() {
         </section>
       </div>
 
-      {/* ---------------- Status breakdown ---------------- */}
-      <section className="card p-6">
-        <div className="mb-1 flex items-baseline justify-between gap-3">
-          <h2 className="display text-xl">Where your items stand</h2>
-          <span className="text-xs text-muted">all time</span>
-        </div>
-        <p className="mb-4 text-[13px] text-muted">Every item you have tracked, by current status.</p>
-        <StatusDonut slices={statusSlices} />
-      </section>
 
       <p className="pb-2 text-center text-[12px] text-muted">
         iOS &amp; Android apps coming soon.
