@@ -61,7 +61,10 @@ export async function POST(req: Request) {
       },
       success_url: `${APP_URL}/account?session_id={CHECKOUT_SESSION_ID}&success=true`,
       cancel_url: `${APP_URL}/account#subscription`,
-    });
+      // Managed Payments is on by default for this account and demands a
+      // product tax code. We opt out per session and handle tax ourselves.
+      managed_payments: { enabled: false },
+    } as Parameters<typeof stripe.checkout.sessions.create>[0]);
 
     return NextResponse.json({ url: checkoutSession.url });
   } catch (err: unknown) {
