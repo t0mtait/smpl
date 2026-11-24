@@ -246,9 +246,12 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
         return (a.url || "").localeCompare(b.url || "") * dir;
       }
       if (sort.key === "waiting") {
-        const tA = new Date(a.createdAt).getTime();
-        const tB = new Date(b.createdAt).getTime();
-        return (tA - tB) * dir;
+        const daysA = daysSinceDate(a.createdAt.slice(0, 10)) ?? 0;
+        const daysB = daysSinceDate(b.createdAt.slice(0, 10)) ?? 0;
+        if (daysA !== daysB) {
+          return (daysA - daysB) * dir;
+        }
+        return (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) * dir;
       }
       return 0;
     });
