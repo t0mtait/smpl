@@ -14,6 +14,7 @@ import {
   IconBox,
   IconCamera,
   IconCheck,
+  IconChevronRight,
   IconFlame,
   IconHeart,
   IconLock,
@@ -50,6 +51,7 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
   const [user, setUser] = useState<User>(initialUser);
   const [categories, setCategories] = useState<UserCategoryData[]>(initialCategories);
   const [catBusy, setCatBusy] = useState(false);
+  const [catsOpen, setCatsOpen] = useState(false);
   const [catError, setCatError] = useState<string | null>(null);
 
   // New category input
@@ -552,8 +554,25 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
       {/* Categories & Subcategories Customization */}
       <section className="card p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
+          <div
+            role="button"
+            tabIndex={0}
+            aria-expanded={catsOpen}
+            onClick={() => setCatsOpen((o) => !o)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setCatsOpen((o) => !o);
+              }
+            }}
+            className="flex-1 cursor-pointer select-none"
+          >
             <div className="flex items-center gap-2">
+              <IconChevronRight
+                width={16}
+                height={16}
+                className={`shrink-0 text-muted transition-transform ${catsOpen ? "rotate-90" : ""}`}
+              />
               <h2 className="display text-lg">Categories & Subcategories</h2>
               {!isPro ? (
                 <span className="rounded-full bg-wash px-2 py-0.5 text-[10px] font-medium text-muted">
@@ -569,6 +588,7 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
               Customize the categories and subcategories you use to organize your possessions.
             </p>
           </div>
+          {catsOpen && (
           <form onSubmit={handleAddCategory} className="flex items-center gap-2">
             <input
               type="text"
@@ -587,8 +607,10 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
               Add Category
             </button>
           </form>
+          )}
         </div>
 
+        {catsOpen && (<>
         {catError && (
           <div className="mt-4 rounded-lg border border-danger-line bg-danger-soft p-3 text-sm text-danger">
             {catError}
@@ -796,6 +818,7 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
             })
           )}
         </div>
+        </>)}
       </section>
 
       {/* Membership & Subscription Card */}
