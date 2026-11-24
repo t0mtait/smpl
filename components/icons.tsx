@@ -297,3 +297,35 @@ export function IconEyeOff(props: IconProps) {
     </svg>
   );
 }
+
+export function IconShoppingCart(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <circle cx="8" cy="21" r="1" />
+      <circle cx="19" cy="21" r="1" />
+      <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
+    </svg>
+  );
+}
+
+export function IconHierarchy(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <rect x="9" y="3" width="6" height="5" rx="1" />
+      <rect x="3" y="16" width="6" height="5" rx="1" />
+      <rect x="15" y="16" width="6" height="5" rx="1" />
+      <path d="M12 8v4M6 16v-4h12v4" />
+    </svg>
+  );
+}
+
+export function IconExport(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+  );
+}
+

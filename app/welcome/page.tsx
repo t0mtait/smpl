@@ -33,7 +33,7 @@ const FEATURES = [
   {
     icon: <IconBox width={20} height={20} />,
     title: "One home for everything you own",
-    body: "Log items with photos, brand, category, location, what you paid and what they're worth now. Search and filter in a click, edit any cell in place.",
+    body: "Log items with photos, brand, category, what you paid and what they're worth now. Search and filter in a click, edit any cell in place.",
   },
   {
     icon: <IconFlame width={20} height={20} />,

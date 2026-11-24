@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { Item } from "@/lib/db";
 import { CATEGORIES, formatCategory, formatMoney, formatQuarter } from "@/lib/format";
 import { currentQuarter, daysSinceDate } from "@/lib/dates";
@@ -186,6 +187,7 @@ function DaysRing({ days }: { days: number | null }) {
 }
 
 export default function PurgatoryClient({ initialItems }: { initialItems: Item[] }) {
+  const router = useRouter();
   const [items, setItems] = useState<Item[]>(initialItems);
   const categories = useMemo(() => {
     const set = new Set(items.map((i) => i.category));
@@ -204,8 +206,7 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
       return (
         item.name.toLowerCase().includes(q) ||
         (item.brand && item.brand.toLowerCase().includes(q)) ||
-        item.category.toLowerCase().includes(q) ||
-        (item.location && item.location.toLowerCase().includes(q))
+        item.category.toLowerCase().includes(q)
       );
     });
   }, [items, query, categoryFilter]);
@@ -340,9 +341,9 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
         </div>
 
         {/* Search & filters beside header */}
-        <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end xl:w-auto xl:flex-1 xl:justify-end">
-          <div className="min-w-[180px] flex-1 xl:max-w-[260px]">
-            <label className="label" htmlFor="purgatory-q">
+        <div className="flex w-full flex-row items-center gap-2 sm:flex-wrap sm:items-end xl:w-auto xl:flex-1 xl:justify-end">
+          <div className="min-w-0 flex-1 xl:max-w-[260px]">
+            <label className="label hidden sm:block" htmlFor="purgatory-q">
               Search
             </label>
             <div className="relative">
@@ -351,21 +352,21 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
               </span>
               <input
                 id="purgatory-q"
-                className="input pl-9"
-                placeholder="Search by name, brand…"
+                className="input pl-9 text-xs sm:text-sm py-1.5 sm:py-2"
+                placeholder="Search purgatory…"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
               />
             </div>
           </div>
 
-          <div className="sm:w-40">
-            <label className="label" htmlFor="purgatory-cat">
+          <div className="w-32 sm:w-40 shrink-0">
+            <label className="label hidden sm:block" htmlFor="purgatory-cat">
               Category
             </label>
             <select
               id="purgatory-cat"
-              className="input"
+              className="input text-xs sm:text-sm px-2 py-1.5 sm:py-2"
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
             >
@@ -399,10 +400,10 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
       ) : (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[640px] border-collapse text-left">
+            <table className="w-full min-w-full sm:min-w-[640px] border-collapse text-left">
               <thead>
                 <tr className="border-b border-line text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
-                  <th scope="col" className="px-4 py-3">
+                  <th scope="col" className="px-3 sm:px-4 py-3">
                     <button
                       type="button"
                       onClick={() => toggleSort("name")}
@@ -416,7 +417,7 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                       </span>
                     </button>
                   </th>
-                  <th scope="col" className="px-4 py-3">
+                  <th scope="col" className="hidden sm:table-cell px-4 py-3">
                     <button
                       type="button"
                       onClick={() => toggleSort("brand")}
@@ -430,7 +431,7 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                       </span>
                     </button>
                   </th>
-                  <th scope="col" className="px-4 py-3">
+                  <th scope="col" className="px-3 sm:px-4 py-3">
                     <button
                       type="button"
                       onClick={() => toggleSort("category")}
@@ -444,7 +445,7 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                       </span>
                     </button>
                   </th>
-                  <th scope="col" className="px-4 py-3 text-right">
+                  <th scope="col" className="hidden sm:table-cell px-4 py-3 text-right">
                     <button
                       type="button"
                       onClick={() => toggleSort("value")}
@@ -458,7 +459,7 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                       </span>
                     </button>
                   </th>
-                  <th scope="col" className="px-4 py-3 text-right">
+                  <th scope="col" className="hidden sm:table-cell px-4 py-3 text-right">
                     <button
                       type="button"
                       onClick={() => toggleSort("acquired")}
@@ -472,7 +473,7 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                       </span>
                     </button>
                   </th>
-                  <th scope="col" className="px-4 py-3 text-right">
+                  <th scope="col" className="px-3 sm:px-4 py-3 text-right">
                     <button
                       type="button"
                       onClick={() => toggleSort("purgatoryDate")}
@@ -487,29 +488,29 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                       </span>
                     </button>
                   </th>
-                  <th scope="col" className="px-4 py-3 text-right">Actions</th>
+                  <th scope="col" className="hidden sm:table-cell px-4 py-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {paginatedItems.map((item) => (
                   <tr
                     key={item.id}
-                    className="border-b border-line-soft transition-colors last:border-0 even:bg-wash/60 dark:even:bg-shell/70 hover:bg-wash dark:hover:bg-wash/40"
+                    onClick={() => {
+                      if (typeof window !== "undefined" && window.innerWidth < 640) {
+                        router.push(`/items/${item.id}`);
+                      }
+                    }}
+                    className="border-b border-line-soft transition-colors last:border-0 even:bg-wash/60 dark:even:bg-shell/70 hover:bg-wash dark:hover:bg-wash/40 cursor-pointer sm:cursor-default"
                   >
-                    <th scope="row" className="px-4 py-3 text-left font-normal">
+                    <th scope="row" className="px-3 sm:px-4 py-3 text-left font-normal">
                       <Link
                         href={`/items/${item.id}`}
                         className="font-medium text-ink hover:text-accent"
                       >
                         {item.name}
                       </Link>
-                      {item.location ? (
-                        <span className="block truncate text-[12px] font-normal text-muted">
-                          {item.location}
-                        </span>
-                      ) : null}
                     </th>
-                    <td className="px-4 py-3 text-[13px] text-ink-soft">
+                    <td className="hidden sm:table-cell px-4 py-3 text-[13px] text-ink-soft">
                       {isEditing(item.id, "brand") ? (
                         <input
                           type="text"
@@ -524,7 +525,10 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                         />
                       ) : (
                         <span
-                          onClick={() => setEditingCell({ itemId: item.id, field: "brand" })}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingCell({ itemId: item.id, field: "brand" });
+                          }}
                           className={cellBtn}
                           title="Click to edit brand"
                         >
@@ -532,7 +536,7 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 sm:px-4 py-3">
                       {isEditing(item.id, "category") ? (
                         <select
                           autoFocus
@@ -549,7 +553,10 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                         </select>
                       ) : (
                         <span
-                          onClick={() => setEditingCell({ itemId: item.id, field: "category" })}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingCell({ itemId: item.id, field: "category" });
+                          }}
                           className={cellBtn}
                           title="Click to edit category"
                         >
@@ -557,7 +564,7 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                         </span>
                       )}
                     </td>
-                    <td className="tabular px-4 py-3 text-right text-[13px] font-medium text-ink">
+                    <td className="hidden sm:table-cell tabular px-4 py-3 text-right text-[13px] font-medium text-ink">
                       {isEditing(item.id, "value") ? (
                         <input
                           type="number"
@@ -577,7 +584,10 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                         />
                       ) : (
                         <span
-                          onClick={() => setEditingCell({ itemId: item.id, field: "value" })}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingCell({ itemId: item.id, field: "value" });
+                          }}
                           className={cellBtn}
                           title="Click to edit value"
                         >
@@ -585,7 +595,7 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                         </span>
                       )}
                     </td>
-                    <td className="tabular px-4 py-3 text-right text-[13px] text-muted">
+                    <td className="hidden sm:table-cell tabular px-4 py-3 text-right text-[13px] text-muted">
                       {isEditing(item.id, "acquired") ? (
                         <input
                           type="text"
@@ -603,7 +613,10 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                         />
                       ) : (
                         <span
-                          onClick={() => setEditingCell({ itemId: item.id, field: "acquired" })}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingCell({ itemId: item.id, field: "acquired" });
+                          }}
                           className={cellBtn}
                           title="Click to edit acquired date"
                         >
@@ -611,15 +624,18 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                         </span>
                       )}
                     </td>
-                    <td className="tabular px-4 py-3 text-right text-[13px] text-muted">
+                    <td className="tabular px-3 sm:px-4 py-3 text-right text-[13px] text-muted">
                       <DaysRing days={daysSinceDate(item.purgatoryDate)} />
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="hidden sm:table-cell px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button
                           type="button"
                           className="btn-secondary px-2.5 py-1 text-[12px]"
-                          onClick={() => restore(item)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            restore(item);
+                          }}
                           disabled={busyId === item.id}
                           title="Restore back to inventory"
                         >
@@ -629,7 +645,10 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                         <button
                           type="button"
                           className="btn-clay px-2.5 py-1 text-[12px]"
-                          onClick={() => setOffloadingItem(item)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOffloadingItem(item);
+                          }}
                           disabled={busyId === item.id}
                         >
                           <IconCheck width={13} height={13} />

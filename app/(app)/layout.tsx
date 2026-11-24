@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { NavLinks } from "@/components/NavLinks";
+import { BottomNav } from "@/components/BottomNav";
 import { SignOutButton } from "@/components/SignOutButton";
 import { SignOutIconButton } from "@/components/SignOutIconButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -132,7 +133,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </aside>
 
       {/* ---------------- Mobile top bar ---------------- */}
-      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-shell/90 px-4 py-3 backdrop-blur lg:hidden">
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-shell/90 px-4 py-2.5 backdrop-blur lg:hidden">
         <Link href="/" className="flex items-center gap-2">
           <span className="display flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-[17px] leading-none text-brand-fg">
             S
@@ -142,22 +143,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <div className="flex items-center gap-2">
           <Link
             href="/account"
-            className="flex items-center gap-2 rounded-lg p-1 transition-colors hover:bg-paper"
+            className="flex items-center gap-2 rounded-lg py-1 px-1.5 transition-colors hover:bg-paper"
             title="Account options"
           >
-            <UserAvatar name={accountName} email={user.email} avatarPath={user.avatarPath} size={28} />
-            <span className="max-w-[7rem] truncate text-[12px] text-muted">{accountName}</span>
+            <span className="max-w-[8rem] truncate text-[13px] font-medium text-ink">{accountName}</span>
             {user.plan === "premium" && (
-              <span className="rounded bg-accent-soft px-1 py-0.2 text-[8px] font-bold uppercase tracking-wider text-accent">
+              <span className="rounded bg-accent-soft px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-accent">
                 PRO
               </span>
             )}
-          </Link>
-          <ThemeToggle variant="icon" />
-          <SignOutIconButton />
-          <Link href="/items/new" className="btn-primary px-3 py-1.5 text-[13px]">
-            <IconPlus width={15} height={15} />
-            Add
+            <UserAvatar name={accountName} email={user.email} avatarPath={user.avatarPath} size={28} />
           </Link>
         </div>
       </header>
@@ -168,18 +163,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </main>
 
       {/* ---------------- Mobile bottom nav ---------------- */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t border-line bg-card/95 backdrop-blur lg:hidden">
-        {NAV.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className="flex flex-1 flex-col items-center gap-1 py-2.5 text-[10px] font-medium text-muted transition-colors hover:text-ink"
-          >
-            {item.icon}
-            {item.label}
-          </Link>
-        ))}
-      </nav>
+      <BottomNav />
     </div>
   );
 }

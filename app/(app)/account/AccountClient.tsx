@@ -15,11 +15,16 @@ import {
   IconCheck,
   IconEye,
   IconEyeOff,
+  IconChevronDown,
   IconChevronRight,
   IconFlame,
   IconHeart,
   IconLock,
   IconPlus,
+  IconRobot,
+  IconShoppingCart,
+  IconHierarchy,
+  IconExport,
   IconSparkles,
   IconTrash,
 } from "@/components/icons";
@@ -65,6 +70,11 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
   // Editing subcategory: { category: string, oldSub: string }
   const [editingSubcat, setEditingSubcat] = useState<{ category: string; oldSub: string } | null>(null);
   const [editSubcatName, setEditSubcatName] = useState("");
+  // Auto-collapse each category by default: empty object means all collapsed
+  const [expandedCats, setExpandedCats] = useState<Record<string, boolean>>({});
+  const toggleCatExpand = (cat: string) => {
+    setExpandedCats((prev) => ({ ...prev, [cat]: !prev[cat] }));
+  };
 
   // Confirmation dialogs
   const [catToDelete, setCatToDelete] = useState<string | null>(null);
@@ -721,12 +731,13 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
             ) : (
               categories.map((c) => {
                 const isEditing = editingCat === c.category;
+                const isExpanded = Boolean(expandedCats[c.category]);
                 const style = getCategoryStyle(c.category);
 
                 return (
                   <div
                     key={c.category}
-                    className="rounded-lg border border-line bg-paper p-2.5 transition-all"
+                    className="rounded-lg border border-line bg-paper p-2.5 sm:p-2.5 transition-all"
                   >
                     {/* Category Header Row */}
                     <div className="flex items-center justify-between gap-2">
@@ -742,47 +753,61 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                                 if (e.key === "Enter") handleRenameCategory(c.category);
                                 if (e.key === "Escape") setEditingCat(null);
                               }}
-                              className="input py-0.5 px-2 text-xs h-7 w-32"
+                              className="input py-1 px-2.5 sm:py-0.5 sm:px-2 text-xs h-8 sm:h-7 w-36 sm:w-32"
                             />
                             <button
                               type="button"
                               onClick={() => handleRenameCategory(c.category)}
                               disabled={catBusy}
-                              className="btn-primary text-[11px] py-0.5 px-2 h-7"
+                              className="btn-primary text-xs sm:text-[11px] py-1 px-2.5 sm:py-0.5 sm:px-2 h-8 sm:h-7"
                             >
                               Save
                             </button>
                             <button
                               type="button"
                               onClick={() => setEditingCat(null)}
-                              className="btn-secondary text-[11px] py-0.5 px-2 h-7"
+                              className="btn-secondary text-xs sm:text-[11px] py-1 px-2.5 sm:py-0.5 sm:px-2 h-8 sm:h-7"
                             >
                               ✕
                             </button>
                           </div>
                         ) : (
-                          <div className="flex items-center gap-1.5 truncate">
-                            <span
-                              className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-semibold truncate ${style}`}
+                          <div className="flex items-center gap-2 truncate">
+                            <button
+                              type="button"
+                              onClick={() => toggleCatExpand(c.category)}
+                              className="flex items-center gap-1.5 truncate group cursor-pointer text-left"
+                              title={isExpanded ? "Collapse subcategories" : "Expand subcategories"}
                             >
-                              {formatCategory(c.category)}
-                            </span>
-                            <span className="text-[10px] text-muted shrink-0">
-                              ({c.subcategories.length})
-                            </span>
+                              <span
+                                className={`inline-flex items-center rounded px-3 py-1.5 sm:px-2 sm:py-0.5 text-sm sm:text-xs font-semibold truncate ${style}`}
+                              >
+                                {formatCategory(c.category)}
+                              </span>
+                              <span className="text-xs sm:text-[10px] text-muted shrink-0">
+                                ({c.subcategories.length})
+                              </span>
+                              <span className="text-muted group-hover:text-ink transition-transform">
+                                <IconChevronDown
+                                  width={14}
+                                  height={14}
+                                  className={`transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+                                />
+                              </span>
+                            </button>
                           </div>
                         )}
                       </div>
 
                       {!isEditing && (
-                        <div className="flex items-center gap-1.5 shrink-0 text-xs text-muted">
+                        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 text-xs text-muted">
                           <button
                             type="button"
                             onClick={() => {
                               setEditingCat(c.category);
                               setEditCatName(c.category);
                             }}
-                            className="hover:text-ink transition-colors cursor-pointer text-[11px]"
+                            className="p-1.5 sm:p-0 hover:text-ink transition-colors cursor-pointer text-xs sm:text-[11px] font-medium"
                           >
                             Rename
                           </button>
@@ -790,7 +815,7 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                           <button
                             type="button"
                             onClick={() => setCatToDelete(c.category)}
-                            className="hover:text-danger text-danger/80 transition-colors cursor-pointer text-[11px]"
+                            className="p-1.5 sm:p-0 hover:text-danger text-danger/80 transition-colors cursor-pointer text-xs sm:text-[11px] font-medium"
                           >
                             Delete
                           </button>
@@ -798,114 +823,116 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                       )}
                     </div>
 
-                    {/* Subcategories list */}
-                    <div className="mt-2 pt-2 border-t border-line-soft flex flex-wrap items-center gap-1.5">
-                      {c.subcategories.map((sub) => {
-                        const isEditingSub =
-                          editingSubcat?.category === c.category && editingSubcat?.oldSub === sub;
+                    {/* Subcategories list - auto collapsed by default */}
+                    {isExpanded && (
+                      <div className="mt-2.5 pt-2 border-t border-line-soft flex flex-wrap items-center gap-2 sm:gap-1.5 animate-fade">
+                        {c.subcategories.map((sub) => {
+                          const isEditingSub =
+                            editingSubcat?.category === c.category && editingSubcat?.oldSub === sub;
 
-                        return (
-                          <div
-                            key={sub}
-                            className="inline-flex items-center rounded-md border border-line bg-card py-0.5 px-1.5 text-[11px]"
-                          >
-                            {isEditingSub ? (
-                              <div className="flex items-center gap-1">
-                                <input
-                                  type="text"
-                                  autoFocus
-                                  value={editSubcatName}
-                                  onChange={(e) => setEditSubcatName(e.target.value)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === "Enter") handleRenameSubcategory(c.category, sub);
-                                    if (e.key === "Escape") setEditingSubcat(null);
-                                  }}
-                                  className="input py-0 px-1 text-[11px] h-5 w-24"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => handleRenameSubcategory(c.category, sub)}
-                                  disabled={catBusy}
-                                  className="text-[10px] font-semibold text-accent hover:underline"
-                                >
-                                  ✓
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setEditingSubcat(null)}
-                                  className="text-[10px] text-muted hover:text-ink"
-                                >
-                                  ✕
-                                </button>
-                              </div>
-                            ) : (
-                              <>
-                                <span className="font-medium text-ink truncate max-w-[100px]">{sub}</span>
-                                <div className="ml-1.5 flex items-center gap-1 text-muted/70">
+                          return (
+                            <div
+                              key={sub}
+                              className="inline-flex items-center rounded-md border border-line bg-card py-1.5 px-2.5 sm:py-0.5 sm:px-1.5 text-xs sm:text-[11px]"
+                            >
+                              {isEditingSub ? (
+                                <div className="flex items-center gap-1">
+                                  <input
+                                    type="text"
+                                    autoFocus
+                                    value={editSubcatName}
+                                    onChange={(e) => setEditSubcatName(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") handleRenameSubcategory(c.category, sub);
+                                      if (e.key === "Escape") setEditingSubcat(null);
+                                    }}
+                                    className="input py-0.5 px-1.5 text-xs sm:text-[11px] h-7 sm:h-5 w-28 sm:w-24"
+                                  />
                                   <button
                                     type="button"
-                                    onClick={() => {
-                                      setEditingSubcat({ category: c.category, oldSub: sub });
-                                      setEditSubcatName(sub);
-                                    }}
-                                    className="hover:text-ink transition-colors cursor-pointer text-[9px]"
-                                    title="Rename"
+                                    onClick={() => handleRenameSubcategory(c.category, sub)}
+                                    disabled={catBusy}
+                                    className="text-xs sm:text-[10px] font-semibold text-accent hover:underline p-1"
                                   >
-                                    ✎
+                                    ✓
                                   </button>
                                   <button
                                     type="button"
-                                    onClick={() =>
-                                      setSubcatToDelete({ category: c.category, sub })
-                                    }
-                                    className="hover:text-danger transition-colors cursor-pointer text-[9px]"
-                                    title="Delete"
+                                    onClick={() => setEditingSubcat(null)}
+                                    className="text-xs sm:text-[10px] text-muted hover:text-ink p-1"
                                   >
                                     ✕
                                   </button>
                                 </div>
-                              </>
+                              ) : (
+                                <>
+                                  <span className="font-medium text-ink truncate max-w-[120px] sm:max-w-[100px]">{sub}</span>
+                                  <div className="ml-2 sm:ml-1.5 flex items-center gap-1 text-muted/70">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setEditingSubcat({ category: c.category, oldSub: sub });
+                                        setEditSubcatName(sub);
+                                      }}
+                                      className="p-1 sm:p-0 hover:text-ink transition-colors cursor-pointer text-xs sm:text-[9px]"
+                                      title="Rename"
+                                    >
+                                      ✎
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setSubcatToDelete({ category: c.category, sub })
+                                      }
+                                      className="p-1 sm:p-0 hover:text-danger transition-colors cursor-pointer text-xs sm:text-[9px]"
+                                      title="Delete"
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          );
+                        })}
+
+                        {/* Add Subcategory Inline Input */}
+                        {(!isPro && c.subcategories.length >= 2) ? (
+                          <span className="text-xs sm:text-[10px] text-muted italic">Max 2 reached</span>
+                        ) : (
+                          <div className="inline-flex items-center gap-1.5">
+                            <input
+                              type="text"
+                              placeholder="+ Subcategory"
+                              value={newSubcatNames[c.category] || ""}
+                              onChange={(e) =>
+                                setNewSubcatNames((prev) => ({
+                                  ...prev,
+                                  [c.category]: e.target.value,
+                                }))
+                              }
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  handleAddSubcategory(c.category);
+                                }
+                              }}
+                              className="input py-1 px-2 sm:py-0.5 sm:px-1.5 text-xs sm:text-[11px] h-7 sm:h-6 w-28 sm:w-24 bg-card/60 focus:bg-card"
+                            />
+                            {(newSubcatNames[c.category] || "").trim() && (
+                              <button
+                                type="button"
+                                onClick={() => handleAddSubcategory(c.category)}
+                                disabled={catBusy}
+                                className="btn-primary py-1 px-2 sm:py-0 sm:px-1.5 text-xs sm:text-[10px] h-7 sm:h-6"
+                              >
+                                Add
+                              </button>
                             )}
                           </div>
-                        );
-                      })}
-
-                      {/* Add Subcategory Inline Input */}
-                      {(!isPro && c.subcategories.length >= 2) ? (
-                        <span className="text-[10px] text-muted italic">Max 2 reached</span>
-                      ) : (
-                        <div className="inline-flex items-center gap-1">
-                          <input
-                            type="text"
-                            placeholder="+ Subcategory"
-                            value={newSubcatNames[c.category] || ""}
-                            onChange={(e) =>
-                              setNewSubcatNames((prev) => ({
-                                ...prev,
-                                [c.category]: e.target.value,
-                              }))
-                            }
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                e.preventDefault();
-                                handleAddSubcategory(c.category);
-                              }
-                            }}
-                            className="input py-0.5 px-1.5 text-[11px] h-6 w-24 bg-card/60 focus:bg-card"
-                          />
-                          {(newSubcatNames[c.category] || "").trim() && (
-                            <button
-                              type="button"
-                              onClick={() => handleAddSubcategory(c.category)}
-                              disabled={catBusy}
-                              className="btn-primary py-0 px-1.5 text-[10px] h-6"
-                            >
-                              Add
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })
@@ -1028,20 +1055,22 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
 
                 <ul className="mt-2.5 space-y-1.5 text-xs text-ink-soft">
                   <li className="flex items-center gap-1.5">
-                    <IconCheck width={13} height={13} className="text-accent shrink-0" />
-                    <span>AI Advisor & offload recommendations</span>
+                    <IconRobot width={14} height={14} className="text-accent shrink-0" />
+                    <span className="rainbow-gradient font-semibold">
+                      AI Advisor: Data-driven offload recommendations
+                    </span>
                   </li>
                   <li className="flex items-center gap-1.5">
-                    <IconCheck width={13} height={13} className="text-accent shrink-0" />
+                    <IconShoppingCart width={14} height={14} className="text-accent shrink-0" />
                     <span>Wishlist & 30-day cooldown tracker</span>
                   </li>
                   <li className="flex items-center gap-1.5">
-                    <IconCheck width={13} height={13} className="text-accent shrink-0" />
-                    <span>Unlimited categories & subcategories</span>
+                    <IconHierarchy width={14} height={14} className="text-accent shrink-0" />
+                    <span>Unlimited custom categories & subcategories</span>
                   </li>
                   <li className="flex items-center gap-1.5">
-                    <IconCheck width={13} height={13} className="text-accent shrink-0" />
-                    <span>Complete CSV & JSON data exports</span>
+                    <IconExport width={14} height={14} className="text-accent shrink-0" />
+                    <span>Complete CSV & JSON data backups and exports</span>
                   </li>
                 </ul>
               </div>

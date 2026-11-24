@@ -185,7 +185,6 @@ export default function AdvisorClient({ initialSuggestions, isPro }: Props) {
                           Valued at {formatMoney(item.currentValue)}
                         </span>
                       )}
-                      {item.location && <span>Location: {item.location}</span>}
                       {item.idleDays !== null && item.idleDays > 0 && (
                         <span>Idle for {item.idleDays} days</span>
                       )}

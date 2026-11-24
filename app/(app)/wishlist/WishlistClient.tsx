@@ -478,72 +478,86 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
         </div>
 
         {isPro && (
-          <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:flex-1 lg:justify-end">
-            <div className="relative min-w-[200px] flex-1 sm:max-w-xs">
-              <IconSearch
-                width={16}
-                height={16}
-                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted"
-              />
-              <input
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search wishlist…"
-                className="input pl-9 text-sm"
-              />
+          <div className="flex w-full flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:flex-1 lg:justify-end">
+            {/* Mobile search row: Add to wishlist beside the searchbar */}
+            <div className="flex items-center gap-2 flex-1 min-w-[200px] sm:max-w-xs">
+              <div className="relative flex-1">
+                <IconSearch
+                  width={15}
+                  height={15}
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted"
+                />
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search wishlist…"
+                  className="input pl-9 text-xs sm:text-sm py-1.5 sm:py-2"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowAddForm(!showAddForm)}
+                className="btn-primary sm:hidden px-3 py-1.5 text-xs font-semibold shrink-0"
+              >
+                <IconPlus width={15} height={15} />
+                {showAddForm ? "Close" : "Add"}
+              </button>
             </div>
 
-            <select
-              value={priorityFilter}
-              onChange={(e) => setPriorityFilter(e.target.value)}
-              className="input w-auto text-sm"
-              aria-label="Filter by priority"
-            >
-              <option value="all">All priorities</option>
-              <option value="high">High priority (70–100)</option>
-              <option value="medium">Medium priority (40–69)</option>
-              <option value="low">Low priority (0–39)</option>
-            </select>
+            {/* Priorities and categories filter next to one another on mobile */}
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-2.5">
+              <select
+                value={priorityFilter}
+                onChange={(e) => setPriorityFilter(e.target.value)}
+                className="input w-auto text-xs sm:text-sm px-2 py-1.5 sm:py-2"
+                aria-label="Filter by priority"
+              >
+                <option value="all">All priorities</option>
+                <option value="high">High (70–100)</option>
+                <option value="medium">Medium (40–69)</option>
+                <option value="low">Low (0–39)</option>
+              </select>
 
-            <select
-              value={categoryFilter}
-              onChange={(e) => {
-                setCategoryFilter(e.target.value);
-                setSubcategoryFilter("all");
-              }}
-              className="input w-auto text-sm"
-              aria-label="Filter by category"
-            >
-              <option value="all">All categories</option>
-              {categories.map((c) => (
-                <option key={c} value={c}>
-                  {formatCategory(c)}
-                </option>
-              ))}
-            </select>
+              <select
+                value={categoryFilter}
+                onChange={(e) => {
+                  setCategoryFilter(e.target.value);
+                  setSubcategoryFilter("all");
+                }}
+                className="input w-auto text-xs sm:text-sm px-2 py-1.5 sm:py-2"
+                aria-label="Filter by category"
+              >
+                <option value="all">All categories</option>
+                {categories.map((c) => (
+                  <option key={c} value={c}>
+                    {formatCategory(c)}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-            <select
-              value={subcategoryFilter}
-              disabled={categoryFilter === "all"}
-              onChange={(e) => setSubcategoryFilter(e.target.value)}
-              className="input w-auto text-sm"
-              aria-label="Filter by subcategory"
-            >
-              <option value="all">
-                {categoryFilter === "all" ? "—" : "All subcategories"}
-              </option>
-              {subcategories.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
+            {categoryFilter !== "all" && (
+              <select
+                value={subcategoryFilter}
+                onChange={(e) => setSubcategoryFilter(e.target.value)}
+                className="input w-full sm:w-auto text-xs sm:text-sm px-2 py-1.5 sm:py-2"
+                aria-label="Filter by subcategory"
+              >
+                <option value="all">All subcategories</option>
+                {subcategories.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            )}
 
             <button
               type="button"
               onClick={() => setShowAddForm(!showAddForm)}
-              className="btn-primary"
+              className="btn-primary hidden sm:inline-flex"
             >
               <IconPlus width={16} height={16} />
               {showAddForm ? "Close form" : "Add to wishlist"}
@@ -791,11 +805,14 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
       ) : (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[840px] border-collapse text-left">
+            <table className="w-full min-w-full sm:min-w-[840px] border-collapse text-left">
               <thead>
                 <tr className="border-b border-line">
                   {WISHLIST_COLUMNS.map((col) => {
                     const active = sort.key === col.key;
+                    const isVisibleOnMobile =
+                      col.key === "name" || col.key === "priority" || col.key === "waiting" || col.key === "url";
+
                     return (
                       <th
                         key={col.key}
@@ -807,9 +824,9 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                               : "descending"
                             : "none"
                         }
-                        className={`whitespace-nowrap px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] ${
-                          col.numeric ? "text-right" : "text-left"
-                        }`}
+                        className={`whitespace-nowrap px-3 sm:px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] ${
+                          !isVisibleOnMobile ? "hidden sm:table-cell" : ""
+                        } ${col.numeric ? "text-right" : "text-left"}`}
                       >
                         <button
                           type="button"
@@ -831,7 +848,7 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                   })}
                   <th
                     scope="col"
-                    className="whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-[0.12em] text-muted"
+                    className="hidden sm:table-cell whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-[0.12em] text-muted"
                   >
                     Actions
                   </th>
@@ -845,14 +862,22 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                   return (
                     <tr
                       key={item.id}
-                      className="border-b border-line-soft transition-colors last:border-0 even:bg-wash/60 dark:even:bg-shell/70 hover:bg-wash dark:hover:bg-wash/40"
+                      onClick={() => {
+                        if (typeof window !== "undefined" && window.innerWidth < 640) {
+                          openEdit(item);
+                        }
+                      }}
+                      className="border-b border-line-soft transition-colors last:border-0 even:bg-wash/60 dark:even:bg-shell/70 hover:bg-wash dark:hover:bg-wash/40 cursor-pointer sm:cursor-default"
                     >
                       {/* Item Name (click to open general edit popup) */}
-                      <th scope="row" className="px-4 py-3 text-left font-normal">
+                      <th scope="row" className="px-3 sm:px-4 py-3 text-left font-normal">
                         <div className="min-w-0">
                           <button
                             type="button"
-                            onClick={() => openEdit(item)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEdit(item);
+                            }}
                             className="text-left font-medium text-ink hover:text-accent transition-colors block cursor-pointer group"
                             title="Click to edit item"
                           >
@@ -867,7 +892,7 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                       </th>
 
                       {/* Priority (click to edit field) */}
-                      <td className="px-4 py-3">
+                      <td className="px-2 sm:px-4 py-3">
                         {editingCell?.itemId === item.id && editingCell?.field === "priority" ? (
                           <div className="flex items-center gap-2">
                             <PriorityRing priority={inlinePriority} size={32} stroke={3} />
@@ -896,7 +921,8 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                         ) : (
                           <button
                             type="button"
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setInlinePriority(item.priority);
                               setEditingCell({ itemId: item.id, field: "priority" });
                             }}
@@ -909,7 +935,7 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                       </td>
 
                       {/* Category (click to edit field) */}
-                      <td className="px-4 py-3">
+                      <td className="hidden sm:table-cell px-4 py-3">
                         {editingCell?.itemId === item.id && editingCell?.field === "category" ? (
                           <select
                             autoFocus
@@ -926,7 +952,10 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                           </select>
                         ) : (
                           <span
-                            onClick={() => setEditingCell({ itemId: item.id, field: "category" })}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingCell({ itemId: item.id, field: "category" });
+                            }}
                             className="inline-block cursor-pointer hover:opacity-80 transition-opacity"
                             title="Click to change category"
                           >
@@ -936,7 +965,7 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                       </td>
 
                       {/* Subcategory (click to edit field) */}
-                      <td className="px-4 py-3 text-[13px] text-muted">
+                      <td className="hidden sm:table-cell px-4 py-3 text-[13px] text-muted">
                         {editingCell?.itemId === item.id && editingCell?.field === "subcategory" ? (
                           <select
                             autoFocus
@@ -954,7 +983,10 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                           </select>
                         ) : (
                           <span
-                            onClick={() => setEditingCell({ itemId: item.id, field: "subcategory" })}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingCell({ itemId: item.id, field: "subcategory" });
+                            }}
                             className="inline-block py-1 px-1.5 -mx-1.5 rounded hover:bg-wash cursor-pointer transition-colors"
                             title="Click to edit subcategory"
                           >
@@ -964,7 +996,7 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                       </td>
 
                       {/* Price (click to edit field) */}
-                      <td className="tabular px-4 py-3 text-right text-[13px] font-medium text-ink">
+                      <td className="hidden sm:table-cell tabular px-4 py-3 text-right text-[13px] font-medium text-ink">
                         {editingCell?.itemId === item.id && editingCell?.field === "price" ? (
                           <input
                             type="number"
@@ -987,7 +1019,10 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                           />
                         ) : (
                           <span
-                            onClick={() => setEditingCell({ itemId: item.id, field: "price" })}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingCell({ itemId: item.id, field: "price" });
+                            }}
                             className="inline-block py-1 px-1.5 -mx-1.5 rounded hover:bg-wash cursor-pointer transition-colors"
                             title="Click to edit price"
                           >
@@ -1001,7 +1036,7 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                       </td>
 
                       {/* Store / Shopping Link (click to add/edit field) */}
-                      <td className="px-4 py-3 text-[13px]">
+                      <td className="px-2 sm:px-4 py-3 text-[13px]">
                         {editingCell?.itemId === item.id && editingCell?.field === "url" ? (
                           <input
                             type="url"
@@ -1025,16 +1060,20 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                               href={item.url}
                               target="_blank"
                               rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
                               className="inline-flex items-center gap-1 rounded bg-accent-soft px-2 py-0.5 text-[11px] font-medium text-accent hover:opacity-80 transition-opacity"
                               title={`Visit ${item.url}`}
                             >
                               <IconExternalLink width={11} height={11} />
-                              <span className="max-w-[100px] truncate">{getDomain(item.url)}</span>
+                              <span className="max-w-[70px] sm:max-w-[100px] truncate">{getDomain(item.url)}</span>
                             </a>
                             <button
                               type="button"
-                              onClick={() => setEditingCell({ itemId: item.id, field: "url" })}
-                              className="text-[11px] text-muted hover:text-ink transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingCell({ itemId: item.id, field: "url" });
+                              }}
+                              className="hidden sm:inline text-[11px] text-muted hover:text-ink transition-colors"
                               title="Edit link"
                             >
                               Edit
@@ -1043,7 +1082,10 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                         ) : (
                           <button
                             type="button"
-                            onClick={() => setEditingCell({ itemId: item.id, field: "url" })}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingCell({ itemId: item.id, field: "url" });
+                            }}
                             className="inline-flex items-center gap-1 rounded border border-dashed border-line px-2 py-0.5 text-[11px] text-muted hover:border-line-strong hover:text-ink transition-colors"
                             title="Add shopping link"
                           >
@@ -1054,16 +1096,19 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                       </td>
 
                       {/* Cooldown */}
-                      <td className="tabular px-4 py-3 text-right text-[13px]">
+                      <td className="tabular px-2 sm:px-4 py-3 text-right text-[13px]">
                         <CooldownRing days={daysWaiting} />
                       </td>
 
                       {/* Actions: Edit icon removed, only Bought and Delete */}
-                      <td className="px-4 py-3 text-right">
+                      <td className="hidden sm:table-cell px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             type="button"
-                            onClick={() => openConvert(item)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openConvert(item);
+                            }}
                             className="btn bg-accent-soft text-accent hover:bg-accent hover:text-accent-fg border border-accent/20 px-2.5 py-1 text-xs font-semibold"
                             title="I bought this: move to owned inventory"
                           >
@@ -1072,7 +1117,10 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                           </button>
                           <button
                             type="button"
-                            onClick={() => handleDelete(item)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(item);
+                            }}
                             className="btn border border-line p-1.5 text-muted hover:text-clay hover:bg-clay-soft"
                             title="Remove from wishlist"
                           >
@@ -1130,7 +1178,6 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                   required
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  autoFocus
                 />
               </div>
 

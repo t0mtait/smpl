@@ -32,7 +32,6 @@ export default function ItemForm({ item }: Props) {
     subcategory: item?.subcategory ?? "",
     quality: item?.quality ?? "",
     description: item?.description ?? "",
-    location: item?.location ?? "",
     purchaseDate: item?.purchaseDate ?? "",
     offloadedDate: item?.offloadedDate ?? "",
     // An empty money field means "never recorded" — it must not become $0.
@@ -61,7 +60,7 @@ export default function ItemForm({ item }: Props) {
       subcategory: form.subcategory,
       quality: form.quality,
       description: form.description,
-      location: form.location,
+      location: "",
       purchaseDate: form.purchaseDate || null,
       offloadedDate: form.offloadedDate || null,
       purchasePrice: form.purchasePrice.trim() === "" ? null : Number(form.purchasePrice),
@@ -167,18 +166,6 @@ export default function ItemForm({ item }: Props) {
               value={form.quality}
               onChange={set("quality")}
               placeholder="e.g. High, Medium, Budget"
-            />
-          </div>
-          <div>
-            <label className="label" htmlFor="location">
-              Where is it
-            </label>
-            <input
-              id="location"
-              className="input"
-              value={form.location}
-              onChange={set("location")}
-              placeholder="e.g. garage shelf 2"
             />
           </div>
           <div className="sm:col-span-2">

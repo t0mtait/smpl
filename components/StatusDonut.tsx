@@ -22,11 +22,11 @@ export function StatusDonut({ slices }: { slices: DonutSlice[] }) {
   let offset = 0;
 
   return (
-    <div className="flex flex-col items-center gap-6 sm:flex-row">
+    <div className="flex flex-row items-center gap-3 sm:gap-6">
       <div className="relative flex shrink-0 items-center justify-center">
         <svg
           viewBox="0 0 100 100"
-          className="h-44 w-44 -rotate-90 transition-transform duration-200"
+          className="h-28 w-28 sm:h-44 sm:w-44 -rotate-90 transition-transform duration-200"
           role="img"
           aria-label="Items by status"
           onMouseLeave={() => setHoveredIdx(null)}
@@ -115,7 +115,7 @@ export function StatusDonut({ slices }: { slices: DonutSlice[] }) {
         </svg>
       </div>
 
-      <ul className="w-full space-y-1.5 text-[13px]">
+      <ul className="w-full min-w-0 flex-1 space-y-1 sm:space-y-1.5 text-xs sm:text-[13px]">
         {slices.map((s, idx) => {
           const isHovered = hoveredIdx === idx;
           const isOther = hoveredIdx !== null && !isHovered;

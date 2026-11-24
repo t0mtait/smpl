@@ -693,7 +693,7 @@ export function MobileAppShowcase() {
               </span>
               <div>
                 <h3 className="font-semibold text-ink text-sm">Instant search anywhere</h3>
-                <p className="text-xs text-muted mt-0.5">Filter by brand, location, or subcategory while standing right in the store aisle.</p>
+                <p className="text-xs text-muted mt-0.5">Filter by brand, category, or subcategory while standing right in the store aisle.</p>
               </div>
             </div>
 

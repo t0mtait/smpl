@@ -42,7 +42,6 @@ function InventoryInner() {
   const [editCategory, setEditCategory] = useState("misc");
   const [editSubcategory, setEditSubcategory] = useState("");
   const [editQuality, setEditQuality] = useState("");
-  const [editLocation, setEditLocation] = useState("");
   const [editUsage, setEditUsage] = useState("monthly");
   const [editValue, setEditValue] = useState("");
   const [editPrice, setEditPrice] = useState("");
@@ -156,7 +155,6 @@ function InventoryInner() {
     setEditCategory(item.category || "misc");
     setEditSubcategory(item.subcategory || "");
     setEditQuality(item.quality || "");
-    setEditLocation(item.location || "");
     setEditUsage(
       item.useFrequency === "daily" || item.useFrequency === "weekly"
         ? "daily"
@@ -188,7 +186,7 @@ function InventoryInner() {
           category: editCategory.trim() || "uncategorized",
           subcategory: editSubcategory.trim(),
           quality: editQuality.trim(),
-          location: editLocation.trim(),
+          location: "",
           useFrequency: editUsage,
           status: "owned",
           currentValue: editValue.trim() === "" ? null : Number(editValue),
@@ -253,13 +251,19 @@ function InventoryInner() {
           </div>
           <h1 className="display mt-2 text-4xl leading-[1.1] sm:text-5xl">Everything you own</h1>
         </div>
-        {/* Search & filters */}
-        <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end xl:w-auto xl:flex-1 xl:justify-end">
-          <div className="min-w-[180px] flex-1 xl:max-w-[260px]">
-            <label className="label" htmlFor="q">
-              Search
-            </label>
-            <div className="relative">
+        {/* Controls: Search, filters & Add Item */}
+        <div className="flex w-full flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-end xl:w-auto xl:flex-1 xl:justify-end">
+          {/* Mobile search row: Add item to the left of search bar on mobile */}
+          <div className="flex items-center gap-2 flex-1 min-w-[200px] xl:max-w-[340px]">
+            <Link
+              href="/items/new"
+              className="btn-primary sm:hidden px-3 py-2 text-xs font-semibold shrink-0"
+              title="Add item"
+            >
+              <IconPlus width={15} height={15} />
+              Add
+            </Link>
+            <div className="relative flex-1">
               <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint">
                 <IconSearch width={15} height={15} />
               </span>
@@ -272,70 +276,76 @@ function InventoryInner() {
               />
             </div>
           </div>
-          <div className="sm:w-36">
-            <label className="label" htmlFor="status">
-              Usage
-            </label>
-            <select
-              id="status"
-              className="input"
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-            >
-              <option value="all">All</option>
-              <option value="heavy_use">Heavy</option>
-              <option value="occasional_use">Occasional</option>
-              <option value="rare_use">Rare</option>
-            </select>
-          </div>
-          <div className="sm:w-36">
-            <label className="label" htmlFor="category">
-              Category
-            </label>
-            <select
-              id="category"
-              className="input"
-              value={category}
-              onChange={(e) => {
-                setCategory(e.target.value);
-                setSubcategory("all");
-              }}
-            >
-              <option value="all">All</option>
-              {categories.map((c) => (
-                <option key={c} value={c}>
-                  {formatCategory(c)}
+
+          {/* 3 Filters: consolidated into a single row on mobile devices side by side */}
+          <div className="grid grid-cols-3 gap-1.5 sm:flex sm:items-end sm:gap-3">
+            <div className="sm:w-32">
+              <label className="label hidden sm:block" htmlFor="status">
+                Usage
+              </label>
+              <select
+                id="status"
+                className="input text-xs sm:text-sm px-2 py-1.5 sm:py-2"
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+              >
+                <option value="all">All uses</option>
+                <option value="heavy_use">Heavy</option>
+                <option value="occasional_use">Occasional</option>
+                <option value="rare_use">Rare</option>
+              </select>
+            </div>
+            <div className="sm:w-36">
+              <label className="label hidden sm:block" htmlFor="category">
+                Category
+              </label>
+              <select
+                id="category"
+                className="input text-xs sm:text-sm px-2 py-1.5 sm:py-2"
+                value={category}
+                onChange={(e) => {
+                  setCategory(e.target.value);
+                  setSubcategory("all");
+                }}
+              >
+                <option value="all">All cats</option>
+                {categories.map((c) => (
+                  <option key={c} value={c}>
+                    {formatCategory(c)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="sm:w-36">
+              <label className="label hidden sm:block" htmlFor="subcategory">
+                Subcategory
+              </label>
+              <select
+                id="subcategory"
+                className="input text-xs sm:text-sm px-2 py-1.5 sm:py-2"
+                disabled={category === "all"}
+                value={subcategory}
+                onChange={(e) => setSubcategory(e.target.value)}
+              >
+                <option value="all">
+                  {category === "all" ? "—" : "All subs"}
                 </option>
-              ))}
-            </select>
+                {subcategories.map((sub) => (
+                  <option key={sub} value={sub}>
+                    {sub}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
-          <div className="sm:w-36">
-            <label className="label" htmlFor="subcategory">
-              Subcategory
-            </label>
-            <select
-              id="subcategory"
-              className="input"
-              disabled={category === "all"}
-              value={subcategory}
-              onChange={(e) => setSubcategory(e.target.value)}
-            >
-              <option value="all">
-                {category === "all" ? "—" : "All subcategories"}
-              </option>
-              {subcategories.map((sub) => (
-                <option key={sub} value={sub}>
-                  {sub}
-                </option>
-              ))}
-            </select>
+
+          {/* Desktop Add item button */}
+          <div className="hidden sm:flex items-center">
+            <Link href="/items/new" className="btn-primary">
+              <IconPlus width={16} height={16} />
+              Add item
+            </Link>
           </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-        <Link href="/items/new" className="btn-primary">
-          <IconPlus width={16} height={16} />
-          Add item
-        </Link>
         </div>
       </header>
 
@@ -372,7 +382,7 @@ function InventoryInner() {
       {sorted.length > 0 ? (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[980px] border-collapse text-left">
+            <table className="w-full min-w-full sm:min-w-[980px] border-collapse text-left">
               <caption className="sr-only">
                 Your inventory: {sorted.length} item{sorted.length === 1 ? "" : "s"}. Choose a column
                 heading to sort by that column.
@@ -381,14 +391,15 @@ function InventoryInner() {
                 <tr className="border-b border-line">
                   {SORT_COLUMNS.map((col) => {
                     const active = sort.key === col.key;
+                    const isVisibleOnMobile = col.key === "name" || col.key === "quality" || col.key === "status";
                     return (
                       <th
                         key={col.key}
                         scope="col"
                         aria-sort={active ? (sort.direction === "asc" ? "ascending" : "descending") : "none"}
-                        className={`whitespace-nowrap px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] ${
-                          col.numeric ? "text-right" : "text-left"
-                        }`}
+                        className={`whitespace-nowrap px-3 sm:px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] ${
+                          !isVisibleOnMobile ? "hidden sm:table-cell" : ""
+                        } ${col.numeric ? "text-right" : "text-left"}`}
                       >
                         <button
                           type="button"
@@ -410,7 +421,7 @@ function InventoryInner() {
                   })}
                   <th
                     scope="col"
-                    className="whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-[0.12em] text-muted"
+                    className="hidden sm:table-cell whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-[0.12em] text-muted"
                   >
                     Purgatory
                   </th>
@@ -422,29 +433,32 @@ function InventoryInner() {
                   return (
                     <tr
                       key={item.id}
-                      className="border-b border-line-soft transition-colors last:border-0 even:bg-wash/60 dark:even:bg-shell/70 hover:bg-wash dark:hover:bg-wash/40"
+                      onClick={() => {
+                        if (typeof window !== "undefined" && window.innerWidth < 640) {
+                          openEditModal(item);
+                        }
+                      }}
+                      className="border-b border-line-soft transition-colors last:border-0 even:bg-wash/60 dark:even:bg-shell/70 hover:bg-wash dark:hover:bg-wash/40 cursor-pointer sm:cursor-default"
                     >
-                      {/* Item Name: clicking opens general edit popup */}
-                      <th scope="row" className="px-4 py-3 text-left font-normal">
+                      {/* Item Name */}
+                      <th scope="row" className="px-3 sm:px-4 py-3 text-left font-normal">
                         <button
                           type="button"
-                          onClick={() => openEditModal(item)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEditModal(item);
+                          }}
                           className="min-w-0 text-left block group cursor-pointer"
                           title="Click to edit item"
                         >
                           <span className="block truncate font-medium text-ink group-hover:text-accent group-hover:underline underline-offset-2 transition-colors">
                             {item.name}
                           </span>
-                          {item.location ? (
-                            <span className="block truncate text-[12px] font-normal text-muted">
-                              {item.location}
-                            </span>
-                          ) : null}
                         </button>
                       </th>
 
-                      {/* Brand: clicking edits brand */}
-                      <td className="px-4 py-3 text-[13px] text-ink-soft">
+                      {/* Brand: hidden on mobile */}
+                      <td className="hidden sm:table-cell px-4 py-3 text-[13px] text-ink-soft">
                         {editingCell?.itemId === item.id && editingCell?.field === "brand" ? (
                           <input
                             type="text"
@@ -463,7 +477,10 @@ function InventoryInner() {
                           />
                         ) : (
                           <span
-                            onClick={() => setEditingCell({ itemId: item.id, field: "brand" })}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingCell({ itemId: item.id, field: "brand" });
+                            }}
                             className="inline-block py-1 px-1.5 -mx-1.5 rounded hover:bg-wash cursor-pointer transition-colors"
                             title="Click to edit brand"
                           >
@@ -472,8 +489,8 @@ function InventoryInner() {
                         )}
                       </td>
 
-                      {/* Category: clicking edits category */}
-                      <td className="px-4 py-3">
+                      {/* Category: hidden on mobile */}
+                      <td className="hidden sm:table-cell px-4 py-3">
                         {editingCell?.itemId === item.id && editingCell?.field === "category" ? (
                           <select
                             autoFocus
@@ -490,7 +507,10 @@ function InventoryInner() {
                           </select>
                         ) : (
                           <span
-                            onClick={() => setEditingCell({ itemId: item.id, field: "category" })}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingCell({ itemId: item.id, field: "category" });
+                            }}
                             className="inline-block cursor-pointer hover:opacity-80 transition-opacity"
                             title="Click to edit category"
                           >
@@ -499,8 +519,8 @@ function InventoryInner() {
                         )}
                       </td>
 
-                      {/* Subcategory: clicking edits subcategory */}
-                      <td className="px-4 py-3 text-[13px] text-ink-soft">
+                      {/* Subcategory: hidden on mobile */}
+                      <td className="hidden sm:table-cell px-4 py-3 text-[13px] text-ink-soft">
                         {editingCell?.itemId === item.id && editingCell?.field === "subcategory" ? (
                           <select
                             autoFocus
@@ -518,7 +538,10 @@ function InventoryInner() {
                           </select>
                         ) : (
                           <span
-                            onClick={() => setEditingCell({ itemId: item.id, field: "subcategory" })}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingCell({ itemId: item.id, field: "subcategory" });
+                            }}
                             className="inline-block py-1 px-1.5 -mx-1.5 rounded hover:bg-wash cursor-pointer transition-colors"
                             title="Click to edit subcategory"
                           >
@@ -527,8 +550,8 @@ function InventoryInner() {
                         )}
                       </td>
 
-                      {/* Quality: clicking edits quality */}
-                      <td className="px-4 py-3 text-[13px] text-ink-soft">
+                      {/* Quality: shown on mobile */}
+                      <td className="px-2.5 sm:px-4 py-3 text-[13px] text-ink-soft">
                         {editingCell?.itemId === item.id && editingCell?.field === "quality" ? (
                           <select
                             autoFocus
@@ -544,7 +567,10 @@ function InventoryInner() {
                           </select>
                         ) : (
                           <span
-                            onClick={() => setEditingCell({ itemId: item.id, field: "quality" })}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingCell({ itemId: item.id, field: "quality" });
+                            }}
                             className="inline-flex items-center gap-1.5 py-1 px-1.5 -mx-1.5 rounded hover:bg-wash cursor-pointer transition-colors"
                             title="Click to edit quality"
                           >
@@ -556,8 +582,8 @@ function InventoryInner() {
                         )}
                       </td>
 
-                      {/* Usage (was Status): clicking edits usage */}
-                      <td className="px-4 py-3">
+                      {/* Usage: shown on mobile */}
+                      <td className="px-2.5 sm:px-4 py-3">
                         {editingCell?.itemId === item.id && editingCell?.field === "status" ? (
                           <select
                             autoFocus
@@ -580,7 +606,10 @@ function InventoryInner() {
                           </select>
                         ) : (
                           <span
-                            onClick={() => setEditingCell({ itemId: item.id, field: "status" })}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingCell({ itemId: item.id, field: "status" });
+                            }}
                             className="inline-block cursor-pointer hover:opacity-80 transition-opacity"
                             title="Click to edit usage"
                           >
@@ -589,8 +618,8 @@ function InventoryInner() {
                         )}
                       </td>
 
-                      {/* Value: clicking edits value */}
-                      <td className="tabular px-4 py-3 text-right text-[13px] font-medium text-ink">
+                      {/* Value: hidden on mobile */}
+                      <td className="hidden sm:table-cell tabular px-4 py-3 text-right text-[13px] font-medium text-ink">
                         {editingCell?.itemId === item.id && editingCell?.field === "value" ? (
                           <input
                             type="number"
@@ -617,7 +646,10 @@ function InventoryInner() {
                           />
                         ) : (
                           <span
-                            onClick={() => setEditingCell({ itemId: item.id, field: "value" })}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingCell({ itemId: item.id, field: "value" });
+                            }}
                             className="inline-block py-1 px-1.5 -mx-1.5 rounded hover:bg-wash cursor-pointer transition-colors"
                             title="Click to edit value"
                           >
@@ -626,8 +658,8 @@ function InventoryInner() {
                         )}
                       </td>
 
-                      {/* Acquired: clicking edits purchaseDate */}
-                      <td className="tabular px-4 py-3 text-right text-[13px]">
+                      {/* Acquired: hidden on mobile */}
+                      <td className="hidden sm:table-cell tabular px-4 py-3 text-right text-[13px]">
                         {editingCell?.itemId === item.id && editingCell?.field === "acquired" ? (
                           <input
                             type="text"
@@ -651,7 +683,10 @@ function InventoryInner() {
                           />
                         ) : (
                           <span
-                            onClick={() => setEditingCell({ itemId: item.id, field: "acquired" })}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingCell({ itemId: item.id, field: "acquired" });
+                            }}
                             className="inline-block py-1 px-1.5 -mx-1.5 rounded hover:bg-wash cursor-pointer transition-colors"
                             title="Click to edit acquired date"
                           >
@@ -670,11 +705,14 @@ function InventoryInner() {
                         )}
                       </td>
 
-                      {/* Purgatory: flame icon instead of X */}
-                      <td className="px-4 py-3 text-right">
+                      {/* Purgatory: hidden on mobile */}
+                      <td className="hidden sm:table-cell px-4 py-3 text-right">
                         <button
                           type="button"
-                          onClick={() => moveToPurgatory(item.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            moveToPurgatory(item.id);
+                          }}
                           title="Move to Purgatory"
                           className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-clay-soft hover:text-clay"
                         >
@@ -740,11 +778,10 @@ function InventoryInner() {
                   required
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  autoFocus
                 />
               </div>
 
-              <div>
+              <div className="sm:col-span-2">
                 <label className="label" htmlFor="edit-item-brand">
                   Brand
                 </label>
@@ -756,120 +793,116 @@ function InventoryInner() {
                 />
               </div>
 
-              <div>
-                <label className="label" htmlFor="edit-item-location">
-                  Location
-                </label>
-                <input
-                  id="edit-item-location"
-                  className="input"
-                  placeholder="e.g. Closet, Living Room"
-                  value={editLocation}
-                  onChange={(e) => setEditLocation(e.target.value)}
-                />
+              {/* Category and Subcategory beside each other on mobile */}
+              <div className="grid grid-cols-2 gap-3 sm:col-span-2">
+                <div>
+                  <label className="label" htmlFor="edit-item-cat">
+                    Category
+                  </label>
+                  <select
+                    id="edit-item-cat"
+                    className="input"
+                    value={editCategory}
+                    onChange={(e) => {
+                      setEditCategory(e.target.value);
+                      setEditSubcategory("");
+                    }}
+                  >
+                    {(userCategories.length > 0 ? userCategories.map((u) => u.category) : CATEGORIES).map((c) => (
+                      <option key={c} value={c}>
+                        {formatCategory(c)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="label" htmlFor="edit-item-subcat">
+                    Subcategory
+                  </label>
+                  <select
+                    id="edit-item-subcat"
+                    className="input"
+                    value={editSubcategory}
+                    onChange={(e) => setEditSubcategory(e.target.value)}
+                  >
+                    <option value="">None</option>
+                    {subOptions(editCategory, editSubcategory).map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
-              <div>
-                <label className="label" htmlFor="edit-item-cat">
-                  Category
-                </label>
-                <select
-                  id="edit-item-cat"
-                  className="input"
-                  value={editCategory}
-                  onChange={(e) => {
-                    setEditCategory(e.target.value);
-                    setEditSubcategory("");
-                  }}
-                >
-                  {(userCategories.length > 0 ? userCategories.map((u) => u.category) : CATEGORIES).map((c) => (
-                    <option key={c} value={c}>
-                      {formatCategory(c)}
-                    </option>
-                  ))}
-                </select>
+              {/* Quality and Usage beside each other on mobile */}
+              <div className="grid grid-cols-2 gap-3 sm:col-span-2">
+                <div>
+                  <label className="label" htmlFor="edit-item-quality">
+                    Quality
+                  </label>
+                  <select
+                    id="edit-item-quality"
+                    className="input"
+                    value={editQuality}
+                    onChange={(e) => setEditQuality(e.target.value)}
+                  >
+                    <option value="">— None —</option>
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="label" htmlFor="edit-item-usage">
+                    Usage
+                  </label>
+                  <select
+                    id="edit-item-usage"
+                    className="input"
+                    value={editUsage}
+                    onChange={(e) => setEditUsage(e.target.value)}
+                  >
+                    <option value="daily">Heavy</option>
+                    <option value="monthly">Occasional</option>
+                    <option value="rare">Rare</option>
+                  </select>
+                </div>
               </div>
 
-              <div>
-                <label className="label" htmlFor="edit-item-subcat">
-                  Subcategory
-                </label>
-                <select
-                  id="edit-item-subcat"
-                  className="input"
-                  value={editSubcategory}
-                  onChange={(e) => setEditSubcategory(e.target.value)}
-                >
-                  <option value="">None</option>
-                  {subOptions(editCategory, editSubcategory).map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {/* Worth today and Paid beside each other on mobile */}
+              <div className="grid grid-cols-2 gap-3 sm:col-span-2">
+                <div>
+                  <label className="label" htmlFor="edit-item-value">
+                    Worth today ($)
+                  </label>
+                  <input
+                    id="edit-item-value"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className="input"
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                  />
+                </div>
 
-              <div>
-                <label className="label" htmlFor="edit-item-quality">
-                  Quality
-                </label>
-                <select
-                  id="edit-item-quality"
-                  className="input"
-                  value={editQuality}
-                  onChange={(e) => setEditQuality(e.target.value)}
-                >
-                  <option value="">— None —</option>
-                  <option value="high">High</option>
-                  <option value="medium">Medium</option>
-                  <option value="low">Low</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="label" htmlFor="edit-item-usage">
-                  Usage
-                </label>
-                <select
-                  id="edit-item-usage"
-                  className="input"
-                  value={editUsage}
-                  onChange={(e) => setEditUsage(e.target.value)}
-                >
-                  <option value="daily">Heavy</option>
-                  <option value="monthly">Occasional</option>
-                  <option value="rare">Rare</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="label" htmlFor="edit-item-value">
-                  Worth today ($)
-                </label>
-                <input
-                  id="edit-item-value"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  className="input"
-                  value={editValue}
-                  onChange={(e) => setEditValue(e.target.value)}
-                />
-              </div>
-
-              <div>
-                <label className="label" htmlFor="edit-item-price">
-                  Paid ($)
-                </label>
-                <input
-                  id="edit-item-price"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  className="input"
-                  value={editPrice}
-                  onChange={(e) => setEditPrice(e.target.value)}
-                />
+                <div>
+                  <label className="label" htmlFor="edit-item-price">
+                    Paid ($)
+                  </label>
+                  <input
+                    id="edit-item-price"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className="input"
+                    value={editPrice}
+                    onChange={(e) => setEditPrice(e.target.value)}
+                  />
+                </div>
               </div>
 
               <div className="sm:col-span-2">

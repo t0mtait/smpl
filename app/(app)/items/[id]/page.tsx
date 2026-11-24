@@ -27,7 +27,6 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
     { label: "Category", value: <CategoryTag category={item.category} /> },
     { label: "Subcategory", value: item.subcategory || "—" },
     { label: "Quality", value: item.quality || "—" },
-    { label: "Location", value: item.location || "—" },
     { label: "Paid", value: <span className="tabular">{formatMoney(item.purchasePrice)}</span> },
     { label: "Worth today", value: <span className="tabular">{formatMoney(item.currentValue)}</span> },
     { label: "Date acquired", value: formatQuarter(item.purchaseDate) },
