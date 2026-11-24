@@ -147,6 +147,43 @@ function OffloadModal({ item, onClose, onSuccess }: OffloadModalProps) {
   );
 }
 
+const PURGATORY_LIMIT_DAYS = 30;
+
+/** Circular progress that fills completely at 30 days in purgatory. */
+function DaysRing({ days }: { days: number | null }) {
+  if (days === null) return <span>—</span>;
+  const d = Math.max(0, days);
+  const pct = Math.min(d / PURGATORY_LIMIT_DAYS, 1);
+  const r = 14;
+  const c = 2 * Math.PI * r;
+  const full = d >= PURGATORY_LIMIT_DAYS;
+  return (
+    <span
+      className="inline-flex items-center justify-end"
+      title={`${d} ${d === 1 ? "day" : "days"} in purgatory${full ? " — time to decide" : ` · ${PURGATORY_LIMIT_DAYS - d} to go`}`}
+    >
+      <span className="relative inline-flex h-9 w-9 items-center justify-center">
+        <svg viewBox="0 0 36 36" className="absolute inset-0 -rotate-90" aria-hidden="true">
+          <circle cx="18" cy="18" r={r} fill="none" strokeWidth="3.5" className="stroke-line" />
+          <circle
+            cx="18"
+            cy="18"
+            r={r}
+            fill="none"
+            strokeWidth="3.5"
+            strokeLinecap="round"
+            strokeDasharray={`${pct * c} ${c}`}
+            className={full ? "stroke-clay" : "stroke-accent"}
+          />
+        </svg>
+        <span className={`tabular relative text-[11px] font-semibold ${full ? "text-clay" : "text-ink"}`}>
+          {d}
+        </span>
+      </span>
+    </span>
+  );
+}
+
 export default function PurgatoryClient({ initialItems }: { initialItems: Item[] }) {
   const [items, setItems] = useState<Item[]>(initialItems);
   const [offloadingItem, setOffloadingItem] = useState<Item | null>(null);
@@ -485,10 +522,7 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                       )}
                     </td>
                     <td className="tabular px-4 py-3 text-right text-[13px] text-muted">
-                      {(() => {
-                        const d = daysSinceDate(item.purgatoryDate);
-                        return d === null ? "—" : `${Math.max(0, d)} ${d === 1 ? "day" : "days"}`;
-                      })()}
+                      <DaysRing days={daysSinceDate(item.purgatoryDate)} />
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-2">
