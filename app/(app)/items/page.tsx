@@ -13,7 +13,7 @@ import {
   getYearStyle,
 } from "@/lib/format";
 import { CategoryTag, QualityIcon, StatusTag } from "@/components/ui";
-import { IconBox, IconFlame, IconPlus, IconSearch } from "@/components/icons";
+import { IconBox, IconFlame, IconPlus, IconSearch, IconSparkles } from "@/components/icons";
 import {
   DEFAULT_SORT,
   SORT_COLUMNS,
@@ -246,10 +246,16 @@ function InventoryInner() {
                 : `${filtered.length} of ${items.length} item${items.length === 1 ? "" : "s"}`}
           </p>
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+        <Link href="/items/advisor" className="btn-secondary">
+          <IconSparkles width={16} height={16} />
+          AI Advisor
+        </Link>
         <Link href="/items/new" className="btn-primary">
           <IconPlus width={16} height={16} />
           Add item
         </Link>
+        </div>
       </header>
 
       {/* ---------------- Filters ---------------- */}
