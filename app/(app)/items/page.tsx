@@ -246,18 +246,9 @@ function InventoryInner() {
                 : `${filtered.length} of ${items.length} item${items.length === 1 ? "" : "s"}`}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-        <Link href="/items/new" className="btn-primary">
-          <IconPlus width={16} height={16} />
-          Add item
-        </Link>
-        </div>
-      </header>
-
-      {/* ---------------- Filters ---------------- */}
-      <div className="card p-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-          <div className="min-w-[200px] flex-1">
+        {/* Search & filters */}
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end xl:w-auto xl:flex-1 xl:justify-end">
+          <div className="min-w-[180px] flex-1 xl:max-w-[260px]">
             <label className="label" htmlFor="q">
               Search
             </label>
@@ -274,7 +265,7 @@ function InventoryInner() {
               />
             </div>
           </div>
-          <div className="sm:w-44">
+          <div className="sm:w-36">
             <label className="label" htmlFor="status">
               Usage
             </label>
@@ -290,7 +281,7 @@ function InventoryInner() {
               <option value="rare_use">Rare</option>
             </select>
           </div>
-          <div className="sm:w-44">
+          <div className="sm:w-36">
             <label className="label" htmlFor="category">
               Category
             </label>
@@ -311,7 +302,7 @@ function InventoryInner() {
               ))}
             </select>
           </div>
-          <div className="sm:w-44">
+          <div className="sm:w-36">
             <label className="label" htmlFor="subcategory">
               Subcategory
             </label>
@@ -333,7 +324,13 @@ function InventoryInner() {
             </select>
           </div>
         </div>
-      </div>
+        <div className="flex flex-wrap items-center gap-2">
+        <Link href="/items/new" className="btn-primary">
+          <IconPlus width={16} height={16} />
+          Add item
+        </Link>
+        </div>
+      </header>
 
       {error && (
         <div className="card border-danger-line bg-danger-soft p-4 text-sm text-danger">{error}</div>
