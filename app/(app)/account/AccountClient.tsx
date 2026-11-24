@@ -374,11 +374,11 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
       </header>
 
       {/* Account Settings Card */}
-      <section className="card p-5 sm:p-6">
-        <form onSubmit={handleSaveAccount} className="space-y-6">
-          <div className="flex flex-col gap-6 md:flex-row md:items-center">
+      <section className="card p-4 sm:p-5">
+        <form onSubmit={handleSaveAccount} className="space-y-3.5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
             {/* Clickable Profile Photo */}
-            <div className="flex shrink-0 flex-col items-center gap-2">
+            <div className="flex shrink-0 flex-col items-center gap-1.5">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -391,17 +391,17 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={avatarBusy}
-                className="group relative cursor-pointer rounded-full p-1 transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-accent"
+                className="group relative cursor-pointer rounded-full p-0.5 transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-accent"
                 title="Click to change profile picture"
               >
                 <UserAvatar
                   name={user.name}
                   email={user.email}
                   avatarPath={user.avatarPath}
-                  size={84}
+                  size={58}
                   className="ring-2 ring-line transition-opacity group-hover:opacity-85"
                 />
-                <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 transition-opacity group-hover:opacity-100 text-white text-[11px] font-medium">
+                <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 transition-opacity group-hover:opacity-100 text-white text-[10px] font-medium">
                   Change
                 </span>
               </button>
@@ -411,7 +411,7 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                   type="button"
                   onClick={handleRemoveAvatar}
                   disabled={avatarBusy}
-                  className="text-[11px] text-danger hover:underline"
+                  className="text-[10px] text-danger hover:underline"
                 >
                   Remove picture
                 </button>
@@ -419,30 +419,30 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
             </div>
 
             {/* Inputs: Display Name and Email on top line, Current Password and New Password on bottom line */}
-            <div className="flex-1 space-y-4">
+            <div className="flex-1 space-y-2.5">
               {/* Top line: Display Name & Email Address */}
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <div>
-                  <label className="label text-xs" htmlFor="user-name">
+                  <label className="label text-xs mb-1" htmlFor="user-name">
                     Display Name
                   </label>
                   <input
                     id="user-name"
                     type="text"
-                    className="input text-sm"
+                    className="input text-xs sm:text-sm py-1.5 h-8.5"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. Tom"
                   />
                 </div>
                 <div>
-                  <label className="label text-xs" htmlFor="user-email">
+                  <label className="label text-xs mb-1" htmlFor="user-email">
                     Email Address
                   </label>
                   <input
                     id="user-email"
                     type="email"
-                    className="input text-sm"
+                    className="input text-xs sm:text-sm py-1.5 h-8.5"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -451,16 +451,16 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
               </div>
 
               {/* Bottom line: Current Password & New Password */}
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <div>
-                  <label className="label text-xs" htmlFor="current-password">
+                  <label className="label text-xs mb-1" htmlFor="current-password">
                     Current Password
                   </label>
                   <div className="relative">
                     <input
                       id="current-password"
                       type={showOldPassword ? "text" : "password"}
-                      className="input pr-9 text-sm"
+                      className="input pr-8 text-xs sm:text-sm py-1.5 h-8.5"
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
                       placeholder="Required only to change password"
@@ -468,24 +468,24 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                     <button
                       type="button"
                       onClick={() => setShowOldPassword(!showOldPassword)}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted hover:text-ink"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted hover:text-ink"
                       tabIndex={-1}
                       title={showOldPassword ? "Hide password" : "Show password"}
                     >
-                      {showOldPassword ? <IconEyeOff width={15} height={15} /> : <IconEye width={15} height={15} />}
+                      {showOldPassword ? <IconEyeOff width={14} height={14} /> : <IconEye width={14} height={14} />}
                     </button>
                   </div>
                 </div>
 
                 <div>
-                  <label className="label text-xs" htmlFor="new-password">
+                  <label className="label text-xs mb-1" htmlFor="new-password">
                     New Password
                   </label>
                   <div className="relative">
                     <input
                       id="new-password"
                       type={showNewPassword ? "text" : "password"}
-                      className="input pr-9 text-sm"
+                      className="input pr-8 text-xs sm:text-sm py-1.5 h-8.5"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       minLength={8}
@@ -494,11 +494,11 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                     <button
                       type="button"
                       onClick={() => setShowNewPassword(!showNewPassword)}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted hover:text-ink"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted hover:text-ink"
                       tabIndex={-1}
                       title={showNewPassword ? "Hide password" : "Show password"}
                     >
-                      {showNewPassword ? <IconEyeOff width={15} height={15} /> : <IconEye width={15} height={15} />}
+                      {showNewPassword ? <IconEyeOff width={14} height={14} /> : <IconEye width={14} height={14} />}
                     </button>
                   </div>
                 </div>
@@ -508,7 +508,7 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
 
           {avatarMsg && (
             <div
-              className={`rounded-lg px-3 py-2 text-xs ${
+              className={`rounded-lg px-3 py-1.5 text-xs ${
                 avatarMsg.type === "success"
                   ? "border border-accent-line bg-accent-soft text-accent"
                   : "border border-danger-line bg-danger-soft text-danger"
@@ -520,7 +520,7 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
 
           {profileMsg && (
             <div
-              className={`rounded-lg px-3 py-2 text-xs ${
+              className={`rounded-lg px-3 py-1.5 text-xs ${
                 profileMsg.type === "success"
                   ? "border border-accent-line bg-accent-soft text-accent"
                   : "border border-danger-line bg-danger-soft text-danger"
@@ -530,30 +530,30 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
             </div>
           )}
 
-          <div className="flex justify-end pt-2 border-t border-line-soft">
+          <div className="flex justify-end pt-1">
             <button
               type="submit"
-              className="btn-primary px-5 py-2 text-sm"
+              className="btn-primary px-4 py-1.5 text-xs"
               disabled={profileBusy}
             >
-              <IconCheck width={15} height={15} />
+              <IconCheck width={14} height={14} />
               {profileBusy ? "Saving…" : "Save changes"}
             </button>
           </div>
         </form>
 
         {/* Data Export inside Account Settings Card */}
-        <div className="border-t border-line-soft pt-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="border-t border-line-soft pt-3 mt-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <div className="flex items-center gap-2">
-                <h2 className="display text-base">Export data</h2>
-                <span className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-2 py-0.5 text-[10px] font-bold text-accent uppercase tracking-wider">
-                  <IconSparkles width={10} height={10} />
-                  Pro Feature
+              <div className="flex items-center gap-1.5">
+                <h2 className="display text-sm font-semibold">Export data</h2>
+                <span className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-2 py-0.5 text-[9px] font-bold text-accent uppercase tracking-wider">
+                  <IconSparkles width={9} height={9} />
+                  Pro
                 </span>
               </div>
-              <p className="mt-0.5 text-xs text-muted">
+              <p className="text-[11px] text-muted">
                 Download your smpl. data as CSV spreadsheets and JSON archives.
               </p>
             </div>
@@ -574,14 +574,14 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
           </div>
 
           {!isPro && (
-            <div className="mt-3 rounded-lg border border-line bg-paper p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-wash text-muted">
-                  <IconLock width={15} height={15} />
+            <div className="mt-2.5 rounded-lg border border-line bg-paper p-2.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-wash text-muted">
+                  <IconLock width={13} height={13} />
                 </span>
                 <div>
                   <p className="text-xs font-semibold text-ink">Data export is locked on the Free tier</p>
-                  <p className="text-[11px] text-muted">
+                  <p className="text-[10px] text-muted">
                     Upgrade to Pro to download CSV spreadsheets and full JSON database backups anytime.
                   </p>
                 </div>
@@ -597,89 +597,74 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
             </div>
           )}
 
-          <div className={`mt-3.5 grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-5 ${!isPro ? "opacity-60 pointer-events-none select-none" : ""}`}>
+          <div className={`mt-2.5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 ${!isPro ? "opacity-60 pointer-events-none select-none" : ""}`}>
             <a
               href={isPro ? "/api/export?type=inventory" : "#"}
               download
-              className="flex flex-col rounded-lg border border-line bg-paper p-3 transition hover:border-line-strong hover:shadow-sm"
+              className="flex items-center justify-between gap-2 rounded-lg border border-line bg-paper px-2.5 py-2 transition hover:border-line-strong hover:shadow-sm"
             >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-ink">Inventory CSV</span>
-                <span className="flex h-6 w-6 items-center justify-center rounded-md bg-accent-soft text-accent">
-                  <IconBox width={13} height={13} />
-                </span>
+              <div className="min-w-0">
+                <div className="text-xs font-semibold text-ink truncate">Inventory</div>
+                <div className="text-[10px] text-accent font-medium truncate">{isPro ? "Download CSV ↓" : "CSV (Pro)"}</div>
               </div>
-              <p className="mt-0.5 text-[11px] text-muted">Active owned items</p>
-              <span className="mt-2 text-[11px] font-medium text-accent hover:underline">
-                {isPro ? "Download CSV ↓" : "Locked (Pro)"}
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-accent-soft text-accent">
+                <IconBox width={12} height={12} />
               </span>
             </a>
 
             <a
               href={isPro ? "/api/export?type=purgatory" : "#"}
               download
-              className="flex flex-col rounded-lg border border-line bg-paper p-3 transition hover:border-line-strong hover:shadow-sm"
+              className="flex items-center justify-between gap-2 rounded-lg border border-line bg-paper px-2.5 py-2 transition hover:border-line-strong hover:shadow-sm"
             >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-ink">Purgatory CSV</span>
-                <span className="flex h-6 w-6 items-center justify-center rounded-md bg-clay-soft text-clay">
-                  <IconFlame width={13} height={13} />
-                </span>
+              <div className="min-w-0">
+                <div className="text-xs font-semibold text-ink truncate">Purgatory</div>
+                <div className="text-[10px] text-clay font-medium truncate">{isPro ? "Download CSV ↓" : "CSV (Pro)"}</div>
               </div>
-              <p className="mt-0.5 text-[11px] text-muted">Staged for offload</p>
-              <span className="mt-2 text-[11px] font-medium text-clay hover:underline">
-                {isPro ? "Download CSV ↓" : "Locked (Pro)"}
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-clay-soft text-clay">
+                <IconFlame width={12} height={12} />
               </span>
             </a>
 
             <a
               href={isPro ? "/api/export?type=wishlist" : "#"}
               download
-              className="flex flex-col rounded-lg border border-line bg-paper p-3 transition hover:border-line-strong hover:shadow-sm"
+              className="flex items-center justify-between gap-2 rounded-lg border border-line bg-paper px-2.5 py-2 transition hover:border-line-strong hover:shadow-sm"
             >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-ink">Wishlist CSV</span>
-                <span className="flex h-6 w-6 items-center justify-center rounded-md bg-warn-soft text-warn">
-                  <IconHeart width={13} height={13} />
-                </span>
+              <div className="min-w-0">
+                <div className="text-xs font-semibold text-ink truncate">Wishlist</div>
+                <div className="text-[10px] text-warn font-medium truncate">{isPro ? "Download CSV ↓" : "CSV (Pro)"}</div>
               </div>
-              <p className="mt-0.5 text-[11px] text-muted">Wishlist & scores</p>
-              <span className="mt-2 text-[11px] font-medium text-warn hover:underline">
-                {isPro ? "Download CSV ↓" : "Locked (Pro)"}
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-warn-soft text-warn">
+                <IconHeart width={12} height={12} />
               </span>
             </a>
 
             <a
               href={isPro ? "/api/export?type=offloaded" : "#"}
               download
-              className="flex flex-col rounded-lg border border-line bg-paper p-3 transition hover:border-line-strong hover:shadow-sm"
+              className="flex items-center justify-between gap-2 rounded-lg border border-line bg-paper px-2.5 py-2 transition hover:border-line-strong hover:shadow-sm"
             >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-ink">Offloaded CSV</span>
-                <span className="flex h-6 w-6 items-center justify-center rounded-md bg-wash text-ink-soft">
-                  <IconArchive width={13} height={13} />
-                </span>
+              <div className="min-w-0">
+                <div className="text-xs font-semibold text-ink truncate">Offloaded</div>
+                <div className="text-[10px] text-ink font-medium truncate">{isPro ? "Download CSV ↓" : "CSV (Pro)"}</div>
               </div>
-              <p className="mt-0.5 text-[11px] text-muted">Disposed, sold & donated</p>
-              <span className="mt-2 text-[11px] font-medium text-ink hover:underline">
-                {isPro ? "Download CSV ↓" : "Locked (Pro)"}
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-wash text-ink-soft">
+                <IconArchive width={12} height={12} />
               </span>
             </a>
 
             <a
               href={isPro ? "/api/export?type=json" : "#"}
               download
-              className="flex flex-col rounded-lg border border-line bg-paper p-3 transition hover:border-line-strong hover:shadow-sm"
+              className="flex items-center justify-between gap-2 rounded-lg border border-line bg-paper px-2.5 py-2 transition hover:border-line-strong hover:shadow-sm"
             >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-ink">JSON Archive</span>
-                <span className="flex h-6 w-6 items-center justify-center rounded-md bg-brand/10 text-brand">
-                  <IconBox width={13} height={13} />
-                </span>
+              <div className="min-w-0">
+                <div className="text-xs font-semibold text-ink truncate">Backup</div>
+                <div className="text-[10px] text-brand font-medium truncate">{isPro ? "Download JSON ↓" : "JSON (Pro)"}</div>
               </div>
-              <p className="mt-0.5 text-[11px] text-muted">Complete raw backup</p>
-              <span className="mt-2 text-[11px] font-medium text-brand hover:underline">
-                {isPro ? "Download JSON ↓" : "Locked (Pro)"}
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-brand/10 text-brand">
+                <IconBox width={12} height={12} />
               </span>
             </a>
           </div>
@@ -689,50 +674,49 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
       {/* Categories & Membership Side by Side */}
       <div className="grid gap-6 lg:grid-cols-2 items-stretch">
         {/* Categories & Subcategories Customization */}
-      <section className="card p-5 flex flex-col justify-between">
-        <div>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <h2 className="display text-lg">Categories</h2>
-              {!isPro ? (
-                <span className="rounded-full bg-wash px-2 py-0.5 text-[10px] font-medium text-muted">
-                  Free: {categories.length}/5
-                </span>
-              ) : (
-                <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[10px] font-bold text-accent">
-                  Pro: Unlimited
-                </span>
-              )}
-            </div>
-            
-            <form onSubmit={handleAddCategory} className="flex items-center gap-1.5">
-              <input
-                type="text"
-                placeholder={!isPro && categories.length >= 5 ? "Limit (5/5)" : "New category…"}
-                value={newCatName}
-                onChange={(e) => setNewCatName(e.target.value)}
-                disabled={!isPro && categories.length >= 5}
-                className="input py-1 px-2.5 text-xs h-8 w-36 sm:w-44 disabled:opacity-50"
-              />
-              <button
-                type="submit"
-                disabled={catBusy || !newCatName.trim() || (!isPro && categories.length >= 5)}
-                className="btn-primary text-xs h-8 px-2.5 shrink-0 disabled:opacity-50"
-              >
-                <IconPlus width={12} height={12} />
-                Add
-              </button>
-            </form>
+      <section className="card p-4 sm:p-5 flex flex-col h-full">
+        <div className="flex flex-wrap items-center justify-between gap-2 shrink-0">
+          <div className="flex items-center gap-2">
+            <h2 className="display text-lg">Categories</h2>
+            {!isPro ? (
+              <span className="rounded-full bg-wash px-2 py-0.5 text-[10px] font-medium text-muted">
+                Free: {categories.length}/5
+              </span>
+            ) : (
+              <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[10px] font-bold text-accent">
+                Pro: Unlimited
+              </span>
+            )}
           </div>
+          
+          <form onSubmit={handleAddCategory} className="flex items-center gap-1.5">
+            <input
+              type="text"
+              placeholder={!isPro && categories.length >= 5 ? "Limit (5/5)" : "New category…"}
+              value={newCatName}
+              onChange={(e) => setNewCatName(e.target.value)}
+              disabled={!isPro && categories.length >= 5}
+              className="input py-1 px-2.5 text-xs h-8 w-36 sm:w-44 disabled:opacity-50"
+            />
+            <button
+              type="submit"
+              disabled={catBusy || !newCatName.trim() || (!isPro && categories.length >= 5)}
+              className="btn-primary text-xs h-8 px-2.5 shrink-0 disabled:opacity-50"
+            >
+              <IconPlus width={12} height={12} />
+              Add
+            </button>
+          </form>
+        </div>
 
-          {catError && (
-            <div className="mt-3 rounded-lg border border-danger-line bg-danger-soft p-2.5 text-xs text-danger">
-              {catError}
-            </div>
-          )}
+        {catError && (
+          <div className="mt-3 shrink-0 rounded-lg border border-danger-line bg-danger-soft p-2.5 text-xs text-danger">
+            {catError}
+          </div>
+        )}
 
-          {/* Scrollable compact categories list with reduced max-height */}
-          <div className="mt-4 space-y-2 max-h-[260px] overflow-y-auto pr-1">
+        {/* Categories list filling all available tile space */}
+        <div className="mt-3.5 space-y-2 flex-1 min-h-[240px] overflow-y-auto pr-1">
             {categories.length === 0 ? (
               <p className="text-xs text-muted py-6 text-center">No categories configured yet.</p>
             ) : (
@@ -945,12 +929,11 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
               })
             )}
           </div>
-        </div>
-      </section>
+        </section>
         {/* Membership & Subscription Card */}
-      <section id="subscription" className="card p-5 scroll-mt-6 flex flex-col justify-between">
-        <div>
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <section id="subscription" className="card p-4 sm:p-5 scroll-mt-6 flex flex-col h-full justify-between">
+          <div>
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
             <div className="flex items-center gap-2">
               <h2 className="display text-lg">Membership & plan</h2>
               {isPro ? (
@@ -1144,15 +1127,15 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Free Trial & Cancellation */}
-          <div className="mt-3.5 border-t border-line-soft pt-3">
-            <div className="flex items-start gap-2 text-[11px] text-muted leading-relaxed">
-              <span className="font-semibold text-ink shrink-0">14-Day Free Trial:</span>
-              <span>
-                We offer a 14-day free Pro trial so you can experience all premium features risk-free. Subscriptions can be cancelled anytime with a single click in your account or Stripe billing portal.
-              </span>
-            </div>
+        {/* Free Trial & Cancellation */}
+        <div className="mt-3.5 border-t border-line-soft pt-3 shrink-0">
+          <div className="flex items-start gap-2 text-[11px] text-muted leading-relaxed">
+            <span className="font-semibold text-ink shrink-0">14-Day Free Trial:</span>
+            <span>
+              We offer a 14-day free Pro trial so you can experience all premium features risk-free. Subscriptions can be cancelled anytime with a single click in your account or Stripe billing portal.
+            </span>
           </div>
         </div>
       </section>
