@@ -18,10 +18,24 @@ export function isUnknownMoney(value: number | null | undefined): boolean {
 
 export function formatDate(value: string | null | undefined): string {
   if (!value) return "—";
-  const iso = value.includes("T") ? value : `${value}T00:00:00`;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return value;
-  return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+  const trimmed = value.trim();
+  if (!trimmed) return "—";
+
+  // Check for leading date part YYYY-MM-DD (e.g. from ISO or SQLite 'YYYY-MM-DD HH:MM:SS')
+  const dateMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(trimmed);
+  if (dateMatch) {
+    const y = parseInt(dateMatch[1], 10);
+    const m = parseInt(dateMatch[2], 10) - 1;
+    const d = parseInt(dateMatch[3], 10);
+    const dateObj = new Date(y, m, d);
+    return dateObj.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+  }
+
+  const d = new Date(trimmed);
+  if (!Number.isNaN(d.getTime())) {
+    return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+  }
+  return trimmed;
 }
 
 /**

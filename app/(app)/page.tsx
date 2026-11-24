@@ -169,6 +169,7 @@ export default async function DashboardPage() {
                   key={cat.category}
                   label={formatCategory(cat.category)}
                   value={cat.value}
+                  valueDisplay={formatMoney(cat.value)}
                   max={maxCatValue}
                   suffix={` · ${cat.count}`}
                   tone={i === 0 ? "clay" : "moss"}

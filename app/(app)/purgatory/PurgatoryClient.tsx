@@ -351,7 +351,7 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                 {sortedItems.map((item) => (
                   <tr
                     key={item.id}
-                    className="border-b border-line-soft transition-colors last:border-0 even:bg-shell/70 hover:bg-paper"
+                    className="border-b border-line-soft transition-colors last:border-0 even:bg-wash/60 dark:even:bg-shell/70 hover:bg-wash dark:hover:bg-wash/40"
                   >
                     <th scope="row" className="px-4 py-3 text-left font-normal">
                       <Link

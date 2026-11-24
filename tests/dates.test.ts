@@ -97,6 +97,8 @@ function eq(name: string, actual: unknown, expected: unknown) {
   eq("formatDate renders the local calendar day", formatDate(today()).length > 0, true);
   eq("formatDate handles a null date", formatDate(null), "—");
   eq("formatDate handles an empty string", formatDate(""), "—");
+  eq("formatDate handles SQLite datetime string without time", formatDate("2026-11-23 20:56:00"), "Nov 23, 2026");
+  eq("formatDate handles date-only string", formatDate("2026-11-23"), "Nov 23, 2026");
 }
 
 /* ------------------------------------------------------- formatQuarter */

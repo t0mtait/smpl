@@ -859,7 +859,7 @@ export function moveItemToPurgatory(ownerId: number, id: number): Item | null {
   const existing = getItem(ownerId, id);
   if (!existing) return null;
   getDb()
-    .prepare("UPDATE items SET status = 'purgatory', purgatory_date = datetime('now'), updated_at = datetime('now') WHERE id = ? AND owner_id = ?")
+    .prepare("UPDATE items SET status = 'purgatory', purgatory_date = date('now'), updated_at = datetime('now') WHERE id = ? AND owner_id = ?")
     .run(id, ownerId);
   scheduleAutoBackup();
   return getItem(ownerId, id);

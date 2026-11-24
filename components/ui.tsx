@@ -194,12 +194,14 @@ export function BarRow({
   value,
   max,
   suffix,
+  valueDisplay,
   tone = "moss",
 }: {
   label: string;
   value: number;
   max: number;
   suffix?: string;
+  valueDisplay?: string;
   tone?: "moss" | "clay" | "ink";
 }) {
   const pct = max > 0 ? Math.round((value / max) * 100) : 0;
@@ -209,12 +211,14 @@ export function BarRow({
     ink: "bg-chart-ink",
   };
 
+  const display = valueDisplay ?? (value > 0 ? `$${Math.round(value).toLocaleString()}` : "$0");
+
   return (
     <div className="group">
       <div className="flex items-baseline justify-between gap-3 text-[13px]">
         <span className="truncate text-ink-soft">{label}</span>
         <span className="tabular shrink-0 font-medium text-ink">
-          {value}
+          {display}
           {suffix ? <span className="ml-0.5 text-muted">{suffix}</span> : null}
         </span>
       </div>
