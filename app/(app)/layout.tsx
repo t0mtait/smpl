@@ -11,6 +11,7 @@ import {
   IconHeart,
   IconHouse,
   IconPlus,
+  IconPencil,
   IconSparkles,
 } from "@/components/icons";
 import { requireUser } from "@/lib/auth";
@@ -89,9 +90,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         )}
 
-        <p className="px-6 pb-3 text-[11px] leading-snug text-muted">
-          <span className="font-semibold text-ink-soft">iOS &amp; Android</span> apps coming soon
-        </p>
+        <div className="px-3 pb-2">
+          <a
+            href="mailto:support@gosmpl.app?subject=smpl.%20Feature%20Request"
+            className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-muted transition-colors hover:bg-paper hover:text-ink"
+            title="Send a feature request or feedback"
+          >
+            <IconPencil width={14} height={14} className="shrink-0 text-muted" />
+            <span>Feature Request</span>
+          </a>
+        </div>
 
         <div className="border-t border-line p-3">
           <Link
