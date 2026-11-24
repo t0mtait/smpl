@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { Item } from "@/lib/db";
-import { formatMoney, formatQuarter } from "@/lib/format";
+import { CATEGORIES, formatCategory, formatMoney, formatQuarter } from "@/lib/format";
 import { currentQuarter, daysSinceDate } from "@/lib/dates";
 import { CategoryTag } from "@/components/ui";
 import { IconArrowLeft, IconBox, IconCheck, IconFlame, IconUndo } from "@/components/icons";
@@ -151,6 +151,45 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
   const [items, setItems] = useState<Item[]>(initialItems);
   const [offloadingItem, setOffloadingItem] = useState<Item | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
+
+  // Inline cell editing: click a value to edit it in place, as in Inventory.
+  const [editingCell, setEditingCell] = useState<{ itemId: number; field: string } | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [userCategories, setUserCategories] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch("/api/user/categories")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        const list = data?.categories as { category: string }[] | undefined;
+        if (list?.length) setUserCategories(list.map((u) => u.category));
+      })
+      .catch(() => {});
+  }, []);
+
+  const saveInline = async (id: number, patch: Record<string, unknown>) => {
+    setEditingCell(null);
+    setSaveError(null);
+    try {
+      const res = await fetch(`/api/items/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...data.item } : it)));
+      } else {
+        setSaveError("Failed to save changes.");
+      }
+    } catch {
+      setSaveError("Network error while saving.");
+    }
+  };
+  const isEditing = (id: number, field: string) =>
+    editingCell?.itemId === id && editingCell.field === field;
+  const cellBtn =
+    "inline-block py-1 px-1.5 -mx-1.5 rounded hover:bg-wash cursor-pointer transition-colors";
 
   type PurgatorySortKey = "name" | "category" | "value" | "acquired" | "purgatoryDate";
   type SortDirection = "asc" | "desc";
@@ -367,13 +406,83 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                       ) : null}
                     </th>
                     <td className="px-4 py-3">
-                      <CategoryTag category={item.category} />
+                      {isEditing(item.id, "category") ? (
+                        <select
+                          autoFocus
+                          defaultValue={item.category}
+                          onChange={(e) => saveInline(item.id, { category: e.target.value })}
+                          onBlur={() => setEditingCell(null)}
+                          className="input py-0.5 px-2 text-xs h-7"
+                        >
+                          {(userCategories.length > 0 ? userCategories : CATEGORIES).map((c) => (
+                            <option key={c} value={c}>
+                              {formatCategory(c)}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span
+                          onClick={() => setEditingCell({ itemId: item.id, field: "category" })}
+                          className={cellBtn}
+                          title="Click to edit category"
+                        >
+                          <CategoryTag category={item.category} />
+                        </span>
+                      )}
                     </td>
                     <td className="tabular px-4 py-3 text-right text-[13px] font-medium text-ink">
-                      {formatMoney(item.currentValue)}
+                      {isEditing(item.id, "value") ? (
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          autoFocus
+                          defaultValue={item.currentValue === null ? "" : String(item.currentValue)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") e.currentTarget.blur();
+                            if (e.key === "Escape") setEditingCell(null);
+                          }}
+                          onBlur={(e) => {
+                            const val = e.currentTarget.value.trim();
+                            saveInline(item.id, { currentValue: val === "" ? null : Number(val) });
+                          }}
+                          className="input py-0.5 px-2 text-xs h-7 tabular text-right max-w-[90px]"
+                        />
+                      ) : (
+                        <span
+                          onClick={() => setEditingCell({ itemId: item.id, field: "value" })}
+                          className={cellBtn}
+                          title="Click to edit value"
+                        >
+                          {formatMoney(item.currentValue)}
+                        </span>
+                      )}
                     </td>
                     <td className="tabular px-4 py-3 text-right text-[13px] text-muted">
-                      {formatQuarter(item.purchaseDate)}
+                      {isEditing(item.id, "acquired") ? (
+                        <input
+                          type="text"
+                          placeholder="YYYY-MM-DD or Q1 2024"
+                          autoFocus
+                          defaultValue={item.purchaseDate || ""}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") e.currentTarget.blur();
+                            if (e.key === "Escape") setEditingCell(null);
+                          }}
+                          onBlur={(e) =>
+                            saveInline(item.id, { purchaseDate: e.currentTarget.value.trim() || null })
+                          }
+                          className="input py-0.5 px-2 text-xs h-7 tabular text-right max-w-[120px]"
+                        />
+                      ) : (
+                        <span
+                          onClick={() => setEditingCell({ itemId: item.id, field: "acquired" })}
+                          className={cellBtn}
+                          title="Click to edit acquired date"
+                        >
+                          {formatQuarter(item.purchaseDate)}
+                        </span>
+                      )}
                     </td>
                     <td className="tabular px-4 py-3 text-right text-[13px] text-muted">
                       {(() => {
@@ -409,6 +518,12 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {saveError && (
+        <div className="rounded-lg border border-danger-line bg-danger-soft p-3 text-sm text-danger">
+          {saveError}
         </div>
       )}
 
