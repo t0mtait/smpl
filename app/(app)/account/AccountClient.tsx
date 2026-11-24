@@ -1087,16 +1087,7 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
         </div>
       </section>
 
-      {/* Account Footer with Sign Out & Theme Toggle */}
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-line bg-card p-4">
-        <div className="text-[13px] text-muted">
-          Member since: <span className="text-ink font-medium">{user.createdAt?.slice(0, 10) || "—"}</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <ThemeToggle />
-          <SignOutButton />
-        </div>
-      </div>
+
 
       <ConfirmDialog
         open={confirmRemoveAvatar}
