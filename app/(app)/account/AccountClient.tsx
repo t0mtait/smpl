@@ -354,10 +354,6 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
           <p className="eyebrow">Account</p>
           <h1 className="display mt-2 text-4xl leading-[1.1] sm:text-5xl">Account options</h1>
         </div>
-        <Link href="/" className="btn-secondary">
-          <IconArrowLeft width={15} height={15} />
-          Back to Dashboard
-        </Link>
       </header>
 
       {/* Account Settings Card */}
