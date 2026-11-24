@@ -17,7 +17,7 @@ const SESSION_COOKIE = "smpl_session";
 const LEGACY_SESSION_COOKIE = "declutter_session";
 
 /** Paths that must stay reachable without a session. */
-const PUBLIC_PREFIXES = ["/auth/", "/api/auth/", "/_next/", "/favicon"];
+const PUBLIC_PREFIXES = ["/auth/", "/api/auth/", "/welcome", "/_next/", "/favicon"];
 
 /** Public file extensions (static assets). */
 const PUBLIC_SUFFIXES = [
@@ -57,6 +57,14 @@ export function middleware(req: NextRequest) {
       return NextResponse.json({ error: "Not signed in" }, { status: 401 });
     }
     return NextResponse.next();
+  }
+
+  // Signed-out visitors to the root see the public landing page. It is a
+  // rewrite, so the address bar stays on "/".
+  if (!hasSession && pathname === "/") {
+    const url = req.nextUrl.clone();
+    url.pathname = "/welcome";
+    return NextResponse.rewrite(url);
   }
 
   if (!hasSession) {
