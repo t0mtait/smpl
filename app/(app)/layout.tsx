@@ -73,13 +73,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           ))}
         </nav>
 
-        <div className="px-3 pb-3">
-          <Link href="/items/new" className="btn-primary w-full">
-            <IconPlus width={16} height={16} />
-            Add item
-          </Link>
-        </div>
-
         {user.plan !== "premium" && (
           <div className="px-3 pb-2">
             <Link
