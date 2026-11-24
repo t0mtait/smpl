@@ -76,7 +76,7 @@ export default function OffloadedClient({
 
   return (
     <div className="space-y-7">
-      <header className="animate-rise flex flex-wrap items-end justify-between gap-4">
+      <header className="animate-rise flex flex-wrap items-center justify-between gap-6">
         <div>
           <div className="flex items-center gap-2">
             <span className="flex h-6 w-6 items-center justify-center rounded-md bg-wash text-ink-soft">
@@ -85,46 +85,27 @@ export default function OffloadedClient({
             <p className="eyebrow">Offloaded</p>
           </div>
           <h1 className="display mt-2 text-4xl leading-[1.1] sm:text-5xl">Past possessions</h1>
-          <p className="mt-2 text-[15px] text-muted">
-            {filtered.length === items.length
-              ? `${items.length} offloaded items`
-              : `${filtered.length} of ${items.length} offloaded items`}
-          </p>
+        </div>
+
+        {/* Consolidated summary tile beside header */}
+        <div className="sm:ml-auto">
+          <div className="card px-5 py-3">
+            <span className="eyebrow text-[10px]">Offloaded</span>
+            <div className="mt-1 flex items-baseline gap-3">
+              <span className="text-2xl font-bold tabular text-ink">{items.length}</span>
+              <div className="flex items-center gap-2 text-xs font-semibold tabular">
+                <span className="text-accent" title="Sold for return">
+                  {soldItems.length} sold ({formatMoney(soldTotal)})
+                </span>
+                <span className="text-muted/60">·</span>
+                <span className="text-muted" title="No return (donated/disposed)">
+                  {noReturnCount} no return
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </header>
-
-      {/* Summary stats */}
-      <div className="grid gap-4 sm:grid-cols-3">
-        <div className="card p-5">
-          <span className="eyebrow">Total offloaded</span>
-          <div className="mt-2 text-3xl font-semibold tabular text-ink">{items.length}</div>
-          <div className="mt-1 text-[13px] text-muted">Items no longer in your possession</div>
-        </div>
-
-        <div className="card p-5">
-          <div className="flex items-center justify-between">
-            <span className="eyebrow">Sold for return</span>
-            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-accent-soft text-accent">
-              <IconCash width={14} height={14} />
-            </span>
-          </div>
-          <div className="mt-2 text-3xl font-semibold tabular text-ink">{soldItems.length}</div>
-          <div className="mt-1 text-[13px] text-accent tabular">
-            {formatMoney(soldTotal)} total proceeds
-          </div>
-        </div>
-
-        <div className="card p-5">
-          <div className="flex items-center justify-between">
-            <span className="eyebrow">No return</span>
-            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-clay-soft text-clay">
-              <IconRecycle width={14} height={14} />
-            </span>
-          </div>
-          <div className="mt-2 text-3xl font-semibold tabular text-ink">{noReturnCount}</div>
-          <div className="mt-1 text-[13px] text-muted">Donated, thrown out, or closed</div>
-        </div>
-      </div>
 
       {/* Filters */}
       <div className="card p-4">
