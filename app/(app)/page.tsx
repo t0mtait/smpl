@@ -6,7 +6,6 @@ import { requireUser } from "@/lib/auth";
 import {
   BarRow,
   QuarterlyChangeChart,
-  StatTile,
 } from "@/components/ui";
 import { StatusDonut } from "@/components/StatusDonut";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -166,29 +165,46 @@ export default async function DashboardPage() {
             </div>
           </div>
 
-          {/* Net items tile below it, double its width as well */}
-          <StatTile
-            className="flex-1 flex flex-col justify-between p-5 sm:p-6 shadow-sm"
-            label={`Net items (${stats.currentQuarter})`}
-            value={
-              <div className="flex items-baseline gap-2.5">
-                <span className="tabular text-3xl sm:text-4xl font-semibold leading-none">
-                  {stats.currentQuarterNet > 0 ? `+${stats.currentQuarterNet}` : stats.currentQuarterNet}
-                </span>
-                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted tabular">
-                  <span className="inline-flex items-center text-clay" title={`${stats.currentQuarterAcquired} acquired`}>
-                    ↑{stats.currentQuarterAcquired} acquired
+          {/* Net items & Declutter rate tile below it, double its width as well */}
+          <div className="card p-5 sm:p-6 shadow-sm flex-1 flex flex-col justify-between">
+            <div className="grid grid-cols-2 divide-x divide-line h-full items-center">
+              <Link href="/items" className="px-4 py-2 group hover:bg-wash/40 rounded-lg transition-colors flex flex-col justify-center h-full">
+                <div className="flex items-center justify-between text-muted">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider">Net items ({stats.currentQuarter})</span>
+                  <span className="text-muted group-hover:text-ink"><IconChart width={15} height={15} /></span>
+                </div>
+                <div className="mt-3 flex items-baseline gap-2.5">
+                  <span className={`tabular text-3xl sm:text-4xl font-semibold leading-none ${
+                    stats.currentQuarterNet > 0 ? "text-clay" : stats.currentQuarterNet < 0 ? "text-moss" : "text-ink"
+                  }`}>
+                    {stats.currentQuarterNet > 0 ? `+${stats.currentQuarterNet}` : stats.currentQuarterNet}
                   </span>
-                  <span className="inline-flex items-center text-accent" title={`${stats.currentQuarterOffloaded} offloaded`}>
-                    ↓{stats.currentQuarterOffloaded} offloaded
+                  <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted tabular">
+                    <span className="inline-flex items-center text-clay" title={`${stats.currentQuarterAcquired} acquired`}>
+                      ↑{stats.currentQuarterAcquired} acquired
+                    </span>
+                    <span className="inline-flex items-center text-accent" title={`${stats.currentQuarterOffloaded} offloaded`}>
+                      ↓{stats.currentQuarterOffloaded} offloaded
+                    </span>
                   </span>
-                </span>
-              </div>
-            }
-            icon={<IconChart width={15} height={15} />}
-            tone={stats.currentQuarterNet > 0 ? "clay" : stats.currentQuarterNet < 0 ? "moss" : "neutral"}
-            href="/items"
-          />
+                </div>
+              </Link>
+              <Link href="/offloaded" className="px-4 py-2 group hover:bg-wash/40 rounded-lg transition-colors flex flex-col justify-center h-full">
+                <div className="flex items-center justify-between text-muted">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider">Declutter rate</span>
+                  <span className="text-moss group-hover:text-ink"><IconSparkles width={15} height={15} /></span>
+                </div>
+                <div className="mt-3 flex items-baseline gap-2">
+                  <span className="tabular text-3xl sm:text-4xl font-semibold leading-none text-ink">
+                    {stats.declutterRate}%
+                  </span>
+                  <span className="tabular text-xs font-medium text-muted" title={`${goneCount} of ${stats.totalItems} items offloaded`}>
+                    {goneCount} of {stats.totalItems} offloaded
+                  </span>
+                </div>
+              </Link>
+            </div>
+          </div>
         </div>
 
         {/* ---------------- Status breakdown ---------------- */}

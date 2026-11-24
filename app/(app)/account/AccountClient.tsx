@@ -1072,7 +1072,7 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                   </li>
                   <li className="flex items-center gap-1.5">
                     <IconShoppingCart width={14} height={14} className="text-accent shrink-0" />
-                    <span>Wishlist & 30-day cooldown tracker</span>
+                    <span>Wishlist: Track items you don&apos;t yet own, with a 30-day cooldown tracker</span>
                   </li>
                   <li className="flex items-center gap-1.5">
                     <IconHierarchy width={14} height={14} className="text-accent shrink-0" />
@@ -1080,7 +1080,7 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                   </li>
                   <li className="flex items-center gap-1.5">
                     <IconExport width={14} height={14} className="text-accent shrink-0" />
-                    <span>Complete CSV & JSON data backups and exports</span>
+                    <span>Complete CSV & JSON data exporting</span>
                   </li>
                 </ul>
               </div>
