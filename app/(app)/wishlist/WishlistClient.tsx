@@ -417,17 +417,25 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
   return (
     <div className="space-y-8">
       {/* ---------------- Header ---------------- */}
-      <header className="animate-rise flex flex-wrap items-end justify-between gap-4">
+      <header className="animate-rise flex flex-wrap items-center justify-between gap-6">
         <div>
           <p className="eyebrow">Intentional Living</p>
           <h1 className="display mt-2 text-4xl leading-[1.1] sm:text-5xl">Wishlist</h1>
-          <p className="mt-2 text-[15px] text-muted">
-            Pause before you purchase. The 30-day cooldown helps separate impulse from genuine utility.
-          </p>
         </div>
 
         {isPro && (
-          <div>
+          <div className="flex flex-wrap items-center gap-4 sm:ml-auto">
+            {/* Consolidated summary tile beside header */}
+            <div className="card px-5 py-3">
+              <span className="eyebrow text-[10px]">On wishlist</span>
+              <div className="mt-1 flex items-baseline gap-2.5">
+                <span className="text-2xl font-bold tabular text-ink">{stats.totalCount}</span>
+                <span className="text-sm font-semibold tabular text-accent" title="Total estimated price">
+                  {formatMoney(stats.totalEstCost)}
+                </span>
+              </div>
+            </div>
+
             <button
               type="button"
               onClick={() => setShowAddForm(!showAddForm)}
@@ -622,33 +630,6 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
           </div>
         </form>
       )}
-
-      {/* ---------------- Quick Stat Strip ---------------- */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <div className="card p-4">
-          <p className="text-[12px] font-medium uppercase tracking-wider text-muted">Waiting</p>
-          <p className="mt-1 text-2xl font-semibold text-ink">{stats.totalCount}</p>
-          <p className="mt-0.5 text-xs text-muted">items on list</p>
-        </div>
-
-        <div className="card p-4">
-          <p className="text-[12px] font-medium uppercase tracking-wider text-muted">Total Price</p>
-          <p className="mt-1 text-2xl font-semibold text-ink">{formatMoney(stats.totalEstCost)}</p>
-          <p className="mt-0.5 text-xs text-muted">unspent capital</p>
-        </div>
-
-        <div className="card p-4">
-          <p className="text-[12px] font-medium uppercase tracking-wider text-muted">Cooldown Passed</p>
-          <p className="mt-1 text-2xl font-semibold text-accent">{stats.matureCount}</p>
-          <p className="mt-0.5 text-xs text-muted">30+ days waiting</p>
-        </div>
-
-        <div className="card p-4">
-          <p className="text-[12px] font-medium uppercase tracking-wider text-muted">High Priority</p>
-          <p className="mt-1 text-2xl font-semibold text-clay">{stats.highPriorityCount}</p>
-          <p className="mt-0.5 text-xs text-muted">urgent considerations</p>
-        </div>
-      </div>
 
       {/* ---------------- Filter & Search Bar ---------------- */}
       <div className="card p-4 space-y-3">
