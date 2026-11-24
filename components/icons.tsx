@@ -41,6 +41,18 @@ export function IconSparkles(props: IconProps) {
   );
 }
 
+export function IconRobot(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <rect x="4" y="8" width="16" height="12" rx="3" />
+      <path d="M12 8V4M9 3.5h6M2 13v3M22 13v3" />
+      <circle cx="9" cy="13.5" r="1.3" />
+      <circle cx="15" cy="13.5" r="1.3" />
+      <path d="M9.5 17h5" />
+    </svg>
+  );
+}
+
 export function IconBell(props: IconProps) {
   return (
     <svg {...base(props)}>

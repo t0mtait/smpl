@@ -15,6 +15,7 @@ import {
   IconChart,
   IconFlame,
   IconRecycle,
+  IconRobot,
   IconSparkles,
 } from "@/components/icons";
 
@@ -78,8 +79,11 @@ export default async function DashboardPage() {
             {possessiveName} stuff, at a glance.
           </h1>
         </div>
-        <Link href="/items/advisor" className="btn-secondary sm:ml-auto">
-          <IconSparkles width={16} height={16} />
+        <Link
+          href="/items/advisor"
+          className="btn-secondary px-5 py-3 text-base font-semibold sm:ml-auto"
+        >
+          <IconRobot width={22} height={22} />
           AI Advisor
           {user.plan !== "premium" && (
             <span className="rounded bg-accent-soft px-1.5 py-0.5 text-[9px] font-bold text-accent">PRO</span>
