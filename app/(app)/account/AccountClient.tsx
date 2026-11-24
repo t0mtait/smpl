@@ -52,7 +52,6 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
   const [user, setUser] = useState<User>(initialUser);
   const [categories, setCategories] = useState<UserCategoryData[]>(initialCategories);
   const [catBusy, setCatBusy] = useState(false);
-  const [catsOpen, setCatsOpen] = useState(false);
   const [catError, setCatError] = useState<string | null>(null);
 
   // New category input
@@ -531,33 +530,16 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
       </section>
 
       {/* Categories & Membership Side by Side */}
-      <div className="grid gap-6 lg:grid-cols-2 items-start">
+      <div className="grid gap-6 lg:grid-cols-2 items-stretch">
         {/* Categories & Subcategories Customization */}
-      <section className="card p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div
-            role="button"
-            tabIndex={0}
-            aria-expanded={catsOpen}
-            onClick={() => setCatsOpen((o) => !o)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                setCatsOpen((o) => !o);
-              }
-            }}
-            className="flex-1 cursor-pointer select-none"
-          >
+      <section className="card p-5 sm:p-6 flex flex-col justify-between">
+        <div>
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <IconChevronRight
-                width={16}
-                height={16}
-                className={`shrink-0 text-muted transition-transform ${catsOpen ? "rotate-90" : ""}`}
-              />
-              <h2 className="display text-lg">Categories & Subcategories</h2>
+              <h2 className="display text-lg">Categories</h2>
               {!isPro ? (
                 <span className="rounded-full bg-wash px-2 py-0.5 text-[10px] font-medium text-muted">
-                  Free: 5 categories · 2 subcategories each ({categories.length}/5)
+                  Free: {categories.length}/5
                 </span>
               ) : (
                 <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[10px] font-bold text-accent">
@@ -565,126 +547,119 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                 </span>
               )}
             </div>
-            <p className="mt-1 text-[13px] text-muted">
-              Customize the categories and subcategories you use to organize your possessions.
-            </p>
+            
+            <form onSubmit={handleAddCategory} className="flex items-center gap-1.5">
+              <input
+                type="text"
+                placeholder={!isPro && categories.length >= 5 ? "Limit (5/5)" : "New category…"}
+                value={newCatName}
+                onChange={(e) => setNewCatName(e.target.value)}
+                disabled={!isPro && categories.length >= 5}
+                className="input py-1 px-2.5 text-xs h-8 w-36 sm:w-44 disabled:opacity-50"
+              />
+              <button
+                type="submit"
+                disabled={catBusy || !newCatName.trim() || (!isPro && categories.length >= 5)}
+                className="btn-primary text-xs h-8 px-2.5 shrink-0 disabled:opacity-50"
+              >
+                <IconPlus width={12} height={12} />
+                Add
+              </button>
+            </form>
           </div>
-          {catsOpen && (
-          <form onSubmit={handleAddCategory} className="flex items-center gap-2">
-            <input
-              type="text"
-              placeholder={!isPro && categories.length >= 5 ? "Limit reached (5/5)" : "New category name…"}
-              value={newCatName}
-              onChange={(e) => setNewCatName(e.target.value)}
-              disabled={!isPro && categories.length >= 5}
-              className="input py-1.5 px-3 text-xs h-9 w-48 sm:w-60 disabled:opacity-50"
-            />
-            <button
-              type="submit"
-              disabled={catBusy || !newCatName.trim() || (!isPro && categories.length >= 5)}
-              className="btn-primary text-xs h-9 flex items-center gap-1.5 shrink-0 disabled:opacity-50"
-            >
-              <IconPlus width={13} height={13} />
-              Add Category
-            </button>
-          </form>
+
+          {catError && (
+            <div className="mt-3 rounded-lg border border-danger-line bg-danger-soft p-2.5 text-xs text-danger">
+              {catError}
+            </div>
           )}
-        </div>
 
-        {catsOpen && (<>
-        {catError && (
-          <div className="mt-4 rounded-lg border border-danger-line bg-danger-soft p-3 text-sm text-danger">
-            {catError}
-          </div>
-        )}
+          {/* Scrollable compact categories list with fixed max-height to match subscription tile */}
+          <div className="mt-4 space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+            {categories.length === 0 ? (
+              <p className="text-xs text-muted py-6 text-center">No categories configured yet.</p>
+            ) : (
+              categories.map((c) => {
+                const isEditing = editingCat === c.category;
+                const style = getCategoryStyle(c.category);
 
-        <div className="mt-6 space-y-4">
-          {categories.length === 0 ? (
-            <p className="text-xs text-muted">No categories configured yet.</p>
-          ) : (
-            categories.map((c) => {
-              const isEditing = editingCat === c.category;
-              const style = getCategoryStyle(c.category);
+                return (
+                  <div
+                    key={c.category}
+                    className="rounded-lg border border-line bg-paper p-2.5 transition-all"
+                  >
+                    {/* Category Header Row */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        {isEditing ? (
+                          <div className="flex items-center gap-1.5 flex-1">
+                            <input
+                              type="text"
+                              autoFocus
+                              value={editCatName}
+                              onChange={(e) => setEditCatName(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") handleRenameCategory(c.category);
+                                if (e.key === "Escape") setEditingCat(null);
+                              }}
+                              className="input py-0.5 px-2 text-xs h-7 w-32"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleRenameCategory(c.category)}
+                              disabled={catBusy}
+                              className="btn-primary text-[11px] py-0.5 px-2 h-7"
+                            >
+                              Save
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingCat(null)}
+                              className="btn-secondary text-[11px] py-0.5 px-2 h-7"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5 truncate">
+                            <span
+                              className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-semibold truncate ${style}`}
+                            >
+                              {formatCategory(c.category)}
+                            </span>
+                            <span className="text-[10px] text-muted shrink-0">
+                              ({c.subcategories.length})
+                            </span>
+                          </div>
+                        )}
+                      </div>
 
-              return (
-                <div
-                  key={c.category}
-                  className="rounded-xl border border-line bg-paper p-4 transition-all"
-                >
-                  {/* Category Header Row */}
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex items-center gap-2.5">
-                      {isEditing ? (
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="text"
-                            autoFocus
-                            value={editCatName}
-                            onChange={(e) => setEditCatName(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") handleRenameCategory(c.category);
-                              if (e.key === "Escape") setEditingCat(null);
+                      {!isEditing && (
+                        <div className="flex items-center gap-1.5 shrink-0 text-xs text-muted">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingCat(c.category);
+                              setEditCatName(c.category);
                             }}
-                            className="input py-1 px-2 text-xs h-8 w-44"
-                          />
+                            className="hover:text-ink transition-colors cursor-pointer text-[11px]"
+                          >
+                            Rename
+                          </button>
+                          <span>•</span>
                           <button
                             type="button"
-                            onClick={() => handleRenameCategory(c.category)}
-                            disabled={catBusy}
-                            className="btn-primary text-xs py-1 px-2.5 h-8"
+                            onClick={() => setCatToDelete(c.category)}
+                            className="hover:text-danger text-danger/80 transition-colors cursor-pointer text-[11px]"
                           >
-                            Save
+                            Delete
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => setEditingCat(null)}
-                            className="btn-secondary text-xs py-1 px-2.5 h-8"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`inline-flex items-center rounded-md px-2.5 py-1 text-xs font-semibold ${style}`}
-                          >
-                            {formatCategory(c.category)}
-                          </span>
-                          <span className="text-[11px] text-muted">
-                            ({c.subcategories.length}{" "}
-                            {c.subcategories.length === 1 ? "subcategory" : "subcategories"})
-                          </span>
                         </div>
                       )}
                     </div>
 
-                    {!isEditing && (
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingCat(c.category);
-                            setEditCatName(c.category);
-                          }}
-                          className="text-xs font-medium text-muted hover:text-ink transition-colors cursor-pointer"
-                        >
-                          Rename
-                        </button>
-                        <span className="text-line">•</span>
-                        <button
-                          type="button"
-                          onClick={() => setCatToDelete(c.category)}
-                          className="text-xs font-medium text-danger/80 hover:text-danger transition-colors cursor-pointer"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Subcategories List and Adder */}
-                  <div className="mt-3.5 pt-3 border-t border-line-soft">
-                    <div className="flex flex-wrap items-center gap-2">
+                    {/* Subcategories list */}
+                    <div className="mt-2 pt-2 border-t border-line-soft flex flex-wrap items-center gap-1.5">
                       {c.subcategories.map((sub) => {
                         const isEditingSub =
                           editingSubcat?.category === c.category && editingSubcat?.oldSub === sub;
@@ -692,10 +667,10 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                         return (
                           <div
                             key={sub}
-                            className="inline-flex items-center rounded-lg border border-line bg-card py-1 px-2 text-xs"
+                            className="inline-flex items-center rounded-md border border-line bg-card py-0.5 px-1.5 text-[11px]"
                           >
                             {isEditingSub ? (
-                              <div className="flex items-center gap-1.5">
+                              <div className="flex items-center gap-1">
                                 <input
                                   type="text"
                                   autoFocus
@@ -705,36 +680,36 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                                     if (e.key === "Enter") handleRenameSubcategory(c.category, sub);
                                     if (e.key === "Escape") setEditingSubcat(null);
                                   }}
-                                  className="input py-0.5 px-1.5 text-xs h-6 w-28"
+                                  className="input py-0 px-1 text-[11px] h-5 w-24"
                                 />
                                 <button
                                   type="button"
                                   onClick={() => handleRenameSubcategory(c.category, sub)}
                                   disabled={catBusy}
-                                  className="text-[11px] font-semibold text-accent hover:underline"
+                                  className="text-[10px] font-semibold text-accent hover:underline"
                                 >
-                                  Save
+                                  ✓
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => setEditingSubcat(null)}
-                                  className="text-[11px] text-muted hover:text-ink"
+                                  className="text-[10px] text-muted hover:text-ink"
                                 >
                                   ✕
                                 </button>
                               </div>
                             ) : (
                               <>
-                                <span className="font-medium text-ink">{sub}</span>
-                                <div className="ml-2 flex items-center gap-1.5 text-muted/70">
+                                <span className="font-medium text-ink truncate max-w-[100px]">{sub}</span>
+                                <div className="ml-1.5 flex items-center gap-1 text-muted/70">
                                   <button
                                     type="button"
                                     onClick={() => {
                                       setEditingSubcat({ category: c.category, oldSub: sub });
                                       setEditSubcatName(sub);
                                     }}
-                                    className="hover:text-ink transition-colors cursor-pointer text-[10px]"
-                                    title="Rename subcategory"
+                                    className="hover:text-ink transition-colors cursor-pointer text-[9px]"
+                                    title="Rename"
                                   >
                                     ✎
                                   </button>
@@ -743,8 +718,8 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                                     onClick={() =>
                                       setSubcatToDelete({ category: c.category, sub })
                                     }
-                                    className="hover:text-danger transition-colors cursor-pointer text-[10px]"
-                                    title="Delete subcategory"
+                                    className="hover:text-danger transition-colors cursor-pointer text-[9px]"
+                                    title="Delete"
                                   >
                                     ✕
                                   </button>
@@ -756,12 +731,10 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                       })}
 
                       {/* Add Subcategory Inline Input */}
-                      {!isPro && c.subcategories.length >= 2 ? (
-                        <span className="text-[11px] text-muted italic px-2 py-1">
-                          Max 2 subcategories (Free)
-                        </span>
+                      {(!isPro && c.subcategories.length >= 2) ? (
+                        <span className="text-[10px] text-muted italic">Max 2 reached</span>
                       ) : (
-                        <div className="inline-flex items-center gap-1.5">
+                        <div className="inline-flex items-center gap-1">
                           <input
                             type="text"
                             placeholder="+ Subcategory"
@@ -778,14 +751,14 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                                 handleAddSubcategory(c.category);
                               }
                             }}
-                            className="input py-1 px-2 text-xs h-7 w-32 bg-card/60 focus:bg-card"
+                            className="input py-0.5 px-1.5 text-[11px] h-6 w-24 bg-card/60 focus:bg-card"
                           />
                           {(newSubcatNames[c.category] || "").trim() && (
                             <button
                               type="button"
                               onClick={() => handleAddSubcategory(c.category)}
                               disabled={catBusy}
-                              className="btn-primary py-0.5 px-2 text-xs h-7"
+                              className="btn-primary py-0 px-1.5 text-[10px] h-6"
                             >
                               Add
                             </button>
@@ -794,12 +767,11 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                       )}
                     </div>
                   </div>
-                </div>
-              );
-            })
-          )}
+                );
+              })
+            )}
+          </div>
         </div>
-        </>)}
       </section>
         {/* Membership & Subscription Card */}
       <section id="subscription" className="card p-6 scroll-mt-6">
