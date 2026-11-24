@@ -378,455 +378,174 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
       </header>
 
       {/* Combined Profile, Credentials & Security Card */}
-      <section className="card p-6 sm:p-7 space-y-6">
-        <div>
-          <h2 className="display text-xl">Account settings</h2>
-          <p className="mt-1 text-[13px] text-muted">
-            Manage your profile picture, account details, and password in one place.
-          </p>
-        </div>
+      <section className="card space-y-4 p-4 sm:p-5">
+        <h2 className="display text-lg">Account settings</h2>
 
-        {/* Top Section: Photo and Personal Info */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Avatar Area (4 cols on lg) */}
-          <div className="lg:col-span-4 rounded-xl border border-line bg-shell/50 p-4 space-y-3">
-            <label className="label mb-1">Profile photo</label>
-            <div className="flex items-center gap-4">
-              <UserAvatar
-                name={user.name}
-                email={user.email}
-                avatarPath={user.avatarPath}
-                size={68}
+        {/* Photo + profile details on one row */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+          <div className="flex shrink-0 items-center gap-3">
+            <UserAvatar name={user.name} email={user.email} avatarPath={user.avatarPath} size={48} />
+            <div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarUpload}
+                className="hidden"
+                id="avatar-upload-input"
               />
-              <div className="space-y-2 min-w-0 flex-1">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarUpload}
-                  className="hidden"
-                  id="avatar-upload-input"
-                />
-                <div className="flex flex-wrap items-center gap-2">
-                  <label
-                    htmlFor="avatar-upload-input"
-                    className={`btn-secondary cursor-pointer py-1.5 px-3 text-xs ${avatarBusy ? "opacity-50 pointer-events-none" : ""}`}
+              <div className="flex items-center gap-1.5">
+                <label
+                  htmlFor="avatar-upload-input"
+                  className={`btn-secondary cursor-pointer px-2.5 py-1 text-xs ${avatarBusy ? "pointer-events-none opacity-50" : ""}`}
+                  title="JPG, PNG, WebP or GIF"
+                >
+                  <IconCamera width={13} height={13} />
+                  {avatarBusy ? "Uploading…" : "Photo"}
+                </label>
+                {user.avatarPath && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveAvatar}
+                    disabled={avatarBusy}
+                    className="btn-secondary px-2 py-1 text-xs text-danger hover:border-danger-line"
+                    aria-label="Remove photo"
+                    title="Remove photo"
                   >
-                    <IconCamera width={14} height={14} />
-                    {avatarBusy ? "Uploading…" : "Upload"}
-                  </label>
-
-                  {user.avatarPath && (
-                    <button
-                      type="button"
-                      onClick={handleRemoveAvatar}
-                      disabled={avatarBusy}
-                      className="btn-secondary py-1.5 px-3 text-xs text-danger hover:border-danger-line"
-                    >
-                      <IconTrash width={14} height={14} />
-                      Remove
-                    </button>
-                  )}
-                </div>
-                <p className="text-[11px] text-muted">JPG, PNG, WebP or GIF</p>
+                    <IconTrash width={13} height={13} />
+                  </button>
+                )}
               </div>
             </div>
-
-            {avatarMsg && (
-              <div
-                className={`rounded-lg p-2.5 text-xs ${
-                  avatarMsg.type === "success"
-                    ? "border border-accent-line bg-accent-soft text-accent"
-                    : "border border-danger-line bg-danger-soft text-danger"
-                }`}
-              >
-                {avatarMsg.text}
-              </div>
-            )}
           </div>
 
-          {/* Profile Details Area (8 cols on lg) */}
-          <form id="profile-form" onSubmit={handleUpdateProfile} className="lg:col-span-8 space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="label" htmlFor="user-name">
-                  Display Name
-                </label>
-                <input
-                  id="user-name"
-                  type="text"
-                  className="input"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Tom"
-                />
-              </div>
-
-              <div>
-                <label className="label" htmlFor="user-email">
-                  Email Address
-                </label>
-                <input
-                  id="user-email"
-                  type="email"
-                  className="input"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
+          <form
+            id="profile-form"
+            onSubmit={handleUpdateProfile}
+            className="grid flex-1 gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+          >
+            <div>
+              <label className="label" htmlFor="user-name">
+                Display name
+              </label>
+              <input
+                id="user-name"
+                type="text"
+                className="input"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Tom"
+              />
             </div>
-
-            {profileMsg && (
-              <div
-                className={`rounded-lg p-2.5 text-xs ${
-                  profileMsg.type === "success"
-                    ? "border border-accent-line bg-accent-soft text-accent"
-                    : "border border-danger-line bg-danger-soft text-danger"
-                }`}
-              >
-                {profileMsg.text}
-              </div>
-            )}
-
-            <div className="flex justify-end">
-              <button
-                type="submit"
-                form="profile-form"
-                className="btn-primary py-2 px-4 text-xs"
-                disabled={profileBusy}
-              >
-                <IconCheck width={14} height={14} />
-                {profileBusy ? "Saving…" : "Save profile"}
-              </button>
+            <div>
+              <label className="label" htmlFor="user-email">
+                Email
+              </label>
+              <input
+                id="user-email"
+                type="email"
+                className="input"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
             </div>
-          </form>
-        </div>
-
-        {/* Divider & Password Section */}
-        <div className="border-t border-line pt-6">
-          <div className="mb-4">
-            <h3 className="text-sm font-semibold text-ink">Change password</h3>
-            <p className="text-xs text-muted">Enter your current password and choose a new secure password.</p>
-          </div>
-
-          {passwordMsg && (
-            <div
-              className={`mb-4 rounded-lg p-2.5 text-xs ${
-                passwordMsg.type === "success"
-                  ? "border border-accent-line bg-accent-soft text-accent"
-                  : "border border-danger-line bg-danger-soft text-danger"
-              }`}
-            >
-              {passwordMsg.text}
-            </div>
-          )}
-
-          <form id="password-form" onSubmit={handleChangePassword} className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div>
-                <label className="label" htmlFor="current-password">
-                  Current Password
-                </label>
-                <input
-                  id="current-password"
-                  type="password"
-                  className="input"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="label" htmlFor="new-password">
-                  New Password
-                </label>
-                <input
-                  id="new-password"
-                  type="password"
-                  className="input"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  minLength={8}
-                  placeholder="Min 8 characters"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="label" htmlFor="confirm-password">
-                  Confirm Password
-                </label>
-                <input
-                  id="confirm-password"
-                  type="password"
-                  className="input"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  minLength={8}
-                  placeholder="Repeat new password"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end">
-              <button
-                type="submit"
-                form="password-form"
-                className="btn-secondary py-2 px-4 text-xs"
-                disabled={passwordBusy}
-              >
-                <IconLock width={14} height={14} />
-                {passwordBusy ? "Updating…" : "Update password"}
-              </button>
-            </div>
-          </form>
-        </div>
-      </section>
-
-      {/* Membership & Subscription Card */}
-      <section id="subscription" className="card p-6 scroll-mt-6">
-        <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="display text-lg">Membership & plan</h2>
-              {isPro ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-accent">
-                  <IconSparkles width={11} height={11} />
-                  Pro Active
-                </span>
-              ) : (
-                <span className="inline-flex items-center rounded-full bg-wash px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider text-muted">
-                  Free Tier
-                </span>
-              )}
-            </div>
-            <p className="mt-1 text-[13px] text-muted">
-              {isPro
-                ? `You have unlocked smpl. Pro on a ${user.subscriptionInterval || "monthly"} plan${user.subscriptionRenewsAt ? ` (renews on ${user.subscriptionRenewsAt})` : ""}.`
-                : "Free tier includes unlimited items tracking with essential declutter tools. Upgrade to Pro to unlock the AI Advisor, Wishlist & cooldown tracker, and unlimited categories."}
-            </p>
-          </div>
-
-          {isPro && (
-            <button
-              type="button"
-              onClick={() => handleSubscribe("free")}
-              disabled={subBusy}
-              className="text-[12px] text-muted underline hover:text-danger transition-colors"
-            >
-              Cancel subscription
+            <button type="submit" className="btn-primary px-3 py-2 text-xs" disabled={profileBusy}>
+              <IconCheck width={14} height={14} />
+              {profileBusy ? "Saving…" : "Save"}
             </button>
-          )}
+          </form>
         </div>
-
-        {subMsg && (
+        {avatarMsg && (
           <div
-            className={`mt-4 rounded-lg p-3 text-sm ${
-              subMsg.type === "success"
+            className={`rounded-lg px-2.5 py-1.5 text-xs ${
+              avatarMsg.type === "success"
                 ? "border border-accent-line bg-accent-soft text-accent"
                 : "border border-danger-line bg-danger-soft text-danger"
             }`}
           >
-            {subMsg.text}
+            {avatarMsg.text}
+          </div>
+        )}
+        {profileMsg && (
+          <div
+            className={`rounded-lg px-2.5 py-1.5 text-xs ${
+              profileMsg.type === "success"
+                ? "border border-accent-line bg-accent-soft text-accent"
+                : "border border-danger-line bg-danger-soft text-danger"
+            }`}
+          >
+            {profileMsg.text}
           </div>
         )}
 
-        {/* Pricing selector */}
-        <div className="mt-6 flex items-center justify-center">
-          <div className="inline-flex rounded-xl border border-line bg-paper p-1 shadow-sm">
-            <button
-              type="button"
-              onClick={() => setSubInterval("monthly")}
-              className={`rounded-lg px-4 py-1.5 text-[13px] font-medium transition-all ${
-                subInterval === "monthly"
-                  ? "bg-brand text-brand-fg shadow-sm"
-                  : "text-muted hover:text-ink"
-              }`}
-            >
-              Monthly ($3.49/mo)
-            </button>
-            <button
-              type="button"
-              onClick={() => setSubInterval("yearly")}
-              className={`flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-[13px] font-medium transition-all ${
-                subInterval === "yearly"
-                  ? "bg-brand text-brand-fg shadow-sm"
-                  : "text-muted hover:text-ink"
-              }`}
-            >
-              <span>Yearly ($24.99/yr)</span>
-              <span className="rounded-full bg-accent-soft px-1.5 py-0.5 text-[10px] font-bold text-accent">
-                Save 40%
-              </span>
-            </button>
-          </div>
-        </div>
-
-        {/* Tier Cards Comparison */}
-        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-          {/* Free Tier */}
+        {/* Password */}
+        <div className="border-t border-line pt-4">
+          <h3 className="mb-2 text-sm font-semibold text-ink">Change password</h3>
+          {passwordMsg && (
           <div
-            className={`flex flex-col justify-between rounded-xl border p-5 transition-all ${
-              !isPro
-                ? "border-line-strong bg-paper ring-1 ring-line-strong"
-                : "border-line bg-card opacity-80"
+            className={`rounded-lg px-2.5 py-1.5 text-xs ${
+              passwordMsg.type === "success"
+                ? "border border-accent-line bg-accent-soft text-accent"
+                : "border border-danger-line bg-danger-soft text-danger"
             }`}
           >
-            <div>
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-ink">Free Plan</h3>
-                {!isPro && (
-                  <span className="rounded bg-wash px-2 py-0.5 text-[11px] font-medium text-muted">
-                    Current plan
-                  </span>
-                )}
-              </div>
-              <div className="mt-2 flex items-baseline gap-1">
-                <span className="display text-3xl font-semibold text-ink">$0</span>
-                <span className="text-xs text-muted">/ forever</span>
-              </div>
-              <p className="mt-2 text-[12px] text-muted">Essential decluttering & basic item tracking</p>
-
-              <ul className="mt-4 space-y-2 text-[13px] text-ink-soft">
-                <li className="flex items-center gap-2">
-                  <IconCheck width={14} height={14} className="text-accent shrink-0" />
-                  <span>Unlimited tracked items</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <IconCheck width={14} height={14} className="text-accent shrink-0" />
-                  <span>Up to 5 categories (2 subcategories each)</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <IconCheck width={14} height={14} className="text-accent shrink-0" />
-                  <span>Purgatory & staging workflow</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <IconCheck width={14} height={14} className="text-accent shrink-0" />
-                  <span>Core declutter scoring engine</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <IconCheck width={14} height={14} className="text-accent shrink-0" />
-                  <span>Light and Dark mode</span>
-                </li>
-              </ul>
-            </div>
-
-            <div className="mt-6">
-              {!isPro ? (
-                <button
-                  type="button"
-                  disabled
-                  className="w-full rounded-lg border border-line py-2 text-[13px] font-medium text-muted"
-                >
-                  Active Plan
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => handleSubscribe("free")}
-                  disabled={subBusy}
-                  className="w-full rounded-lg border border-line py-2 text-[13px] font-medium text-muted hover:border-danger hover:text-danger transition-colors"
-                >
-                  {subBusy ? "Updating…" : "Downgrade to Free"}
-                </button>
-              )}
-            </div>
+            {passwordMsg.text}
           </div>
-
-          {/* Pro Tier */}
-          <div
-            className={`flex flex-col justify-between rounded-xl border p-5 transition-all ${
-              isPro
-                ? "border-accent bg-accent-soft/20 ring-1 ring-accent"
-                : "border-accent/40 bg-paper shadow-sm"
-            }`}
+        )}
+          <form
+            id="password-form"
+            onSubmit={handleChangePassword}
+            className="mt-2 grid gap-3 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end"
           >
             <div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <h3 className="font-semibold text-ink">Pro Plan</h3>
-                  <IconSparkles width={14} height={14} className="text-accent" />
-                </div>
-                {isPro ? (
-                  <span className="rounded bg-accent-soft px-2 py-0.5 text-[11px] font-bold text-accent">
-                    Active Plan
-                  </span>
-                ) : (
-                  <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-accent">
-                    Recommended
-                  </span>
-                )}
-              </div>
-              <div className="mt-2 flex items-baseline gap-1.5">
-                <span className="display text-3xl font-semibold text-ink">
-                  {subInterval === "yearly" ? "$24.99" : "$3.49"}
-                </span>
-                <span className="text-xs text-muted">
-                  {subInterval === "yearly" ? "USD / year ($2.08/mo)" : "USD / month"}
-                </span>
-              </div>
-              <p className="mt-2 text-[12px] text-muted">
-                Complete possession analytics, unlimited items, and full CSV & JSON data exports
-              </p>
-
-              <ul className="mt-4 space-y-2 text-[13px] text-ink-soft">
-                <li className="flex items-center gap-2">
-                  <IconCheck width={14} height={14} className="text-accent shrink-0" />
-                  <strong>AI Advisor & offload recommendations</strong>
-                </li>
-                <li className="flex items-center gap-2">
-                  <IconCheck width={14} height={14} className="text-accent shrink-0" />
-                  <strong>Wishlist & 30-day cooldown tracker</strong>
-                </li>
-                <li className="flex items-center gap-2">
-                  <IconCheck width={14} height={14} className="text-accent shrink-0" />
-                  <strong>Unlimited custom categories & subcategories</strong>
-                </li>
-                <li className="flex items-center gap-2">
-                  <IconCheck width={14} height={14} className="text-accent shrink-0" />
-                  <span>Complete CSV & JSON data backups and exports</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <IconCheck width={14} height={14} className="text-accent shrink-0" />
-                  <span>PRO badge across dashboard and profile</span>
-                </li>
-              </ul>
+              <label className="label" htmlFor="current-password">
+                Current
+              </label>
+              <input
+                id="current-password"
+                type="password"
+                className="input"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                required
+              />
             </div>
-
-            <div className="mt-6">
-              {isPro ? (
-                user.subscriptionInterval !== subInterval ? (
-                  <button
-                    type="button"
-                    onClick={() => handleSubscribe("premium", subInterval)}
-                    disabled={subBusy}
-                    className="btn-primary w-full"
-                  >
-                    {subBusy ? "Updating…" : `Switch to ${subInterval === "yearly" ? "Yearly ($24.99/yr)" : "Monthly ($3.49/mo)"}`}
-                  </button>
-                ) : (
-                  <div className="rounded-lg bg-accent-soft py-2 text-center text-[13px] font-semibold text-accent">
-                    Active Subscription
-                  </div>
-                )
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => handleSubscribe("premium", subInterval)}
-                  disabled={subBusy}
-                  className="btn-primary w-full shadow-sm"
-                >
-                  <IconSparkles width={15} height={15} />
-                  {subBusy
-                    ? "Upgrading…"
-                    : `Upgrade to Pro — ${subInterval === "yearly" ? "$24.99/yr" : "$3.49/mo"}`}
-                </button>
-              )}
+            <div>
+              <label className="label" htmlFor="new-password">
+                New
+              </label>
+              <input
+                id="new-password"
+                type="password"
+                className="input"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                minLength={8}
+                placeholder="Min 8 characters"
+                required
+              />
             </div>
-          </div>
+            <div>
+              <label className="label" htmlFor="confirm-password">
+                Confirm
+              </label>
+              <input
+                id="confirm-password"
+                type="password"
+                className="input"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                minLength={8}
+                placeholder="Repeat new password"
+                required
+              />
+            </div>
+            <button type="submit" className="btn-secondary px-3 py-2 text-xs" disabled={passwordBusy}>
+              <IconLock width={14} height={14} />
+              {passwordBusy ? "Updating…" : "Update"}
+            </button>
+          </form>
         </div>
       </section>
 
@@ -1078,6 +797,251 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
           )}
         </div>
       </section>
+
+      {/* Membership & Subscription Card */}
+      <section id="subscription" className="card p-6 scroll-mt-6">
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="display text-lg">Membership & plan</h2>
+              {isPro ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-accent">
+                  <IconSparkles width={11} height={11} />
+                  Pro Active
+                </span>
+              ) : (
+                <span className="inline-flex items-center rounded-full bg-wash px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider text-muted">
+                  Free Tier
+                </span>
+              )}
+            </div>
+            <p className="mt-1 text-[13px] text-muted">
+              {isPro
+                ? `You have unlocked smpl. Pro on a ${user.subscriptionInterval || "monthly"} plan${user.subscriptionRenewsAt ? ` (renews on ${user.subscriptionRenewsAt})` : ""}.`
+                : "Free tier includes unlimited items tracking with essential declutter tools. Upgrade to Pro to unlock the AI Advisor, Wishlist & cooldown tracker, and unlimited categories."}
+            </p>
+          </div>
+
+          {isPro && (
+            <button
+              type="button"
+              onClick={() => handleSubscribe("free")}
+              disabled={subBusy}
+              className="text-[12px] text-muted underline hover:text-danger transition-colors"
+            >
+              Cancel subscription
+            </button>
+          )}
+        </div>
+
+        {subMsg && (
+          <div
+            className={`mt-4 rounded-lg p-3 text-sm ${
+              subMsg.type === "success"
+                ? "border border-accent-line bg-accent-soft text-accent"
+                : "border border-danger-line bg-danger-soft text-danger"
+            }`}
+          >
+            {subMsg.text}
+          </div>
+        )}
+
+        {/* Pricing selector */}
+        <div className="mt-6 flex items-center justify-center">
+          <div className="inline-flex rounded-xl border border-line bg-paper p-1 shadow-sm">
+            <button
+              type="button"
+              onClick={() => setSubInterval("monthly")}
+              className={`rounded-lg px-4 py-1.5 text-[13px] font-medium transition-all ${
+                subInterval === "monthly"
+                  ? "bg-brand text-brand-fg shadow-sm"
+                  : "text-muted hover:text-ink"
+              }`}
+            >
+              Monthly ($3.49/mo)
+            </button>
+            <button
+              type="button"
+              onClick={() => setSubInterval("yearly")}
+              className={`flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-[13px] font-medium transition-all ${
+                subInterval === "yearly"
+                  ? "bg-brand text-brand-fg shadow-sm"
+                  : "text-muted hover:text-ink"
+              }`}
+            >
+              <span>Yearly ($24.99/yr)</span>
+              <span className="rounded-full bg-accent-soft px-1.5 py-0.5 text-[10px] font-bold text-accent">
+                Save 40%
+              </span>
+            </button>
+          </div>
+        </div>
+
+        {/* Tier Cards Comparison */}
+        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+          {/* Free Tier */}
+          <div
+            className={`flex flex-col justify-between rounded-xl border p-5 transition-all ${
+              !isPro
+                ? "border-line-strong bg-paper ring-1 ring-line-strong"
+                : "border-line bg-card opacity-80"
+            }`}
+          >
+            <div>
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-ink">Free Plan</h3>
+                {!isPro && (
+                  <span className="rounded bg-wash px-2 py-0.5 text-[11px] font-medium text-muted">
+                    Current plan
+                  </span>
+                )}
+              </div>
+              <div className="mt-2 flex items-baseline gap-1">
+                <span className="display text-3xl font-semibold text-ink">$0</span>
+                <span className="text-xs text-muted">/ forever</span>
+              </div>
+              <p className="mt-2 text-[12px] text-muted">Essential decluttering & basic item tracking</p>
+
+              <ul className="mt-4 space-y-2 text-[13px] text-ink-soft">
+                <li className="flex items-center gap-2">
+                  <IconCheck width={14} height={14} className="text-accent shrink-0" />
+                  <span>Unlimited tracked items</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <IconCheck width={14} height={14} className="text-accent shrink-0" />
+                  <span>Up to 5 categories (2 subcategories each)</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <IconCheck width={14} height={14} className="text-accent shrink-0" />
+                  <span>Purgatory & staging workflow</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <IconCheck width={14} height={14} className="text-accent shrink-0" />
+                  <span>Core declutter scoring engine</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <IconCheck width={14} height={14} className="text-accent shrink-0" />
+                  <span>Light and Dark mode</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="mt-6">
+              {!isPro ? (
+                <button
+                  type="button"
+                  disabled
+                  className="w-full rounded-lg border border-line py-2 text-[13px] font-medium text-muted"
+                >
+                  Active Plan
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handleSubscribe("free")}
+                  disabled={subBusy}
+                  className="w-full rounded-lg border border-line py-2 text-[13px] font-medium text-muted hover:border-danger hover:text-danger transition-colors"
+                >
+                  {subBusy ? "Updating…" : "Downgrade to Free"}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Pro Tier */}
+          <div
+            className={`flex flex-col justify-between rounded-xl border p-5 transition-all ${
+              isPro
+                ? "border-accent bg-accent-soft/20 ring-1 ring-accent"
+                : "border-accent/40 bg-paper shadow-sm"
+            }`}
+          >
+            <div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <h3 className="font-semibold text-ink">Pro Plan</h3>
+                  <IconSparkles width={14} height={14} className="text-accent" />
+                </div>
+                {isPro ? (
+                  <span className="rounded bg-accent-soft px-2 py-0.5 text-[11px] font-bold text-accent">
+                    Active Plan
+                  </span>
+                ) : (
+                  <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-accent">
+                    Recommended
+                  </span>
+                )}
+              </div>
+              <div className="mt-2 flex items-baseline gap-1.5">
+                <span className="display text-3xl font-semibold text-ink">
+                  {subInterval === "yearly" ? "$24.99" : "$3.49"}
+                </span>
+                <span className="text-xs text-muted">
+                  {subInterval === "yearly" ? "USD / year ($2.08/mo)" : "USD / month"}
+                </span>
+              </div>
+              <p className="mt-2 text-[12px] text-muted">
+                Complete possession analytics, unlimited items, and full CSV & JSON data exports
+              </p>
+
+              <ul className="mt-4 space-y-2 text-[13px] text-ink-soft">
+                <li className="flex items-center gap-2">
+                  <IconCheck width={14} height={14} className="text-accent shrink-0" />
+                  <strong>AI Advisor & offload recommendations</strong>
+                </li>
+                <li className="flex items-center gap-2">
+                  <IconCheck width={14} height={14} className="text-accent shrink-0" />
+                  <strong>Wishlist & 30-day cooldown tracker</strong>
+                </li>
+                <li className="flex items-center gap-2">
+                  <IconCheck width={14} height={14} className="text-accent shrink-0" />
+                  <strong>Unlimited custom categories & subcategories</strong>
+                </li>
+                <li className="flex items-center gap-2">
+                  <IconCheck width={14} height={14} className="text-accent shrink-0" />
+                  <span>Complete CSV & JSON data backups and exports</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <IconCheck width={14} height={14} className="text-accent shrink-0" />
+                  <span>PRO badge across dashboard and profile</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="mt-6">
+              {isPro ? (
+                user.subscriptionInterval !== subInterval ? (
+                  <button
+                    type="button"
+                    onClick={() => handleSubscribe("premium", subInterval)}
+                    disabled={subBusy}
+                    className="btn-primary w-full"
+                  >
+                    {subBusy ? "Updating…" : `Switch to ${subInterval === "yearly" ? "Yearly ($24.99/yr)" : "Monthly ($3.49/mo)"}`}
+                  </button>
+                ) : (
+                  <div className="rounded-lg bg-accent-soft py-2 text-center text-[13px] font-semibold text-accent">
+                    Active Subscription
+                  </div>
+                )
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handleSubscribe("premium", subInterval)}
+                  disabled={subBusy}
+                  className="btn-primary w-full shadow-sm"
+                >
+                  <IconSparkles width={15} height={15} />
+                  {subBusy
+                    ? "Upgrading…"
+                    : `Upgrade to Pro — ${subInterval === "yearly" ? "$24.99/yr" : "$3.49/mo"}`}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
 
       {/* Export Data Card — Paywalled for Pro */}
       <section className="card p-6">
