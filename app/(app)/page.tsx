@@ -43,7 +43,7 @@ export default async function DashboardPage() {
   ];
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-4 sm:space-y-10">
       {/* ---------------- Hero ---------------- */}
       <header className="animate-rise flex flex-wrap items-center gap-4 sm:gap-5">
         <Link href="/account" className="hidden sm:block shrink-0 transition-transform hover:scale-105" title="Manage account">
@@ -208,7 +208,7 @@ export default async function DashboardPage() {
         </div>
 
         {/* ---------------- Status breakdown ---------------- */}
-        <section className="card flex flex-col p-6">
+        <section className="card flex flex-col p-4 sm:p-6">
           <div className="mb-1 flex items-baseline justify-between gap-3">
             <h2 className="display text-xl">Where your items stand</h2>
             <span className="text-xs text-muted">all time</span>
@@ -219,8 +219,8 @@ export default async function DashboardPage() {
       </div>
 
       {/* ---------------- Quarterly Change & Category breakdown ---------------- */}
-      <div className="grid gap-5 lg:grid-cols-5">
-        <section className="card flex flex-col justify-between p-6 lg:col-span-3">
+      <div className="grid gap-4 sm:gap-5 lg:grid-cols-5">
+        <section className="card flex flex-col justify-between p-4 sm:p-6 lg:col-span-3">
           <div>
             <div className="mb-1 flex items-baseline justify-between gap-3">
               <h2 className="display text-xl">Quarterly growth</h2>

@@ -392,6 +392,7 @@ function InventoryInner() {
                   {SORT_COLUMNS.map((col) => {
                     const active = sort.key === col.key;
                     const isVisibleOnMobile = col.key === "name" || col.key === "quality" || col.key === "status";
+                    const isQuality = col.key === "quality";
                     return (
                       <th
                         key={col.key}
@@ -399,7 +400,7 @@ function InventoryInner() {
                         aria-sort={active ? (sort.direction === "asc" ? "ascending" : "descending") : "none"}
                         className={`whitespace-nowrap px-3 sm:px-4 py-2.5 align-middle text-[11px] font-semibold uppercase tracking-[0.12em] ${
                           !isVisibleOnMobile ? "hidden sm:table-cell" : ""
-                        } ${col.numeric ? "text-right" : "text-left"}`}
+                        } ${isQuality ? "w-10 sm:w-auto px-1.5 sm:px-4" : ""} ${col.numeric ? "text-right" : "text-left"}`}
                       >
                         <button
                           type="button"
@@ -550,8 +551,8 @@ function InventoryInner() {
                         )}
                       </td>
 
-                      {/* Quality: shown on mobile */}
-                      <td className="px-2.5 sm:px-4 py-2 sm:py-2.5 align-middle text-[13px] text-ink-soft">
+                      {/* Quality: shown on mobile (icon only on mobile, reduced col width) */}
+                      <td className="px-1.5 sm:px-4 py-2 sm:py-2.5 align-middle text-[13px] text-ink-soft w-10 sm:w-auto">
                         {editingCell?.itemId === item.id && editingCell?.field === "quality" ? (
                           <select
                             autoFocus
@@ -571,12 +572,12 @@ function InventoryInner() {
                               e.stopPropagation();
                               setEditingCell({ itemId: item.id, field: "quality" });
                             }}
-                            className="inline-flex items-center gap-1.5 py-1 px-1.5 -mx-1.5 rounded hover:bg-wash cursor-pointer transition-colors"
-                            title="Click to edit quality"
+                            className="inline-flex items-center gap-1.5 py-1 px-1 sm:px-1.5 -mx-1 sm:-mx-1.5 rounded hover:bg-wash cursor-pointer transition-colors"
+                            title={item.quality ? `Quality: ${item.quality}` : "Click to edit quality"}
                           >
                             <QualityIcon quality={item.quality} />
                             {item.quality ? (
-                              <span className="capitalize text-xs text-muted">({item.quality})</span>
+                              <span className="hidden sm:inline capitalize text-xs text-muted">({item.quality})</span>
                             ) : null}
                           </span>
                         )}
