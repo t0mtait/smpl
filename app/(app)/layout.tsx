@@ -86,7 +86,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                 <IconSparkles width={13} height={13} className="shrink-0 text-accent" />
                 <span className="truncate font-semibold text-accent">Upgrade to Pro</span>
               </div>
-              <span className="shrink-0 text-[11px] font-medium text-ink-soft">$3.49/mo</span>
+              <span className="shrink-0 text-[11px] font-medium text-ink-soft">$4.29/mo</span>
             </Link>
           </div>
         )}

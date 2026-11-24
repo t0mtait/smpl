@@ -1000,7 +1000,7 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                     : "text-muted hover:text-ink"
                 }`}
               >
-                Monthly ($3.49/mo)
+                Monthly ($4.29/mo)
               </button>
               <button
                 type="button"
@@ -1011,9 +1011,9 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                     : "text-muted hover:text-ink"
                 }`}
               >
-                <span>Yearly ($24.99/yr)</span>
+                <span>Yearly ($34.99/yr)</span>
                 <span className="rounded-full bg-accent-soft px-1.5 py-0.2 text-[9px] font-bold text-accent">
-                  -40%
+                  -32%
                 </span>
               </button>
             </div>
@@ -1046,10 +1046,10 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                 </div>
                 <div className="mt-1 flex items-baseline gap-1.5">
                   <span className="display text-2xl font-semibold text-ink">
-                    {subInterval === "yearly" ? "$24.99" : "$3.49"}
+                    {subInterval === "yearly" ? "$34.99" : "$4.29"}
                   </span>
                   <span className="text-[11px] text-muted">
-                    {subInterval === "yearly" ? "USD / yr ($2.08/mo)" : "USD / month"}
+                    {subInterval === "yearly" ? "USD / yr ($2.92/mo)" : "USD / month"}
                   </span>
                 </div>
 
@@ -1084,7 +1084,7 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                       disabled={subBusy}
                       className="btn-primary w-full text-xs py-1.5"
                     >
-                      {subBusy ? "Updating…" : `Switch to ${subInterval === "yearly" ? "Yearly ($24.99/yr)" : "Monthly ($3.49/mo)"}`}
+                      {subBusy ? "Updating…" : `Switch to ${subInterval === "yearly" ? "Yearly ($34.99/yr)" : "Monthly ($4.29/mo)"}`}
                     </button>
                   ) : (
                     <div className="rounded-lg bg-accent-soft py-1.5 text-center text-xs font-semibold text-accent">
@@ -1101,7 +1101,7 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                     <IconSparkles width={13} height={13} />
                     {subBusy
                       ? "Upgrading…"
-                      : `Upgrade to Pro — ${subInterval === "yearly" ? "$24.99/yr" : "$3.49/mo"}`}
+                      : `Upgrade to Pro — ${subInterval === "yearly" ? "$34.99/yr" : "$4.29/mo"}`}
                   </button>
                 )}
               </div>

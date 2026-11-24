@@ -224,10 +224,10 @@ export default async function WelcomePage() {
                 </span>
                 <h3 className="text-lg font-semibold">Pro</h3>
                 <div className="mt-2 flex items-baseline gap-2">
-                  <span className="display text-4xl">$3.49</span>
+                  <span className="display text-4xl">$4.29</span>
                   <span className="text-sm text-muted">/ month</span>
                 </div>
-                <p className="text-[13px] text-muted">or $24.99 / year</p>
+                <p className="text-[13px] text-muted">or $34.99 / year</p>
                 <ul className="mt-5 space-y-2.5">
                   <Check>Everything in Free</Check>
                   <Check>AI advisor suggestions</Check>

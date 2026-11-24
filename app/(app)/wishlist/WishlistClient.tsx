@@ -578,7 +578,7 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <Link href="/account#subscription" className="btn-primary">
               <IconSparkles width={16} height={16} />
-              Upgrade to Pro for $3.49/mo
+              Upgrade to Pro for $4.29/mo
             </Link>
             <Link href="/items" className="btn-secondary">
               Back to Inventory
