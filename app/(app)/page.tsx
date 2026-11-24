@@ -46,7 +46,7 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-10">
       {/* ---------------- Hero ---------------- */}
-      <header className="animate-rise flex items-center gap-4 sm:gap-5">
+      <header className="animate-rise flex flex-wrap items-center gap-4 sm:gap-5">
         <Link href="/account" className="shrink-0 transition-transform hover:scale-105" title="Manage account">
           <UserAvatar
             name={user.name}
@@ -78,6 +78,13 @@ export default async function DashboardPage() {
             {possessiveName} stuff, at a glance.
           </h1>
         </div>
+        <Link href="/items/advisor" className="btn-secondary sm:ml-auto">
+          <IconSparkles width={16} height={16} />
+          AI Advisor
+          {user.plan !== "premium" && (
+            <span className="rounded bg-accent-soft px-1.5 py-0.5 text-[9px] font-bold text-accent">PRO</span>
+          )}
+        </Link>
       </header>
 
       {/* ---------------- Stat tiles ---------------- */}
