@@ -228,7 +228,7 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
   const cellBtn =
     "inline-block py-1 px-1.5 -mx-1.5 rounded hover:bg-wash cursor-pointer transition-colors";
 
-  type PurgatorySortKey = "name" | "category" | "value" | "acquired" | "purgatoryDate";
+  type PurgatorySortKey = "name" | "brand" | "category" | "value" | "acquired" | "purgatoryDate";
   type SortDirection = "asc" | "desc";
 
   const [sort, setSort] = useState<{ key: PurgatorySortKey; direction: SortDirection }>({
@@ -255,6 +255,9 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
       }
       if (sort.key === "name") {
         return a.name.localeCompare(b.name) * dir;
+      }
+      if (sort.key === "brand") {
+        return (a.brand || "").localeCompare(b.brand || "") * dir;
       }
       if (sort.key === "category") {
         return a.category.localeCompare(b.category) * dir;
@@ -366,6 +369,20 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                   <th scope="col" className="px-4 py-3">
                     <button
                       type="button"
+                      onClick={() => toggleSort("brand")}
+                      className={`inline-flex items-center gap-1.5 rounded transition-colors hover:text-ink ${
+                        sort.key === "brand" ? "text-ink" : "text-muted"
+                      }`}
+                    >
+                      Brand
+                      <span className={`text-[9px] leading-none ${sort.key === "brand" ? "opacity-100" : "opacity-0"}`}>
+                        {sort.direction === "asc" ? "▲" : "▼"}
+                      </span>
+                    </button>
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    <button
+                      type="button"
                       onClick={() => toggleSort("category")}
                       className={`inline-flex items-center gap-1.5 rounded transition-colors hover:text-ink ${
                         sort.key === "category" ? "text-ink" : "text-muted"
@@ -442,6 +459,29 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                         </span>
                       ) : null}
                     </th>
+                    <td className="px-4 py-3 text-[13px] text-ink-soft">
+                      {isEditing(item.id, "brand") ? (
+                        <input
+                          type="text"
+                          autoFocus
+                          defaultValue={item.brand}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") e.currentTarget.blur();
+                            if (e.key === "Escape") setEditingCell(null);
+                          }}
+                          onBlur={(e) => saveInline(item.id, { brand: e.currentTarget.value.trim() })}
+                          className="input py-0.5 px-2 text-xs h-7 max-w-[120px]"
+                        />
+                      ) : (
+                        <span
+                          onClick={() => setEditingCell({ itemId: item.id, field: "brand" })}
+                          className={cellBtn}
+                          title="Click to edit brand"
+                        >
+                          {item.brand || <span className="text-muted/60">—</span>}
+                        </span>
+                      )}
+                    </td>
                     <td className="px-4 py-3">
                       {isEditing(item.id, "category") ? (
                         <select
