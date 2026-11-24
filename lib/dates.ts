@@ -38,7 +38,8 @@ export function today(): string {
  */
 export function parseDateOnly(value: string | null | undefined): Date | null {
   if (!value) return null;
-  const iso = value.includes("T") ? value : `${value}T00:00:00`;
+  // Legacy SQLite rows are "YYYY-MM-DD HH:MM:SS"; keep just the date part.
+  const iso = value.includes("T") ? value : `${value.slice(0, 10)}T00:00:00`;
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? null : d;
 }

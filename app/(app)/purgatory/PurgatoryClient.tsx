@@ -3,8 +3,8 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { Item } from "@/lib/db";
-import { formatDate, formatMoney, formatQuarter } from "@/lib/format";
-import { currentQuarter } from "@/lib/dates";
+import { formatMoney, formatQuarter } from "@/lib/format";
+import { currentQuarter, daysSinceDate } from "@/lib/dates";
 import { CategoryTag } from "@/components/ui";
 import { IconArrowLeft, IconBox, IconCheck, IconFlame, IconUndo } from "@/components/icons";
 
@@ -173,9 +173,9 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
     const dir = sort.direction === "asc" ? 1 : -1;
     return [...items].sort((a, b) => {
       if (sort.key === "purgatoryDate") {
-        const tA = a.purgatoryDate ? new Date(a.purgatoryDate).getTime() : 0;
-        const tB = b.purgatoryDate ? new Date(b.purgatoryDate).getTime() : 0;
-        return (tA - tB) * dir;
+        const dA = daysSinceDate(a.purgatoryDate) ?? -1;
+        const dB = daysSinceDate(b.purgatoryDate) ?? -1;
+        return (dA - dB) * dir;
       }
       if (sort.key === "name") {
         return a.name.localeCompare(b.name) * dir;
@@ -336,9 +336,9 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                       className={`inline-flex items-center gap-1.5 rounded transition-colors hover:text-ink ${
                         sort.key === "purgatoryDate" ? "text-ink" : "text-muted"
                       }`}
-                      title="Sort by date added to purgatory"
+                      title="Sort by days in purgatory"
                     >
-                      Added to Purgatory Date
+                      Days in Purgatory
                       <span className={`text-[9px] leading-none ${sort.key === "purgatoryDate" ? "opacity-100" : "opacity-0"}`}>
                         {sort.direction === "asc" ? "▲" : "▼"}
                       </span>
@@ -376,7 +376,10 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                       {formatQuarter(item.purchaseDate)}
                     </td>
                     <td className="tabular px-4 py-3 text-right text-[13px] text-muted">
-                      {formatDate(item.purgatoryDate)}
+                      {(() => {
+                        const d = daysSinceDate(item.purgatoryDate);
+                        return d === null ? "—" : `${Math.max(0, d)} ${d === 1 ? "day" : "days"}`;
+                      })()}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-2">
