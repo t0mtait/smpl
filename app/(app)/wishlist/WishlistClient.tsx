@@ -17,7 +17,7 @@ import {
   IconTrash,
 } from "@/components/icons";
 
-type WishlistSortKey = "name" | "priority" | "category" | "price" | "url" | "waiting";
+type WishlistSortKey = "name" | "priority" | "category" | "subcategory" | "price" | "url" | "waiting";
 type SortDirection = "asc" | "desc";
 
 interface WishlistSortState {
@@ -29,6 +29,7 @@ const WISHLIST_COLUMNS: { key: WishlistSortKey; label: string; numeric?: boolean
   { key: "name", label: "Item" },
   { key: "priority", label: "Priority" },
   { key: "category", label: "Category" },
+  { key: "subcategory", label: "Subcategory" },
   { key: "price", label: "Price", numeric: true },
   { key: "url", label: "Store Link" },
   { key: "waiting", label: "Cooldown", numeric: true },
@@ -90,12 +91,14 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
   const [query, setQuery] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [subcategoryFilter, setSubcategoryFilter] = useState<string>("all");
   const [sort, setSort] = useState<WishlistSortState>({ key: "waiting", direction: "desc" });
 
   // Add form toggle
   const [showAddForm, setShowAddForm] = useState(false);
   const [addName, setAddName] = useState("");
   const [addCategory, setAddCategory] = useState("misc");
+  const [addSubcategory, setAddSubcategory] = useState("");
   const [addPrice, setAddPrice] = useState("");
   const [addUrl, setAddUrl] = useState("");
   const [addNotes, setAddNotes] = useState("");
@@ -109,6 +112,7 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [editName, setEditName] = useState("");
   const [editCategory, setEditCategory] = useState("");
+  const [editSubcategory, setEditSubcategory] = useState("");
   const [editPrice, setEditPrice] = useState("");
   const [editUrl, setEditUrl] = useState("");
   const [editNotes, setEditNotes] = useState("");
@@ -119,18 +123,30 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
   // Inline cell edit state
   const [editingCell, setEditingCell] = useState<{ itemId: number; field: string } | null>(null);
   const [inlinePriority, setInlinePriority] = useState<number>(50);
-  const [userCategories, setUserCategories] = useState<string[]>(COMMON_CATEGORIES);
+  const [userCategories, setUserCategories] = useState<{ category: string; subcategories: string[] }[]>([]);
 
   useEffect(() => {
     fetch("/api/user/categories")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data?.categories?.length) {
-          setUserCategories(data.categories.map((c: { category: string }) => c.category));
+          setUserCategories(data.categories);
         }
       })
       .catch(() => {});
   }, []);
+
+  const subOptions = (cat: string, current?: string) => {
+    const opts = userCategories.find((u) => u.category === cat)?.subcategories || [];
+    return current && !opts.includes(current) ? [current, ...opts] : opts;
+  };
+
+  const categoryNames = useMemo(() => {
+    const set = new Set((items ?? []).map((i) => i.category || "misc"));
+    for (const u of userCategories) set.add(u.category);
+    for (const c of COMMON_CATEGORIES) set.add(c);
+    return [...set].sort();
+  }, [items, userCategories]);
 
   // Convert to inventory modal state
   const [convertingItem, setConvertingItem] = useState<WishlistItem | null>(null);
@@ -166,6 +182,18 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
     return [...set].sort();
   }, [items]);
 
+  const subcategories = useMemo(() => {
+    if (categoryFilter === "all") return [];
+    const set = new Set(
+      (items ?? [])
+        .filter((i) => i.category === categoryFilter && i.subcategory?.trim())
+        .map((i) => i.subcategory.trim())
+    );
+    const userSubs = userCategories.find((u) => u.category === categoryFilter)?.subcategories || [];
+    for (const s of userSubs) set.add(s);
+    return [...set].sort();
+  }, [items, categoryFilter, userCategories]);
+
   const filteredItems = useMemo(() => {
     let list = items ?? [];
     if (query.trim()) {
@@ -174,7 +202,9 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
         (i) =>
           i.name.toLowerCase().includes(q) ||
           i.category.toLowerCase().includes(q) ||
-          i.notes.toLowerCase().includes(q)
+          (i.subcategory && i.subcategory.toLowerCase().includes(q)) ||
+          i.notes.toLowerCase().includes(q) ||
+          i.url.toLowerCase().includes(q)
       );
     }
     if (priorityFilter === "high") {
@@ -186,6 +216,9 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
     }
     if (categoryFilter !== "all") {
       list = list.filter((i) => i.category === categoryFilter);
+      if (subcategoryFilter !== "all") {
+        list = list.filter((i) => (i.subcategory || "") === subcategoryFilter);
+      }
     }
 
     const dir = sort.direction === "asc" ? 1 : -1;
@@ -198,6 +231,9 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
       }
       if (sort.key === "category") {
         return a.category.localeCompare(b.category) * dir;
+      }
+      if (sort.key === "subcategory") {
+        return (a.subcategory || "").localeCompare(b.subcategory || "") * dir;
       }
       if (sort.key === "price") {
         const pA = a.price ?? -1;
@@ -215,7 +251,7 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
       }
       return 0;
     });
-  }, [items, query, priorityFilter, categoryFilter, sort]);
+  }, [items, query, priorityFilter, categoryFilter, subcategoryFilter, sort]);
 
   const toggleSort = (key: WishlistSortKey) => {
     setSort((curr) => {
@@ -254,6 +290,7 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
         body: JSON.stringify({
           name: addName.trim(),
           category: addCategory.trim() || "misc",
+          subcategory: addSubcategory.trim(),
           price: addPrice.trim() === "" ? null : Number(addPrice),
           url: addUrl.trim(),
           notes: addNotes.trim(),
@@ -270,6 +307,7 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
 
       setAddName("");
       setAddCategory("misc");
+      setAddSubcategory("");
       setAddPrice("");
       setAddUrl("");
       setAddNotes("");
@@ -288,6 +326,7 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
     setEditingItem(item);
     setEditName(item.name);
     setEditCategory(item.category);
+    setEditSubcategory(item.subcategory || "");
     setEditPrice(item.price === null ? "" : String(item.price));
     setEditUrl(item.url);
     setEditNotes(item.notes);
@@ -309,6 +348,7 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
         body: JSON.stringify({
           name: editName.trim(),
           category: editCategory.trim() || "misc",
+          subcategory: editSubcategory.trim(),
           price: editPrice.trim() === "" ? null : Number(editPrice),
           url: editUrl.trim(),
           notes: editNotes.trim(),
@@ -417,24 +457,79 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
   return (
     <div className="space-y-8">
       {/* ---------------- Header ---------------- */}
-      <header className="animate-rise flex flex-wrap items-center justify-between gap-6">
+      <header className="animate-rise flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="eyebrow">Intentional Living</p>
+          <div className="flex items-center gap-2">
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-accent-soft text-accent">
+              <IconHeart width={15} height={15} />
+            </span>
+            <p className="eyebrow">Intentional Living</p>
+          </div>
           <h1 className="display mt-2 text-4xl leading-[1.1] sm:text-5xl">Wishlist</h1>
         </div>
 
         {isPro && (
-          <div className="flex flex-wrap items-center gap-4 sm:ml-auto">
-            {/* Consolidated summary tile beside header */}
-            <div className="card px-5 py-3">
-              <span className="eyebrow text-[10px]">On wishlist</span>
-              <div className="mt-1 flex items-baseline gap-2.5">
-                <span className="text-2xl font-bold tabular text-ink">{stats.totalCount}</span>
-                <span className="text-sm font-semibold tabular text-accent" title="Total estimated price">
-                  {formatMoney(stats.totalEstCost)}
-                </span>
-              </div>
+          <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:flex-1 lg:justify-end">
+            <div className="relative min-w-[200px] flex-1 sm:max-w-xs">
+              <IconSearch
+                width={16}
+                height={16}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted"
+              />
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search wishlist…"
+                className="input pl-9 text-sm"
+              />
             </div>
+
+            <select
+              value={priorityFilter}
+              onChange={(e) => setPriorityFilter(e.target.value)}
+              className="input w-auto text-sm"
+              aria-label="Filter by priority"
+            >
+              <option value="all">All priorities</option>
+              <option value="high">High priority (70–100)</option>
+              <option value="medium">Medium priority (40–69)</option>
+              <option value="low">Low priority (0–39)</option>
+            </select>
+
+            <select
+              value={categoryFilter}
+              onChange={(e) => {
+                setCategoryFilter(e.target.value);
+                setSubcategoryFilter("all");
+              }}
+              className="input w-auto text-sm"
+              aria-label="Filter by category"
+            >
+              <option value="all">All categories</option>
+              {categories.map((c) => (
+                <option key={c} value={c}>
+                  {formatCategory(c)}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={subcategoryFilter}
+              disabled={categoryFilter === "all"}
+              onChange={(e) => setSubcategoryFilter(e.target.value)}
+              className="input w-auto text-sm"
+              aria-label="Filter by subcategory"
+            >
+              <option value="all">
+                {categoryFilter === "all" ? "—" : "All subcategories"}
+              </option>
+              {subcategories.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
 
             <button
               type="button"
@@ -537,7 +632,7 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-3">
             <div>
               <label className="label" htmlFor="add-cat">
                 Category
@@ -548,11 +643,33 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                 className="input"
                 placeholder="misc"
                 value={addCategory}
-                onChange={(e) => setAddCategory(e.target.value)}
+                onChange={(e) => {
+                  setAddCategory(e.target.value);
+                  setAddSubcategory("");
+                }}
               />
               <datalist id="category-suggestions">
-                {userCategories.map((c) => (
+                {categoryNames.map((c) => (
                   <option key={c} value={c} />
+                ))}
+              </datalist>
+            </div>
+
+            <div>
+              <label className="label" htmlFor="add-subcat">
+                Subcategory <span className="font-normal text-muted">(optional)</span>
+              </label>
+              <input
+                id="add-subcat"
+                list="subcategory-suggestions"
+                className="input"
+                placeholder="e.g. accessories"
+                value={addSubcategory}
+                onChange={(e) => setAddSubcategory(e.target.value)}
+              />
+              <datalist id="subcategory-suggestions">
+                {subOptions(addCategory).map((s) => (
+                  <option key={s} value={s} />
                 ))}
               </datalist>
             </div>
@@ -630,54 +747,6 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
           </div>
         </form>
       )}
-
-      {/* ---------------- Filter & Search Bar ---------------- */}
-      <div className="card p-4 space-y-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="relative min-w-[200px] flex-1">
-            <IconSearch
-              width={16}
-              height={16}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted"
-            />
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search wishlist…"
-              className="input pl-9"
-            />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <select
-              value={priorityFilter}
-              onChange={(e) => setPriorityFilter(e.target.value)}
-              className="input w-auto text-sm"
-              aria-label="Filter by priority"
-            >
-              <option value="all">All priorities</option>
-              <option value="high">High priority (70–100)</option>
-              <option value="medium">Medium priority (40–69)</option>
-              <option value="low">Low priority (0–39)</option>
-            </select>
-
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="input w-auto text-sm"
-              aria-label="Filter by category"
-            >
-              <option value="all">All categories</option>
-              {categories.map((c) => (
-                <option key={c} value={c}>
-                  {formatCategory(c)}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </div>
 
       {/* ---------------- Content / Items List ---------------- */}
       {loading ? (
@@ -840,7 +909,7 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                             onBlur={() => setEditingCell(null)}
                             className="input py-0.5 px-2 text-xs h-7"
                           >
-                            {userCategories.map((c) => (
+                            {categoryNames.map((c) => (
                               <option key={c} value={c}>
                                 {formatCategory(c)}
                               </option>
@@ -853,6 +922,34 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                             title="Click to change category"
                           >
                             <CategoryTag category={item.category} />
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Subcategory (click to edit field) */}
+                      <td className="px-4 py-3 text-[13px] text-muted">
+                        {editingCell?.itemId === item.id && editingCell?.field === "subcategory" ? (
+                          <select
+                            autoFocus
+                            defaultValue={item.subcategory || ""}
+                            onChange={(e) => saveInline(item.id, { subcategory: e.target.value })}
+                            onBlur={() => setEditingCell(null)}
+                            className="input py-0.5 px-2 text-xs h-7"
+                          >
+                            <option value="">—</option>
+                            {subOptions(item.category, item.subcategory).map((s) => (
+                              <option key={s} value={s}>
+                                {s}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span
+                            onClick={() => setEditingCell({ itemId: item.id, field: "subcategory" })}
+                            className="inline-block py-1 px-1.5 -mx-1.5 rounded hover:bg-wash cursor-pointer transition-colors"
+                            title="Click to edit subcategory"
+                          >
+                            {item.subcategory || <span className="text-muted/60">—</span>}
                           </span>
                         )}
                       </td>
@@ -1039,7 +1136,7 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
               </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-3">
               <div>
                 <label className="label" htmlFor="edit-cat">
                   Category
@@ -1052,8 +1149,26 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                   onChange={(e) => setEditCategory(e.target.value)}
                 />
                 <datalist id="edit-category-suggestions">
-                  {userCategories.map((c) => (
+                  {categoryNames.map((c) => (
                     <option key={c} value={c} />
+                  ))}
+                </datalist>
+              </div>
+
+              <div>
+                <label className="label" htmlFor="edit-subcat">
+                  Subcategory
+                </label>
+                <input
+                  id="edit-subcat"
+                  list="edit-subcategory-suggestions"
+                  className="input"
+                  value={editSubcategory}
+                  onChange={(e) => setEditSubcategory(e.target.value)}
+                />
+                <datalist id="edit-subcategory-suggestions">
+                  {subOptions(editCategory).map((s) => (
+                    <option key={s} value={s} />
                   ))}
                 </datalist>
               </div>

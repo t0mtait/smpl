@@ -120,6 +120,7 @@ const d = db.getDb();
   const aWish = db.createWishlistItem(alice.id, {
     name: "Alice's dream teapot",
     category: "kitchen",
+    subcategory: "ceramics",
     price: 45,
     notes: "Wait 30 days",
     priority: "high",
@@ -127,16 +128,19 @@ const d = db.getDb();
   const bWish = db.createWishlistItem(bob.id, {
     name: "Bob's espresso machine",
     category: "kitchen",
+    subcategory: "appliances",
     price: 500,
     priority: "medium",
   });
 
   check("wishlist items are scoped to owner", db.listWishlist(alice.id).length === 1);
   check("owner sees their wishlist item", db.listWishlist(alice.id)[0].name === "Alice's dream teapot");
+  check("wishlist item stores subcategory", aWish.subcategory === "ceramics");
   check("legacy high priority converts to numeric 80", aWish.priority === 80);
   check("legacy medium priority converts to numeric 50", bWish.priority === 50);
-  const updatedBWish = db.updateWishlistItem(bob.id, bWish.id, { priority: 95 });
+  const updatedBWish = db.updateWishlistItem(bob.id, bWish.id, { priority: 95, subcategory: "coffee" });
   check("wishlist priority updates to number out of 100", updatedBWish?.priority === 95);
+  check("wishlist subcategory updates", updatedBWish?.subcategory === "coffee");
   check("cross-account getWishlistItem denied", db.getWishlistItem(bob.id, aWish.id) === null);
   check(
     "cross-account updateWishlistItem denied",
@@ -149,6 +153,7 @@ const d = db.getDb();
   check("converted item returned", converted !== null);
   check("converted item is in inventory", db.getItem(alice.id, converted!.id)?.name === "Alice's dream teapot");
   check("converted item has updated price", db.getItem(alice.id, converted!.id)?.purchasePrice === 40);
+  check("converted item preserves subcategory", db.getItem(alice.id, converted!.id)?.subcategory === "ceramics");
   check("converted item removed from wishlist", db.getWishlistItem(alice.id, aWish.id) === null);
   check("alice wishlist is now empty", db.listWishlist(alice.id).length === 0);
   db.deleteItem(alice.id, converted!.id);

@@ -76,7 +76,7 @@ export default function OffloadedClient({
 
   return (
     <div className="space-y-7">
-      <header className="animate-rise flex flex-wrap items-center justify-between gap-6">
+      <header className="animate-rise flex flex-wrap items-end justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
             <span className="flex h-6 w-6 items-center justify-center rounded-md bg-wash text-ink-soft">
@@ -87,30 +87,9 @@ export default function OffloadedClient({
           <h1 className="display mt-2 text-4xl leading-[1.1] sm:text-5xl">Past possessions</h1>
         </div>
 
-        {/* Consolidated summary tile beside header */}
-        <div className="sm:ml-auto">
-          <div className="card px-5 py-3">
-            <span className="eyebrow text-[10px]">Offloaded</span>
-            <div className="mt-1 flex items-baseline gap-3">
-              <span className="text-2xl font-bold tabular text-ink">{items.length}</span>
-              <div className="flex items-center gap-2 text-xs font-semibold tabular">
-                <span className="text-accent" title="Sold for return">
-                  {soldItems.length} sold ({formatMoney(soldTotal)})
-                </span>
-                <span className="text-muted/60">·</span>
-                <span className="text-muted" title="No return (donated/disposed)">
-                  {noReturnCount} no return
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Filters */}
-      <div className="card p-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-          <div className="min-w-[200px] flex-1">
+        {/* Search & filters beside header */}
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end xl:w-auto xl:flex-1 xl:justify-end">
+          <div className="min-w-[180px] flex-1 xl:max-w-[260px]">
             <label className="label" htmlFor="offload-q">
               Search
             </label>
@@ -121,14 +100,14 @@ export default function OffloadedClient({
               <input
                 id="offload-q"
                 className="input pl-9"
-                placeholder="name, brand, notes…"
+                placeholder="Search offloaded items…"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
               />
             </div>
           </div>
 
-          <div className="sm:w-44">
+          <div className="sm:w-36">
             <label className="label" htmlFor="offload-status">
               Status
             </label>
@@ -146,7 +125,7 @@ export default function OffloadedClient({
             </select>
           </div>
 
-          <div className="sm:w-44">
+          <div className="sm:w-40">
             <label className="label" htmlFor="offload-cat">
               Category
             </label>
@@ -165,7 +144,7 @@ export default function OffloadedClient({
             </select>
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Items table */}
       {filtered.length === 0 ? (

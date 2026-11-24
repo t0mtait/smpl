@@ -6,7 +6,8 @@ import type { Item } from "@/lib/db";
 import { CATEGORIES, formatCategory, formatMoney, formatQuarter } from "@/lib/format";
 import { currentQuarter, daysSinceDate } from "@/lib/dates";
 import { CategoryTag } from "@/components/ui";
-import { IconArrowLeft, IconBox, IconCheck, IconFlame, IconUndo } from "@/components/icons";
+import { IconArrowLeft, IconBox, IconCheck,
+  IconSearch, IconFlame, IconUndo } from "@/components/icons";
 
 interface OffloadModalProps {
   item: Item;
@@ -186,6 +187,27 @@ function DaysRing({ days }: { days: number | null }) {
 
 export default function PurgatoryClient({ initialItems }: { initialItems: Item[] }) {
   const [items, setItems] = useState<Item[]>(initialItems);
+  const categories = useMemo(() => {
+    const set = new Set(items.map((i) => i.category));
+    return [...set].sort();
+  }, [items]);
+
+  const [query, setQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+
+  const filteredItems = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return items.filter((item) => {
+      if (categoryFilter !== "all" && item.category !== categoryFilter) return false;
+      if (!q) return true;
+      return (
+        item.name.toLowerCase().includes(q) ||
+        (item.brand && item.brand.toLowerCase().includes(q)) ||
+        item.category.toLowerCase().includes(q) ||
+        (item.location && item.location.toLowerCase().includes(q))
+      );
+    });
+  }, [items, query, categoryFilter]);
   const [offloadingItem, setOffloadingItem] = useState<Item | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
 
@@ -247,7 +269,7 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
 
   const sortedItems = useMemo(() => {
     const dir = sort.direction === "asc" ? 1 : -1;
-    return [...items].sort((a, b) => {
+    return [...filteredItems].sort((a, b) => {
       if (sort.key === "purgatoryDate") {
         const dA = daysSinceDate(a.purgatoryDate) ?? -1;
         const dB = daysSinceDate(b.purgatoryDate) ?? -1;
@@ -297,7 +319,7 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
 
   return (
     <div className="space-y-7">
-      <header className="animate-rise flex flex-wrap items-center justify-between gap-6">
+      <header className="animate-rise flex flex-wrap items-end justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
             <span className="flex h-6 w-6 items-center justify-center rounded-md bg-clay-soft text-clay">
@@ -308,14 +330,43 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
           <h1 className="display mt-2 text-4xl leading-[1.1] sm:text-5xl">Staged for offloading</h1>
         </div>
 
-        {/* Consolidated summary tile beside header */}
-        <div className="sm:ml-auto">
-          <div className="card px-5 py-3">
-            <span className="eyebrow text-[10px]">In purgatory</span>
-            <div className="mt-1 flex items-baseline gap-2.5">
-              <span className="text-2xl font-bold tabular text-ink">{items.length}</span>
-              <span className="text-sm font-semibold tabular text-clay">{formatMoney(totalValue)}</span>
+        {/* Search & filters beside header */}
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end xl:w-auto xl:flex-1 xl:justify-end">
+          <div className="min-w-[180px] flex-1 xl:max-w-[260px]">
+            <label className="label" htmlFor="purgatory-q">
+              Search
+            </label>
+            <div className="relative">
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint">
+                <IconSearch width={15} height={15} />
+              </span>
+              <input
+                id="purgatory-q"
+                className="input pl-9"
+                placeholder="Search by name, brand…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
             </div>
+          </div>
+
+          <div className="sm:w-40">
+            <label className="label" htmlFor="purgatory-cat">
+              Category
+            </label>
+            <select
+              id="purgatory-cat"
+              className="input"
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+            >
+              <option value="all">All categories</option>
+              {categories.map((c) => (
+                <option key={c} value={c}>
+                  {formatCategory(c)}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </header>

@@ -59,6 +59,9 @@ export async function PATCH(
   if (body.category !== undefined) {
     patch.category = typeof body.category === "string" ? body.category.trim() : "misc";
   }
+  if (body.subcategory !== undefined) {
+    patch.subcategory = typeof body.subcategory === "string" ? body.subcategory.trim() : "";
+  }
   if (body.price !== undefined) {
     patch.price = money(body.price);
   }

@@ -103,6 +103,7 @@ CREATE TABLE IF NOT EXISTS wishlist_items (
   owner_id    INTEGER REFERENCES users(id),
   name        TEXT    NOT NULL,
   category    TEXT    NOT NULL DEFAULT 'misc',
+  subcategory TEXT    NOT NULL DEFAULT '',
   price       REAL,
   url         TEXT    NOT NULL DEFAULT '',
   notes       TEXT    NOT NULL DEFAULT '',

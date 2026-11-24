@@ -236,9 +236,13 @@ function InventoryInner() {
     <div className="space-y-7">
       <header className="animate-rise flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="eyebrow">Inventory</p>
+          <div className="flex items-center gap-2">
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-wash text-ink-soft">
+              <IconBox width={15} height={15} />
+            </span>
+            <p className="eyebrow">Inventory</p>
+          </div>
           <h1 className="display mt-2 text-4xl leading-[1.1] sm:text-5xl">Everything you own</h1>
-
         </div>
         {/* Search & filters */}
         <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end xl:w-auto xl:flex-1 xl:justify-end">

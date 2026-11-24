@@ -39,6 +39,7 @@ export async function POST(req: Request) {
   const input: WishlistInput = {
     name,
     category: typeof body.category === "string" && body.category.trim() ? body.category.trim() : "misc",
+    subcategory: typeof body.subcategory === "string" ? body.subcategory.trim() : "",
     price: money(body.price),
     url: typeof body.url === "string" ? body.url.trim() : "",
     notes: typeof body.notes === "string" ? body.notes.trim() : "",

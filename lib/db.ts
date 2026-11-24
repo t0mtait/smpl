@@ -178,6 +178,7 @@ export function getDb(): DatabaseSync {
   ensureColumn(db, "items", "subcategory", "subcategory TEXT NOT NULL DEFAULT ''");
   ensureColumn(db, "items", "quality", "quality TEXT NOT NULL DEFAULT ''");
   ensureColumn(db, "items", "purgatory_date", "purgatory_date TEXT");
+  ensureColumn(db, "wishlist_items", "subcategory", "subcategory TEXT NOT NULL DEFAULT ''");
   ensureColumn(db, "users", "avatar_path", "avatar_path TEXT");
   ensureColumn(db, "users", "plan", "plan TEXT NOT NULL DEFAULT 'free'");
   ensureColumn(db, "users", "subscription_interval", "subscription_interval TEXT");
@@ -939,6 +940,7 @@ export interface WishlistItem {
   ownerId: number;
   name: string;
   category: string;
+  subcategory: string;
   price: number | null;
   url: string;
   notes: string;
@@ -950,6 +952,7 @@ export interface WishlistItem {
 export interface WishlistInput {
   name: string;
   category?: string;
+  subcategory?: string;
   price?: number | null;
   url?: string;
   notes?: string;
@@ -979,6 +982,7 @@ function toWishlistItem(row: Record<string, unknown>): WishlistItem {
     ownerId: Number(row.owner_id),
     name: String(row.name),
     category: normalizeCategory(String(row.category ?? "misc")),
+    subcategory: String(row.subcategory ?? "").trim(),
     price: row.price === null || row.price === undefined ? null : Number(row.price),
     url: String(row.url ?? ""),
     notes: String(row.notes ?? ""),
@@ -1006,13 +1010,14 @@ export function createWishlistItem(ownerId: number, input: WishlistInput): Wishl
   const priority = input.priority !== undefined ? parseWishlistPriority(input.priority) : 50;
   const res = getDb()
     .prepare(
-      `INSERT INTO wishlist_items (owner_id, name, category, price, url, notes, priority)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO wishlist_items (owner_id, name, category, subcategory, price, url, notes, priority)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       ownerId,
       input.name.trim(),
       normalizeCategory(input.category),
+      (input.subcategory ?? "").trim(),
       input.price === null || input.price === undefined ? null : Number(input.price),
       (input.url ?? "").trim(),
       (input.notes ?? "").trim(),
@@ -1034,6 +1039,7 @@ export function updateWishlistItem(
   const merged = {
     name: input.name !== undefined ? input.name.trim() : existing.name,
     category: input.category !== undefined ? normalizeCategory(input.category) : existing.category,
+    subcategory: input.subcategory !== undefined ? input.subcategory.trim() : existing.subcategory,
     price: input.price !== undefined ? (input.price === null ? null : Number(input.price)) : existing.price,
     url: input.url !== undefined ? input.url.trim() : existing.url,
     notes: input.notes !== undefined ? input.notes.trim() : existing.notes,
@@ -1043,12 +1049,13 @@ export function updateWishlistItem(
   getDb()
     .prepare(
       `UPDATE wishlist_items
-       SET name = ?, category = ?, price = ?, url = ?, notes = ?, priority = ?, updated_at = datetime('now')
+       SET name = ?, category = ?, subcategory = ?, price = ?, url = ?, notes = ?, priority = ?, updated_at = datetime('now')
        WHERE id = ? AND owner_id = ?`
     )
     .run(
       merged.name,
       merged.category,
+      merged.subcategory,
       merged.price,
       merged.url,
       merged.notes,
@@ -1083,6 +1090,7 @@ export function convertWishlistItemToInventory(
   const newItem = createItem(ownerId, {
     name: wish.name,
     category: wish.category,
+    subcategory: wish.subcategory || "",
     description: wish.notes,
     location: "",
     purchaseDate: today(),
@@ -1132,12 +1140,15 @@ export function listUserCategories(userId: number): { category: string; subcateg
   }
 
   const wishRows = d
-    .prepare("SELECT DISTINCT category FROM wishlist_items WHERE owner_id = ?")
-    .all(userId) as { category: string }[];
+    .prepare("SELECT DISTINCT category, subcategory FROM wishlist_items WHERE owner_id = ?")
+    .all(userId) as { category: string; subcategory?: string }[];
   for (const r of wishRows) {
     if (r.category && r.category.trim()) {
       const cat = r.category.trim().toLowerCase();
       if (!map.has(cat)) map.set(cat, new Set());
+      if (r.subcategory && r.subcategory.trim()) {
+        map.get(cat)!.add(r.subcategory.trim());
+      }
     }
   }
 
@@ -1245,6 +1256,9 @@ export function renameUserSubcategory(
   d.prepare(
     "UPDATE items SET subcategory = ? WHERE owner_id = ? AND category = ? AND subcategory = ?"
   ).run(newSub, userId, cat, oldSub);
+  d.prepare(
+    "UPDATE wishlist_items SET subcategory = ? WHERE owner_id = ? AND category = ? AND subcategory = ?"
+  ).run(newSub, userId, cat, oldSub);
 
   d.prepare(
     "DELETE FROM user_categories WHERE user_id = ? AND category = ? AND subcategory = ?"
@@ -1263,6 +1277,9 @@ export function deleteUserSubcategory(userId: number, category: string, subcateg
   const d = getDb();
   d.prepare(
     "UPDATE items SET subcategory = '' WHERE owner_id = ? AND category = ? AND subcategory = ?"
+  ).run(userId, cat, sub);
+  d.prepare(
+    "UPDATE wishlist_items SET subcategory = '' WHERE owner_id = ? AND category = ? AND subcategory = ?"
   ).run(userId, cat, sub);
   d.prepare(
     "DELETE FROM user_categories WHERE user_id = ? AND category = ? AND subcategory = ?"
