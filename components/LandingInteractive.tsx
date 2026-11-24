@@ -806,7 +806,7 @@ const FAQS = [
   },
   {
     q: "What is included in the Free tier vs. Pro?",
-    a: "The Free tier is free forever and includes unlimited items tracking, possession analytics, 30-day purgatory, and up to 5 categories with subcategories. Pro ($4.29/mo or $34.99/yr) unlocks the AI Declutter Advisor, Wishlist cooldown tracker, unlimited custom categories, and complete CSV/JSON data exports.",
+    a: "The Free tier is free forever and includes unlimited items tracking, possession analytics, 30-day purgatory, and up to 5 categories with subcategories. Pro ($4.29/mo or $34.99/yr, including a 14-day free trial) unlocks the AI Declutter Advisor, Wishlist cooldown tracker, unlimited custom categories, and complete CSV/JSON data exports.",
   },
   {
     q: "What is your refund policy?",

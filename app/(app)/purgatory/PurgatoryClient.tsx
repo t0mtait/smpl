@@ -164,7 +164,7 @@ function DaysRing({ days }: { days: number | null }) {
       className="inline-flex items-center justify-end"
       title={`${d} ${d === 1 ? "day" : "days"} in purgatory${full ? " — time to decide" : ` · ${PURGATORY_LIMIT_DAYS - d} to go`}`}
     >
-      <span className="relative inline-flex h-9 w-9 items-center justify-center">
+      <span className="relative inline-flex h-8 w-8 items-center justify-center">
         <svg viewBox="0 0 36 36" className="absolute inset-0 -rotate-90" aria-hidden="true">
           <circle cx="18" cy="18" r={r} fill="none" strokeWidth="3.5" className="stroke-line" />
           <circle
@@ -400,10 +400,10 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
       ) : (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-full sm:min-w-[640px] border-collapse text-left">
+            <table className="w-full min-w-full sm:min-w-[960px] border-collapse text-left">
               <thead>
-                <tr className="border-b border-line text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
-                  <th scope="col" className="px-3 sm:px-4 py-3">
+                <tr className="h-11 border-b border-line text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
+                  <th scope="col" className="px-3 sm:px-4 py-2.5 align-middle">
                     <button
                       type="button"
                       onClick={() => toggleSort("name")}
@@ -417,7 +417,7 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                       </span>
                     </button>
                   </th>
-                  <th scope="col" className="hidden sm:table-cell px-4 py-3">
+                  <th scope="col" className="hidden sm:table-cell px-4 py-2.5 align-middle">
                     <button
                       type="button"
                       onClick={() => toggleSort("brand")}
@@ -431,7 +431,7 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                       </span>
                     </button>
                   </th>
-                  <th scope="col" className="px-3 sm:px-4 py-3">
+                  <th scope="col" className="px-3 sm:px-4 py-2.5 align-middle">
                     <button
                       type="button"
                       onClick={() => toggleSort("category")}
@@ -445,7 +445,7 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                       </span>
                     </button>
                   </th>
-                  <th scope="col" className="hidden sm:table-cell px-4 py-3 text-right">
+                  <th scope="col" className="hidden sm:table-cell px-4 py-2.5 align-middle text-right">
                     <button
                       type="button"
                       onClick={() => toggleSort("value")}
@@ -459,7 +459,7 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                       </span>
                     </button>
                   </th>
-                  <th scope="col" className="hidden sm:table-cell px-4 py-3 text-right">
+                  <th scope="col" className="hidden sm:table-cell px-4 py-2.5 align-middle text-right">
                     <button
                       type="button"
                       onClick={() => toggleSort("acquired")}
@@ -473,7 +473,7 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                       </span>
                     </button>
                   </th>
-                  <th scope="col" className="px-3 sm:px-4 py-3 text-right">
+                  <th scope="col" className="px-3 sm:px-4 py-2.5 align-middle text-right">
                     <button
                       type="button"
                       onClick={() => toggleSort("purgatoryDate")}
@@ -488,7 +488,7 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                       </span>
                     </button>
                   </th>
-                  <th scope="col" className="hidden sm:table-cell px-4 py-3 text-right">Actions</th>
+                  <th scope="col" className="hidden sm:table-cell px-4 py-2.5 align-middle text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -500,9 +500,9 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                         router.push(`/items/${item.id}`);
                       }
                     }}
-                    className="border-b border-line-soft transition-colors last:border-0 even:bg-wash/60 dark:even:bg-shell/70 hover:bg-wash dark:hover:bg-wash/40 cursor-pointer sm:cursor-default"
+                    className="h-[52px] sm:h-[54px] border-b border-line-soft transition-colors last:border-0 even:bg-wash/60 dark:even:bg-shell/70 hover:bg-wash dark:hover:bg-wash/40 cursor-pointer sm:cursor-default"
                   >
-                    <th scope="row" className="px-3 sm:px-4 py-3 text-left font-normal">
+                    <th scope="row" className="px-3 sm:px-4 py-2 sm:py-2.5 align-middle text-left font-normal">
                       <Link
                         href={`/items/${item.id}`}
                         className="font-medium text-ink hover:text-accent"
@@ -510,7 +510,7 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                         {item.name}
                       </Link>
                     </th>
-                    <td className="hidden sm:table-cell px-4 py-3 text-[13px] text-ink-soft">
+                    <td className="hidden sm:table-cell px-4 py-2 sm:py-2.5 align-middle text-[13px] text-ink-soft">
                       {isEditing(item.id, "brand") ? (
                         <input
                           type="text"
@@ -536,7 +536,7 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                         </span>
                       )}
                     </td>
-                    <td className="px-3 sm:px-4 py-3">
+                    <td className="px-3 sm:px-4 py-2 sm:py-2.5 align-middle">
                       {isEditing(item.id, "category") ? (
                         <select
                           autoFocus
@@ -564,7 +564,7 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                         </span>
                       )}
                     </td>
-                    <td className="hidden sm:table-cell tabular px-4 py-3 text-right text-[13px] font-medium text-ink">
+                    <td className="hidden sm:table-cell tabular px-4 py-2 sm:py-2.5 align-middle text-right text-[13px] font-medium text-ink">
                       {isEditing(item.id, "value") ? (
                         <input
                           type="number"
@@ -595,7 +595,7 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                         </span>
                       )}
                     </td>
-                    <td className="hidden sm:table-cell tabular px-4 py-3 text-right text-[13px] text-muted">
+                    <td className="hidden sm:table-cell tabular px-4 py-2 sm:py-2.5 align-middle text-right text-[13px] text-muted">
                       {isEditing(item.id, "acquired") ? (
                         <input
                           type="text"
@@ -624,10 +624,10 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                         </span>
                       )}
                     </td>
-                    <td className="tabular px-3 sm:px-4 py-3 text-right text-[13px] text-muted">
+                    <td className="tabular px-3 sm:px-4 py-2 sm:py-2.5 align-middle text-right text-[13px] text-muted">
                       <DaysRing days={daysSinceDate(item.purgatoryDate)} />
                     </td>
-                    <td className="hidden sm:table-cell px-4 py-3 text-right">
+                    <td className="hidden sm:table-cell px-4 py-2 sm:py-2.5 align-middle text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button
                           type="button"

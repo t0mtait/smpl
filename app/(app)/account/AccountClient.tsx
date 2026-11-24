@@ -96,8 +96,12 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
   const [passwordMsg, setPasswordMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [avatarMsg, setAvatarMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  const [subInterval, setSubInterval] = useState<"monthly" | "yearly">(
-    initialUser.subscriptionInterval === "yearly" ? "yearly" : "monthly"
+  const [subInterval, setSubInterval] = useState<"trial" | "monthly" | "yearly">(
+    initialUser.subscriptionInterval === "yearly"
+      ? "yearly"
+      : initialUser.subscriptionInterval === "trial"
+      ? "trial"
+      : "trial"
   );
   const [subBusy, setSubBusy] = useState(false);
   const [subMsg, setSubMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -187,7 +191,10 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
     setSubcatToDelete(null);
   };
 
-  const handleSubscribe = async (targetPlan: "free" | "premium", targetInterval: "monthly" | "yearly" = subInterval) => {
+  const handleSubscribe = async (
+    targetPlan: "free" | "premium",
+    targetInterval: "monthly" | "yearly" | "trial" = subInterval
+  ) => {
     setSubBusy(true);
     setSubMsg(null);
     try {
@@ -972,7 +979,9 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
 
           <p className="mt-1 text-xs text-muted">
             {isPro
-              ? `Unlocked on a ${user.subscriptionInterval || "monthly"} plan${user.subscriptionRenewsAt ? ` (renews on ${user.subscriptionRenewsAt})` : ""}.`
+              ? `Unlocked on a ${
+                  user.subscriptionInterval === "trial" ? "2-week free trial" : user.subscriptionInterval || "monthly"
+                } plan${user.subscriptionRenewsAt ? ` (renews on ${user.subscriptionRenewsAt})` : ""}.`
               : "Upgrade to unlock AI Advisor, Wishlist cooldown tracker, and unlimited categories."}
           </p>
 
@@ -990,7 +999,21 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
 
           {/* Pricing selector */}
           <div className="mt-3.5 flex items-center justify-center">
-            <div className="inline-flex rounded-xl border border-line bg-paper p-0.5 shadow-sm">
+            <div className="inline-flex flex-wrap justify-center rounded-xl border border-line bg-paper p-0.5 shadow-sm gap-0.5">
+              <button
+                type="button"
+                onClick={() => setSubInterval("trial")}
+                className={`flex items-center gap-1 rounded-lg px-3 py-1 text-xs font-medium transition-all ${
+                  subInterval === "trial"
+                    ? "bg-brand text-brand-fg shadow-sm"
+                    : "text-muted hover:text-ink"
+                }`}
+              >
+                <span>Free Trial (2 wks)</span>
+                <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.2 text-[9px] font-bold text-emerald-700 dark:text-emerald-400">
+                  $0
+                </span>
+              </button>
               <button
                 type="button"
                 onClick={() => setSubInterval("monthly")}
@@ -1046,10 +1069,14 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                 </div>
                 <div className="mt-1 flex items-baseline gap-1.5">
                   <span className="display text-2xl font-semibold text-ink">
-                    {subInterval === "yearly" ? "$34.99" : "$4.29"}
+                    {subInterval === "trial" ? "$0" : subInterval === "yearly" ? "$34.99" : "$4.29"}
                   </span>
                   <span className="text-[11px] text-muted">
-                    {subInterval === "yearly" ? "USD / yr ($2.92/mo)" : "USD / month"}
+                    {subInterval === "trial"
+                      ? "USD for 2 weeks, then $4.29/mo"
+                      : subInterval === "yearly"
+                      ? "USD / yr ($2.92/mo)"
+                      : "USD / month"}
                   </span>
                 </div>
 
@@ -1084,7 +1111,15 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                       disabled={subBusy}
                       className="btn-primary w-full text-xs py-1.5"
                     >
-                      {subBusy ? "Updating…" : `Switch to ${subInterval === "yearly" ? "Yearly ($34.99/yr)" : "Monthly ($4.29/mo)"}`}
+                      {subBusy
+                        ? "Updating…"
+                        : `Switch to ${
+                            subInterval === "trial"
+                              ? "Free Trial (2 weeks)"
+                              : subInterval === "yearly"
+                              ? "Yearly ($34.99/yr)"
+                              : "Monthly ($4.29/mo)"
+                          }`}
                     </button>
                   ) : (
                     <div className="rounded-lg bg-accent-soft py-1.5 text-center text-xs font-semibold text-accent">
@@ -1101,6 +1136,8 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                     <IconSparkles width={13} height={13} />
                     {subBusy
                       ? "Upgrading…"
+                      : subInterval === "trial"
+                      ? "Start 2-Week Free Trial — $0"
                       : `Upgrade to Pro — ${subInterval === "yearly" ? "$34.99/yr" : "$4.29/mo"}`}
                   </button>
                 )}

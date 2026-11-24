@@ -227,7 +227,7 @@ export default async function WelcomePage() {
                   <span className="display text-4xl">$4.29</span>
                   <span className="text-sm text-muted">/ month</span>
                 </div>
-                <p className="text-[13px] text-muted">or $34.99 / year</p>
+                <p className="text-[13px] text-muted">or $34.99 / year • includes 14-day free trial</p>
                 <ul className="mt-5 space-y-2.5">
                   <Check>Everything in Free</Check>
                   <Check>AI advisor suggestions</Check>

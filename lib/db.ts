@@ -412,7 +412,7 @@ export interface User {
   name: string;
   avatarPath?: string | null;
   plan: "free" | "premium";
-  subscriptionInterval?: "monthly" | "yearly" | null;
+  subscriptionInterval?: "monthly" | "yearly" | "trial" | null;
   subscriptionRenewsAt?: string | null;
   stripeCustomerId?: string | null;
   stripeSubscriptionId?: string | null;
@@ -464,7 +464,7 @@ export function findOAuthAccount(provider: string, providerId: string): (OAuthAc
       name: String(row.u_name ?? ""),
       avatarPath: (row.u_avatar as string | null) ?? null,
       plan: ((row.u_plan as string) || "free") === "premium" ? "premium" : "free",
-      subscriptionInterval: (row.u_sub_interval as "monthly" | "yearly") ?? null,
+      subscriptionInterval: (row.u_sub_interval as "monthly" | "yearly" | "trial") ?? null,
       subscriptionRenewsAt: (row.u_sub_renews as string) ?? null,
       createdAt: String(row.u_created_at),
     },
@@ -523,7 +523,7 @@ function toUser(row: Record<string, unknown>): User {
     name: String(row.name ?? ""),
     avatarPath: (row.avatar_path as string | null) ?? null,
     plan: ((row.plan as string) || "free") === "premium" ? "premium" : "free",
-    subscriptionInterval: (row.subscription_interval as "monthly" | "yearly") ?? null,
+    subscriptionInterval: (row.subscription_interval as "monthly" | "yearly" | "trial") ?? null,
     subscriptionRenewsAt: (row.subscription_renews_at as string) ?? null,
     stripeCustomerId: (row.stripe_customer_id as string | null) ?? null,
     stripeSubscriptionId: (row.stripe_subscription_id as string | null) ?? null,
@@ -534,7 +534,7 @@ function toUser(row: Record<string, unknown>): User {
 export function updateUserSubscription(
   userId: number,
   plan: "free" | "premium",
-  interval: "monthly" | "yearly" | null = null,
+  interval: "monthly" | "yearly" | "trial" | null = null,
   renewsAt: string | null = null,
   stripeCustomerId: string | null = null,
   stripeSubscriptionId: string | null = null

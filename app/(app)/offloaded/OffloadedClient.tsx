@@ -179,15 +179,15 @@ export default function OffloadedClient({
           <div className="overflow-x-auto">
             <table className="w-full min-w-full sm:min-w-[960px] border-collapse text-left">
               <thead>
-                <tr className="border-b border-line text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
-                  <th scope="col" className="px-3 sm:px-4 py-3">Item</th>
-                  <th scope="col" className="hidden sm:table-cell px-4 py-3">Brand</th>
-                  <th scope="col" className="px-3 sm:px-4 py-3">Category</th>
-                  <th scope="col" className="hidden sm:table-cell px-4 py-3">Status</th>
-                  <th scope="col" className="px-3 sm:px-4 py-3 text-right">Return ($)</th>
-                  <th scope="col" className="hidden sm:table-cell px-4 py-3 text-right">Acquired</th>
-                  <th scope="col" className="hidden sm:table-cell px-4 py-3 text-right">Offloaded</th>
-                  <th scope="col" className="hidden sm:table-cell px-4 py-3 text-right">Actions</th>
+                <tr className="h-11 border-b border-line text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
+                  <th scope="col" className="px-3 sm:px-4 py-2.5 align-middle">Item</th>
+                  <th scope="col" className="hidden sm:table-cell px-4 py-2.5 align-middle">Brand</th>
+                  <th scope="col" className="px-3 sm:px-4 py-2.5 align-middle">Category</th>
+                  <th scope="col" className="hidden sm:table-cell px-4 py-2.5 align-middle">Status</th>
+                  <th scope="col" className="px-3 sm:px-4 py-2.5 align-middle text-right">Return ($)</th>
+                  <th scope="col" className="hidden sm:table-cell px-4 py-2.5 align-middle text-right">Acquired</th>
+                  <th scope="col" className="hidden sm:table-cell px-4 py-2.5 align-middle text-right">Offloaded</th>
+                  <th scope="col" className="hidden sm:table-cell px-4 py-2.5 align-middle text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -201,9 +201,9 @@ export default function OffloadedClient({
                           router.push(`/items/${item.id}`);
                         }
                       }}
-                      className="border-b border-line-soft transition-colors last:border-0 even:bg-wash/60 dark:even:bg-shell/70 hover:bg-wash dark:hover:bg-wash/40 cursor-pointer sm:cursor-default"
+                      className="h-[52px] sm:h-[54px] border-b border-line-soft transition-colors last:border-0 even:bg-wash/60 dark:even:bg-shell/70 hover:bg-wash dark:hover:bg-wash/40 cursor-pointer sm:cursor-default"
                     >
-                      <th scope="row" className="px-3 sm:px-4 py-3 text-left font-normal">
+                      <th scope="row" className="px-3 sm:px-4 py-2 sm:py-2.5 align-middle text-left font-normal">
                         <Link
                           href={`/items/${item.id}`}
                           className="font-medium text-ink hover:text-accent"
@@ -211,23 +211,23 @@ export default function OffloadedClient({
                           {item.name}
                         </Link>
                       </th>
-                      <td className="hidden sm:table-cell px-4 py-3 text-[13px] text-ink-soft">{item.brand || "—"}</td>
-                      <td className="px-3 sm:px-4 py-3">
+                      <td className="hidden sm:table-cell px-4 py-2 sm:py-2.5 align-middle text-[13px] text-ink-soft">{item.brand || "—"}</td>
+                      <td className="px-3 sm:px-4 py-2 sm:py-2.5 align-middle">
                         <CategoryTag category={item.category} />
                       </td>
-                      <td className="hidden sm:table-cell px-4 py-3">
+                      <td className="hidden sm:table-cell px-4 py-2 sm:py-2.5 align-middle">
                         <StatusTag status={statusInfo} />
                       </td>
-                      <td className="tabular px-3 sm:px-4 py-3 text-right text-[13px] font-medium text-ink">
+                      <td className="tabular px-3 sm:px-4 py-2 sm:py-2.5 align-middle text-right text-[13px] font-medium text-ink">
                         {item.status === "sold" ? formatMoney(saleAmounts[item.id] ?? null) : "—"}
                       </td>
-                      <td className="hidden sm:table-cell tabular px-4 py-3 text-right text-[13px] text-muted">
+                      <td className="hidden sm:table-cell tabular px-4 py-2 sm:py-2.5 align-middle text-right text-[13px] text-muted">
                         {formatQuarter(item.purchaseDate)}
                       </td>
-                      <td className="hidden sm:table-cell tabular px-4 py-3 text-right text-[13px] text-muted">
+                      <td className="hidden sm:table-cell tabular px-4 py-2 sm:py-2.5 align-middle text-right text-[13px] text-muted">
                         {formatQuarter(item.offloadedDate)}
                       </td>
-                      <td className="hidden sm:table-cell px-4 py-3 text-right">
+                      <td className="hidden sm:table-cell px-4 py-2 sm:py-2.5 align-middle text-right">
                         <button
                           type="button"
                           className="btn-secondary px-2.5 py-1 text-[12px]"

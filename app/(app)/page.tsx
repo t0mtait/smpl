@@ -121,29 +121,29 @@ export default async function DashboardPage() {
         </div>
 
         {/* Desktop / Tablet: Consolidated top tile (double width) + Net items tile below (double width) */}
-        <div className="hidden sm:flex sm:flex-col sm:gap-4">
+        <div className="hidden sm:flex sm:flex-col sm:gap-4 sm:h-full">
           {/* Consolidated tile for owned, purgatory, and offloaded */}
-          <div className="card p-5 shadow-sm">
-            <div className="grid grid-cols-3 divide-x divide-line">
-              <Link href="/items?status=owned" className="px-4 py-1 group hover:bg-wash/40 rounded-lg transition-colors">
+          <div className="card p-5 sm:p-6 shadow-sm flex-1 flex flex-col justify-between">
+            <div className="grid grid-cols-3 divide-x divide-line h-full items-center">
+              <Link href="/items?status=owned" className="px-4 py-2 group hover:bg-wash/40 rounded-lg transition-colors flex flex-col justify-center h-full">
                 <div className="flex items-center justify-between text-muted">
                   <span className="text-[11px] font-semibold uppercase tracking-wider">Items owned</span>
                   <span className="text-muted group-hover:text-ink"><IconBox width={15} height={15} /></span>
                 </div>
-                <div className="mt-2 flex items-baseline gap-2">
-                  <span className="tabular text-3xl font-semibold leading-none text-ink">{stats.ownedItems}</span>
+                <div className="mt-3 flex items-baseline gap-2">
+                  <span className="tabular text-3xl sm:text-4xl font-semibold leading-none text-ink">{stats.ownedItems}</span>
                   <span className="tabular text-xs font-medium text-moss" title="Total estimated value">
                     {formatMoney(stats.totalValueOwned)}
                   </span>
                 </div>
               </Link>
-              <Link href="/purgatory" className="px-4 py-1 group hover:bg-wash/40 rounded-lg transition-colors">
+              <Link href="/purgatory" className="px-4 py-2 group hover:bg-wash/40 rounded-lg transition-colors flex flex-col justify-center h-full">
                 <div className="flex items-center justify-between text-muted">
                   <span className="text-[11px] font-semibold uppercase tracking-wider">In purgatory</span>
                   <span className="text-clay"><IconFlame width={15} height={15} /></span>
                 </div>
-                <div className="mt-2 flex items-baseline gap-2">
-                  <span className="tabular text-3xl font-semibold leading-none text-ink">{purgatoryItems.length}</span>
+                <div className="mt-3 flex items-baseline gap-2">
+                  <span className="tabular text-3xl sm:text-4xl font-semibold leading-none text-ink">{purgatoryItems.length}</span>
                   {purgatoryValue > 0 && (
                     <span className="tabular text-xs font-medium text-muted">
                       {formatMoney(purgatoryValue)}
@@ -151,13 +151,13 @@ export default async function DashboardPage() {
                   )}
                 </div>
               </Link>
-              <Link href="/offloaded" className="px-4 py-1 group hover:bg-wash/40 rounded-lg transition-colors">
+              <Link href="/offloaded" className="px-4 py-2 group hover:bg-wash/40 rounded-lg transition-colors flex flex-col justify-center h-full">
                 <div className="flex items-center justify-between text-muted">
                   <span className="text-[11px] font-semibold uppercase tracking-wider">Decluttered</span>
                   <span className="text-moss"><IconRecycle width={15} height={15} /></span>
                 </div>
-                <div className="mt-2 flex items-baseline gap-2">
-                  <span className="tabular text-3xl font-semibold leading-none text-ink">{goneCount}</span>
+                <div className="mt-3 flex items-baseline gap-2">
+                  <span className="tabular text-3xl sm:text-4xl font-semibold leading-none text-ink">{goneCount}</span>
                   <span className="tabular text-xs font-medium text-accent" title="Total sales proceeds">
                     {formatMoney(stats.lifetimeSalesEarnings)}
                   </span>
@@ -168,10 +168,11 @@ export default async function DashboardPage() {
 
           {/* Net items tile below it, double its width as well */}
           <StatTile
+            className="flex-1 flex flex-col justify-between p-5 sm:p-6 shadow-sm"
             label={`Net items (${stats.currentQuarter})`}
             value={
               <div className="flex items-baseline gap-2.5">
-                <span className="tabular text-3xl font-semibold leading-none">
+                <span className="tabular text-3xl sm:text-4xl font-semibold leading-none">
                   {stats.currentQuarterNet > 0 ? `+${stats.currentQuarterNet}` : stats.currentQuarterNet}
                 </span>
                 <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted tabular">

@@ -223,6 +223,10 @@ const d = db.getDb();
   check("switched interval is yearly", yearly?.subscriptionInterval === "yearly");
   check("switched renewsAt is yearly", yearly?.subscriptionRenewsAt === "2027-11-23");
 
+  const trial = db.updateUserSubscription(subUser.id, "premium", "trial", "2026-12-07");
+  check("switched interval is trial", trial?.subscriptionInterval === "trial");
+  check("switched renewsAt is trial", trial?.subscriptionRenewsAt === "2026-12-07");
+
   const cancelled = db.updateUserSubscription(subUser.id, "free", null, null);
   check("cancelled user returns to free", cancelled?.plan === "free");
   check("cancelled user has no interval", cancelled?.subscriptionInterval === null);

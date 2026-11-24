@@ -43,8 +43,9 @@ export async function POST(req: Request) {
         if (userIdStr && subscriptionId) {
           const userId = Number(userIdStr);
           const sub = (await stripe.subscriptions.retrieve(subscriptionId)) as any;
+          const recurringInterval = sub.items?.data?.[0]?.price?.recurring?.interval;
           const interval =
-            sub.items?.data?.[0]?.price?.recurring?.interval === "year" ? "yearly" : "monthly";
+            recurringInterval === "year" ? "yearly" : recurringInterval === "week" ? "trial" : "monthly";
           const currentPeriodEnd = (sub.current_period_end || sub.items?.data?.[0]?.current_period_end) as number;
           const renewsAt = currentPeriodEnd
             ? new Date(currentPeriodEnd * 1000).toISOString().slice(0, 10)
@@ -68,8 +69,9 @@ export async function POST(req: Request) {
 
         if (user) {
           if (status === "active" || status === "trialing") {
+            const recurringInterval = sub.items?.data?.[0]?.price?.recurring?.interval;
             const interval =
-              sub.items?.data?.[0]?.price?.recurring?.interval === "year" ? "yearly" : "monthly";
+              recurringInterval === "year" ? "yearly" : recurringInterval === "week" ? "trial" : "monthly";
             const currentPeriodEnd = (sub.current_period_end || sub.items?.data?.[0]?.current_period_end) as number;
             const renewsAt = currentPeriodEnd
               ? new Date(currentPeriodEnd * 1000).toISOString().slice(0, 10)

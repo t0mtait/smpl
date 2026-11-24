@@ -13,12 +13,12 @@ export async function POST(req: Request) {
   const user = getUserById(sessionUser.id);
   if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
-  let body: { interval?: "monthly" | "yearly" } = {};
+  let body: { interval?: "monthly" | "yearly" | "trial" } = {};
   try {
     body = await req.json();
   } catch {}
 
-  const interval = body.interval === "yearly" ? "yearly" : "monthly";
+  const interval = body.interval === "yearly" ? "yearly" : body.interval === "trial" ? "trial" : "monthly";
   const priceId = STRIPE_PRICES[interval];
 
   if (!priceId) {

@@ -28,11 +28,11 @@ export async function POST(req: Request) {
   }
 
   const requestedPlan = body.plan === "free" ? "free" : "premium";
-  const interval = body.interval === "yearly" ? "yearly" : "monthly";
+  const interval = body.interval === "yearly" ? "yearly" : body.interval === "trial" ? "trial" : "monthly";
 
   if (requestedPlan === "premium") {
-    // 30 days for monthly, 365 days for yearly
-    const days = interval === "yearly" ? 365 : 30;
+    // 14 days for trial, 365 days for yearly, 30 days for monthly
+    const days = interval === "trial" ? 14 : interval === "yearly" ? 365 : 30;
     const renewsAt = new Date(Date.now() + days * 86400000).toISOString().slice(0, 10);
     const updated = updateUserSubscription(user.id, "premium", interval, renewsAt);
     return NextResponse.json({ ok: true, user: updated });

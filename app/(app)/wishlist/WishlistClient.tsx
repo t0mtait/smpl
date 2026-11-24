@@ -60,7 +60,7 @@ function CooldownRing({ days }: { days: number }) {
       className="inline-flex items-center justify-end"
       title={`${d} ${d === 1 ? "day" : "days"} waiting${ready ? " — cooldown passed (ready to purchase)" : ` · ${WISHLIST_COOLDOWN_DAYS - d}d remaining`}`}
     >
-      <span className="relative inline-flex h-9 w-9 items-center justify-center">
+      <span className="relative inline-flex h-8 w-8 items-center justify-center">
         <svg viewBox="0 0 36 36" className="absolute inset-0 -rotate-90" aria-hidden="true">
           <circle cx="18" cy="18" r={r} fill="none" strokeWidth="3.5" className="stroke-line" />
           <circle
@@ -805,9 +805,9 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
       ) : (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-full sm:min-w-[840px] border-collapse text-left">
+            <table className="w-full min-w-full sm:min-w-[960px] border-collapse text-left">
               <thead>
-                <tr className="border-b border-line">
+                <tr className="h-11 border-b border-line text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
                   {WISHLIST_COLUMNS.map((col) => {
                     const active = sort.key === col.key;
                     const isVisibleOnMobile =
@@ -824,7 +824,7 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                               : "descending"
                             : "none"
                         }
-                        className={`whitespace-nowrap px-3 sm:px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] ${
+                        className={`whitespace-nowrap px-3 sm:px-4 py-2.5 align-middle text-[11px] font-semibold uppercase tracking-[0.12em] ${
                           !isVisibleOnMobile ? "hidden sm:table-cell" : ""
                         } ${col.numeric ? "text-right" : "text-left"}`}
                       >
@@ -848,7 +848,7 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                   })}
                   <th
                     scope="col"
-                    className="hidden sm:table-cell whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-[0.12em] text-muted"
+                    className="hidden sm:table-cell whitespace-nowrap px-4 py-2.5 align-middle text-right text-[11px] font-semibold uppercase tracking-[0.12em] text-muted"
                   >
                     Actions
                   </th>
@@ -867,10 +867,10 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                           openEdit(item);
                         }
                       }}
-                      className="border-b border-line-soft transition-colors last:border-0 even:bg-wash/60 dark:even:bg-shell/70 hover:bg-wash dark:hover:bg-wash/40 cursor-pointer sm:cursor-default"
+                      className="h-[52px] sm:h-[54px] border-b border-line-soft transition-colors last:border-0 even:bg-wash/60 dark:even:bg-shell/70 hover:bg-wash dark:hover:bg-wash/40 cursor-pointer sm:cursor-default"
                     >
                       {/* Item Name (click to open general edit popup) */}
-                      <th scope="row" className="px-3 sm:px-4 py-3 text-left font-normal">
+                      <th scope="row" className="px-3 sm:px-4 py-2 sm:py-2.5 align-middle text-left font-normal">
                         <div className="min-w-0">
                           <button
                             type="button"
@@ -878,13 +878,13 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                               e.stopPropagation();
                               openEdit(item);
                             }}
-                            className="text-left font-medium text-ink hover:text-accent transition-colors block cursor-pointer group"
+                            className="text-left font-medium text-ink hover:text-accent transition-colors block cursor-pointer group truncate max-w-[180px] sm:max-w-[240px]"
                             title="Click to edit item"
                           >
                             <span className="group-hover:underline underline-offset-2">{item.name}</span>
                           </button>
                           {item.notes && (
-                            <p className="mt-0.5 text-[12px] text-muted line-clamp-1 font-normal">
+                            <p className="text-[11px] text-muted truncate max-w-[180px] sm:max-w-[240px] font-normal" title={item.notes}>
                               {item.notes}
                             </p>
                           )}
@@ -892,10 +892,10 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                       </th>
 
                       {/* Priority (click to edit field) */}
-                      <td className="px-2 sm:px-4 py-3">
+                      <td className="px-2 sm:px-4 py-2 sm:py-2.5 align-middle">
                         {editingCell?.itemId === item.id && editingCell?.field === "priority" ? (
                           <div className="flex items-center gap-2">
-                            <PriorityRing priority={inlinePriority} size={32} stroke={3} />
+                            <PriorityRing priority={inlinePriority} size={28} stroke={3} />
                             <input
                               type="number"
                               min="0"
@@ -929,13 +929,13 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                             className="inline-flex items-center gap-2 rounded-lg py-1 px-1.5 -mx-1.5 hover:bg-wash transition-colors group cursor-pointer"
                             title="Click to edit priority (0–100)"
                           >
-                            <PriorityRing priority={item.priority} size={32} stroke={3} />
+                            <PriorityRing priority={item.priority} size={28} stroke={3} />
                           </button>
                         )}
                       </td>
 
                       {/* Category (click to edit field) */}
-                      <td className="hidden sm:table-cell px-4 py-3">
+                      <td className="hidden sm:table-cell px-4 py-2 sm:py-2.5 align-middle">
                         {editingCell?.itemId === item.id && editingCell?.field === "category" ? (
                           <select
                             autoFocus
@@ -965,7 +965,7 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                       </td>
 
                       {/* Subcategory (click to edit field) */}
-                      <td className="hidden sm:table-cell px-4 py-3 text-[13px] text-muted">
+                      <td className="hidden sm:table-cell px-4 py-2 sm:py-2.5 align-middle text-[13px] text-muted">
                         {editingCell?.itemId === item.id && editingCell?.field === "subcategory" ? (
                           <select
                             autoFocus
@@ -996,7 +996,7 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                       </td>
 
                       {/* Price (click to edit field) */}
-                      <td className="hidden sm:table-cell tabular px-4 py-3 text-right text-[13px] font-medium text-ink">
+                      <td className="hidden sm:table-cell tabular px-4 py-2 sm:py-2.5 align-middle text-right text-[13px] font-medium text-ink">
                         {editingCell?.itemId === item.id && editingCell?.field === "price" ? (
                           <input
                             type="number"
@@ -1036,7 +1036,7 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                       </td>
 
                       {/* Store / Shopping Link (click to add/edit field) */}
-                      <td className="px-2 sm:px-4 py-3 text-[13px]">
+                      <td className="px-2 sm:px-4 py-2 sm:py-2.5 align-middle text-[13px]">
                         {editingCell?.itemId === item.id && editingCell?.field === "url" ? (
                           <input
                             type="url"
@@ -1096,12 +1096,12 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                       </td>
 
                       {/* Cooldown */}
-                      <td className="tabular px-2 sm:px-4 py-3 text-right text-[13px]">
+                      <td className="tabular px-2 sm:px-4 py-2 sm:py-2.5 align-middle text-right text-[13px]">
                         <CooldownRing days={daysWaiting} />
                       </td>
 
                       {/* Actions: Edit icon removed, only Bought and Delete */}
-                      <td className="hidden sm:table-cell px-4 py-3 text-right">
+                      <td className="hidden sm:table-cell px-4 py-2 sm:py-2.5 align-middle text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             type="button"

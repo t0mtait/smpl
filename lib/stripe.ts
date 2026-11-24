@@ -28,6 +28,7 @@ export const stripe = new Proxy({} as Stripe, {
 });
 
 export const STRIPE_PRICES = {
+  trial: process.env.STRIPE_PRICE_TRIAL || "price_1UfNQ72aeP0a2hji4boKsNEc",
   monthly: process.env.STRIPE_PRICE_MONTHLY || "price_1UfNMc2aeP0a2hjiwfmHMJfe",
   yearly: process.env.STRIPE_PRICE_YEARLY || "price_1UfNNE2aeP0a2hjirlZShG8X",
 };

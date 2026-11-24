@@ -382,13 +382,13 @@ function InventoryInner() {
       {sorted.length > 0 ? (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-full sm:min-w-[980px] border-collapse text-left">
+            <table className="w-full min-w-full sm:min-w-[960px] border-collapse text-left">
               <caption className="sr-only">
                 Your inventory: {sorted.length} item{sorted.length === 1 ? "" : "s"}. Choose a column
                 heading to sort by that column.
               </caption>
               <thead>
-                <tr className="border-b border-line">
+                <tr className="h-11 border-b border-line text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
                   {SORT_COLUMNS.map((col) => {
                     const active = sort.key === col.key;
                     const isVisibleOnMobile = col.key === "name" || col.key === "quality" || col.key === "status";
@@ -397,7 +397,7 @@ function InventoryInner() {
                         key={col.key}
                         scope="col"
                         aria-sort={active ? (sort.direction === "asc" ? "ascending" : "descending") : "none"}
-                        className={`whitespace-nowrap px-3 sm:px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] ${
+                        className={`whitespace-nowrap px-3 sm:px-4 py-2.5 align-middle text-[11px] font-semibold uppercase tracking-[0.12em] ${
                           !isVisibleOnMobile ? "hidden sm:table-cell" : ""
                         } ${col.numeric ? "text-right" : "text-left"}`}
                       >
@@ -421,7 +421,7 @@ function InventoryInner() {
                   })}
                   <th
                     scope="col"
-                    className="hidden sm:table-cell whitespace-nowrap px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-[0.12em] text-muted"
+                    className="hidden sm:table-cell whitespace-nowrap px-4 py-2.5 align-middle text-right text-[11px] font-semibold uppercase tracking-[0.12em] text-muted"
                   >
                     Purgatory
                   </th>
@@ -438,10 +438,10 @@ function InventoryInner() {
                           openEditModal(item);
                         }
                       }}
-                      className="border-b border-line-soft transition-colors last:border-0 even:bg-wash/60 dark:even:bg-shell/70 hover:bg-wash dark:hover:bg-wash/40 cursor-pointer sm:cursor-default"
+                      className="h-[52px] sm:h-[54px] border-b border-line-soft transition-colors last:border-0 even:bg-wash/60 dark:even:bg-shell/70 hover:bg-wash dark:hover:bg-wash/40 cursor-pointer sm:cursor-default"
                     >
                       {/* Item Name */}
-                      <th scope="row" className="px-3 sm:px-4 py-3 text-left font-normal">
+                      <th scope="row" className="px-3 sm:px-4 py-2 sm:py-2.5 align-middle text-left font-normal">
                         <button
                           type="button"
                           onClick={(e) => {
@@ -458,7 +458,7 @@ function InventoryInner() {
                       </th>
 
                       {/* Brand: hidden on mobile */}
-                      <td className="hidden sm:table-cell px-4 py-3 text-[13px] text-ink-soft">
+                      <td className="hidden sm:table-cell px-4 py-2 sm:py-2.5 align-middle text-[13px] text-ink-soft">
                         {editingCell?.itemId === item.id && editingCell?.field === "brand" ? (
                           <input
                             type="text"
@@ -490,7 +490,7 @@ function InventoryInner() {
                       </td>
 
                       {/* Category: hidden on mobile */}
-                      <td className="hidden sm:table-cell px-4 py-3">
+                      <td className="hidden sm:table-cell px-4 py-2 sm:py-2.5 align-middle">
                         {editingCell?.itemId === item.id && editingCell?.field === "category" ? (
                           <select
                             autoFocus
@@ -520,7 +520,7 @@ function InventoryInner() {
                       </td>
 
                       {/* Subcategory: hidden on mobile */}
-                      <td className="hidden sm:table-cell px-4 py-3 text-[13px] text-ink-soft">
+                      <td className="hidden sm:table-cell px-4 py-2 sm:py-2.5 align-middle text-[13px] text-ink-soft">
                         {editingCell?.itemId === item.id && editingCell?.field === "subcategory" ? (
                           <select
                             autoFocus
@@ -551,7 +551,7 @@ function InventoryInner() {
                       </td>
 
                       {/* Quality: shown on mobile */}
-                      <td className="px-2.5 sm:px-4 py-3 text-[13px] text-ink-soft">
+                      <td className="px-2.5 sm:px-4 py-2 sm:py-2.5 align-middle text-[13px] text-ink-soft">
                         {editingCell?.itemId === item.id && editingCell?.field === "quality" ? (
                           <select
                             autoFocus
@@ -583,7 +583,7 @@ function InventoryInner() {
                       </td>
 
                       {/* Usage: shown on mobile */}
-                      <td className="px-2.5 sm:px-4 py-3">
+                      <td className="px-2.5 sm:px-4 py-2 sm:py-2.5 align-middle">
                         {editingCell?.itemId === item.id && editingCell?.field === "status" ? (
                           <select
                             autoFocus
@@ -619,7 +619,7 @@ function InventoryInner() {
                       </td>
 
                       {/* Value: hidden on mobile */}
-                      <td className="hidden sm:table-cell tabular px-4 py-3 text-right text-[13px] font-medium text-ink">
+                      <td className="hidden sm:table-cell tabular px-4 py-2 sm:py-2.5 align-middle text-right text-[13px] font-medium text-ink">
                         {editingCell?.itemId === item.id && editingCell?.field === "value" ? (
                           <input
                             type="number"
@@ -659,7 +659,7 @@ function InventoryInner() {
                       </td>
 
                       {/* Acquired: hidden on mobile */}
-                      <td className="hidden sm:table-cell tabular px-4 py-3 text-right text-[13px]">
+                      <td className="hidden sm:table-cell tabular px-4 py-2 sm:py-2.5 align-middle text-right text-[13px]">
                         {editingCell?.itemId === item.id && editingCell?.field === "acquired" ? (
                           <input
                             type="text"
@@ -706,7 +706,7 @@ function InventoryInner() {
                       </td>
 
                       {/* Purgatory: hidden on mobile */}
-                      <td className="hidden sm:table-cell px-4 py-3 text-right">
+                      <td className="hidden sm:table-cell px-4 py-2 sm:py-2.5 align-middle text-right">
                         <button
                           type="button"
                           onClick={(e) => {

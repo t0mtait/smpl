@@ -146,6 +146,7 @@ export function StatTile({
   icon,
   tone = "neutral",
   href,
+  className = "",
 }: {
   label: string;
   value: ReactNode;
@@ -153,6 +154,7 @@ export function StatTile({
   icon?: ReactNode;
   tone?: "neutral" | "moss" | "clay";
   href?: string;
+  className?: string;
 }) {
   const tones = {
     neutral: "bg-paper text-muted",
@@ -161,7 +163,7 @@ export function StatTile({
   };
 
   const inner = (
-    <>
+    <div className="flex flex-col justify-between h-full">
       <div className="flex items-start justify-between gap-3">
         <span className="eyebrow">{label}</span>
         {icon ? (
@@ -170,12 +172,12 @@ export function StatTile({
           </span>
         ) : null}
       </div>
-      <div className="mt-3 text-ink">{value}</div>
+      <div className="mt-2 sm:mt-3 text-ink">{value}</div>
       {sub ? <div className="mt-1 text-[13px] leading-snug text-muted">{sub}</div> : null}
-    </>
+    </div>
   );
 
-  const cls = "card card-hover block p-5";
+  const cls = `card card-hover block p-5 ${className}`;
   return href ? (
     <a href={href} className={cls}>
       {inner}
