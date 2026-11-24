@@ -8,14 +8,16 @@ export function NavLinks({
   label,
   icon,
   badge,
+  exclude,
 }: {
   href: string;
   label: string;
   icon: React.ReactNode;
   badge?: React.ReactNode;
+  exclude?: string[];
 }) {
   const pathname = usePathname();
-  const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
+  const active = href === "/" ? pathname === "/" : pathname.startsWith(href) && !(exclude ?? []).some((e) => pathname.startsWith(e));
 
   return (
     <Link

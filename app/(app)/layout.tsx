@@ -21,9 +21,16 @@ export const dynamic = "force-dynamic";
 // component functions themselves cannot cross the client boundary.
 const NAV = [
   { href: "/", label: "Dashboard", icon: <IconHouse width={17} height={17} /> },
-  { href: "/items", label: "Inventory", icon: <IconBox width={17} height={17} /> },
+  {
+    href: "/items",
+    label: "Inventory",
+    icon: <IconBox width={17} height={17} />,
+    exclude: ["/items/advisor"],
+    children: [
+      { href: "/items/advisor", label: "AI Advisor", icon: <IconSparkles width={15} height={15} />, proOnly: true },
+    ],
+  },
   { href: "/purgatory", label: "Purgatory", icon: <IconFlame width={17} height={17} /> },
-  { href: "/advisor", label: "AI Advisor", icon: <IconSparkles width={17} height={17} />, proOnly: true },
   { href: "/offloaded", label: "Offloaded", icon: <IconArchive width={17} height={17} /> },
   { href: "/wishlist", label: "Wishlist", icon: <IconHeart width={17} height={17} />, proOnly: true },
 ];
@@ -53,19 +60,40 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
         <nav className="flex-1 space-y-0.5 px-3">
           {NAV.map((item) => (
-            <NavLinks
-              key={item.href}
-              href={item.href}
-              label={item.label}
-              icon={item.icon}
-              badge={
-                item.proOnly && !isPro ? (
-                  <span className="rounded bg-accent-soft px-1.5 py-0.5 text-[9px] font-bold text-accent">
-                    PRO
-                  </span>
-                ) : undefined
-              }
-            />
+            <div key={item.href}>
+              <NavLinks
+                href={item.href}
+                label={item.label}
+                icon={item.icon}
+                exclude={item.exclude}
+                badge={
+                  item.proOnly && !isPro ? (
+                    <span className="rounded bg-accent-soft px-1.5 py-0.5 text-[9px] font-bold text-accent">
+                      PRO
+                    </span>
+                  ) : undefined
+                }
+              />
+              {item.children && (
+                <div className="ml-4 mt-0.5 space-y-0.5 border-l border-line pl-2">
+                  {item.children.map((c) => (
+                    <NavLinks
+                      key={c.href}
+                      href={c.href}
+                      label={c.label}
+                      icon={c.icon}
+                      badge={
+                        c.proOnly && !isPro ? (
+                          <span className="rounded bg-accent-soft px-1.5 py-0.5 text-[9px] font-bold text-accent">
+                            PRO
+                          </span>
+                        ) : undefined
+                      }
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           ))}
         </nav>
 
@@ -160,7 +188,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
       {/* ---------------- Mobile bottom nav ---------------- */}
       <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t border-line bg-card/95 backdrop-blur lg:hidden">
-        {NAV.map((item) => (
+        {NAV.flatMap((i) => [i, ...(i.children ?? [])]).map((item) => (
           <Link
             key={item.href}
             href={item.href}
