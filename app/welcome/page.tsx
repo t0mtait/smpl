@@ -263,9 +263,15 @@ export default async function WelcomePage() {
           <p className="mt-3 text-[16px] text-muted">
             It takes a minute to start. Your inventory stays yours alone.
           </p>
-          <Link href="/auth/register" className="btn-primary mt-7 px-7 py-3 text-base">
-            Create your free account
-          </Link>
+          <div className="mt-8 flex flex-col items-center gap-6">
+            <Link href="/auth/register" className="btn-primary px-7 py-3 text-base">
+              Create your free account
+            </Link>
+            <p className="inline-flex items-center gap-2 text-[13px] text-muted">
+              <IconSearch width={14} height={14} />
+              iOS &amp; Android apps coming soon (in development)
+            </p>
+          </div>
         </section>
       </main>
 

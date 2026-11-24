@@ -1145,19 +1145,12 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
             </div>
           </div>
 
-          {/* Refund Policy */}
+          {/* Free Trial & Cancellation */}
           <div className="mt-3.5 border-t border-line-soft pt-3">
             <div className="flex items-start gap-2 text-[11px] text-muted leading-relaxed">
-              <span className="font-semibold text-ink shrink-0">Refund Policy:</span>
+              <span className="font-semibold text-ink shrink-0">14-Day Free Trial:</span>
               <span>
-                14-day 100% money-back guarantee. If smpl. isn&apos;t for you, email{" "}
-                <a
-                  href="mailto:support@gosmpl.app?subject=smpl.%20Refund%20Request"
-                  className="font-medium text-accent hover:underline"
-                >
-                  support@gosmpl.app
-                </a>{" "}
-                within 14 days of upgrade or renewal for a full refund, no questions asked. Subscriptions can be cancelled at any time with a single click.
+                We offer a 14-day free Pro trial so you can experience all premium features risk-free. Subscriptions can be cancelled anytime with a single click in your account or Stripe billing portal.
               </span>
             </div>
           </div>

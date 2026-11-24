@@ -714,6 +714,16 @@ export function MobileAppShowcase() {
               </div>
             </div>
           </div>
+
+          <div className="pt-6 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+            <Link href="/auth/register" className="btn-primary px-6 py-2.5 text-sm">
+              Create your free account
+            </Link>
+            <p className="inline-flex items-center gap-2 text-xs text-muted">
+              <IconSearch width={14} height={14} className="shrink-0" />
+              iOS &amp; Android apps coming soon (in development)
+            </p>
+          </div>
         </div>
       </div>
     </section>
@@ -806,12 +816,12 @@ const FAQS = [
     a: "The Free tier is free forever and includes unlimited items tracking, possession analytics, 30-day purgatory, and limited custom categories. Pro ($4.29/mo or $34.99/yr, including a 14-day free trial) unlocks the AI Declutter Advisor, Wishlist cooldown tracker, unlimited custom categories, and complete CSV/JSON data exports.",
   },
   {
-    q: "What is your refund policy?",
-    a: "We offer a 14-day, 100% money-back guarantee on all Pro memberships. If smpl. isn't right for you, simply email support@gosmpl.app within 14 days of upgrade or renewal for a full refund with no questions asked. You can also cancel your subscription anytime with a single click.",
+    q: "Is there a free trial for Pro?",
+    a: "Yes! We offer a full 14-day free trial on smpl. Pro with zero upfront commitment. You can explore the AI Declutter Advisor, Wishlist cooldown tracker, unlimited custom categories, and CSV/JSON backups completely free for 14 days. You can cancel anytime with a single click.",
   },
   {
     q: "How do I install smpl. on my phone?",
-    a: "smpl. is built as a Progressive Web App (PWA). Open gosmpl.app in Safari on iOS and tap 'Share → Add to Home Screen', or tap the menu in Chrome on Android and select 'Install app'. It opens full-screen like a native app.",
+    a: "Native iOS and Android apps are currently in active development. In the meantime, smpl. is built as a Progressive Web App (PWA) that works smoothly on any mobile browser. Simply open gosmpl.app in Safari on iOS and tap 'Share → Add to Home Screen', or tap the menu in Chrome on Android and select 'Install app' to use it full-screen just like a native app.",
   },
 ];
 
