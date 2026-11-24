@@ -134,10 +134,10 @@ function AuthFormInner({ mode }: Props) {
           <div className="relative bg-card px-2 text-xs uppercase text-muted">Or continue with</div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
+        <div>
           <a
             href={`/api/auth/oauth/google?returnTo=${encodeURIComponent(next)}`}
-            className="flex items-center justify-center gap-2 rounded-xl border border-line bg-paper px-3 py-2 text-xs font-medium text-ink transition hover:border-ink/30 hover:bg-tint"
+            className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-line bg-paper px-4 py-2.5 text-xs font-medium text-ink transition hover:border-ink/30 hover:bg-tint"
           >
             <svg className="h-4 w-4" viewBox="0 0 24 24">
               <path
@@ -157,16 +157,7 @@ function AuthFormInner({ mode }: Props) {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
               />
             </svg>
-            Google
-          </a>
-          <a
-            href={`/api/auth/oauth/apple?returnTo=${encodeURIComponent(next)}`}
-            className="flex items-center justify-center gap-2 rounded-xl border border-line bg-paper px-3 py-2 text-xs font-medium text-ink transition hover:border-ink/30 hover:bg-tint"
-          >
-            <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M16.37 1.43c0 1.14-.42 2.2-1.24 3.06-.99 1.03-2.19 1.63-3.49 1.53a3.6 3.6 0 0 1 1.3-2.9c.9-.83 2.1-1.4 3.43-1.69ZM20.5 17.1c-.55 1.27-.82 1.84-1.53 2.96-.99 1.57-2.39 3.53-4.12 3.54-1.54.02-1.94-1-4.03-.99-2.09.01-2.53 1.01-4.07.99-1.73-.02-3.05-1.78-4.04-3.35C-.1 15.9-.4 10.7 1.3 8.1c1.2-1.85 3.1-2.93 4.88-2.93 1.82 0 2.96 1 4.46 1 1.46 0 2.35-1 4.45-1 1.58 0 3.26.86 4.46 2.35-3.92 2.15-3.28 7.75.95 9.58Z" />
-            </svg>
-            Apple
+            Continue with Google
           </a>
         </div>
       </form>

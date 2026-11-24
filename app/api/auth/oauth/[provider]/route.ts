@@ -4,9 +4,7 @@ import {
   createOAuthState,
   getAppBaseUrl,
   getGoogleAuthUrl,
-  getAppleAuthUrl,
   GOOGLE_CLIENT_ID,
-  isAppleConfigured,
 } from "@/lib/oauth";
 
 export const runtime = "nodejs";
@@ -34,23 +32,6 @@ export async function GET(req: Request, { params }: Ctx) {
       path: "/",
     });
     return NextResponse.redirect(getGoogleAuthUrl(state, redirectUri));
-  }
-
-  if (provider === "apple") {
-    if (!isAppleConfigured) {
-      return NextResponse.json({ error: "Apple sign-in is not configured on this server." }, { status: 400 });
-    }
-    const state = createOAuthState("apple", returnTo);
-    // Apple POSTs back cross-site (form_post), so a Lax cookie would be
-    // dropped. SameSite=None requires Secure.
-    (await cookies()).set("oauth_state", state, {
-      httpOnly: true,
-      sameSite: "none",
-      secure: true,
-      maxAge: 600,
-      path: "/",
-    });
-    return NextResponse.redirect(getAppleAuthUrl(state, redirectUri));
   }
 
   return NextResponse.json({ error: `Unsupported provider ${provider}` }, { status: 400 });
