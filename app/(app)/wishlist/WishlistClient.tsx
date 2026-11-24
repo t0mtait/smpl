@@ -45,6 +45,42 @@ function getDomain(urlStr: string): string {
   }
 }
 
+const WISHLIST_COOLDOWN_DAYS = 30;
+
+function CooldownRing({ days }: { days: number }) {
+  const d = Math.max(0, days);
+  const pct = Math.min(d / WISHLIST_COOLDOWN_DAYS, 1);
+  const r = 14;
+  const c = 2 * Math.PI * r;
+  const ready = d >= WISHLIST_COOLDOWN_DAYS;
+
+  return (
+    <span
+      className="inline-flex items-center justify-end"
+      title={`${d} ${d === 1 ? "day" : "days"} waiting${ready ? " — cooldown passed (ready to purchase)" : ` · ${WISHLIST_COOLDOWN_DAYS - d}d remaining`}`}
+    >
+      <span className="relative inline-flex h-9 w-9 items-center justify-center">
+        <svg viewBox="0 0 36 36" className="absolute inset-0 -rotate-90" aria-hidden="true">
+          <circle cx="18" cy="18" r={r} fill="none" strokeWidth="3.5" className="stroke-line" />
+          <circle
+            cx="18"
+            cy="18"
+            r={r}
+            fill="none"
+            strokeWidth="3.5"
+            strokeLinecap="round"
+            strokeDasharray={`${pct * c} ${c}`}
+            className={ready ? "stroke-accent" : "stroke-accent/70"}
+          />
+        </svg>
+        <span className={`tabular relative text-[11px] font-semibold ${ready ? "text-accent" : "text-ink"}`}>
+          {d}
+        </span>
+      </span>
+    </span>
+  );
+}
+
 export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
   const [items, setItems] = useState<WishlistItem[] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -932,18 +968,7 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
 
                       {/* Cooldown */}
                       <td className="tabular px-4 py-3 text-right text-[13px]">
-                        {cooldownPassed ? (
-                          <span className="inline-flex items-center gap-1 rounded-md bg-accent-soft px-2 py-0.5 text-[11px] font-medium text-accent">
-                            <IconCheck width={12} height={12} />
-                            <span>30+ days (ready)</span>
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 rounded-md bg-wash px-2 py-0.5 text-[11px] text-muted">
-                            <span>{daysWaiting}d waiting</span>
-                            <span className="opacity-60">·</span>
-                            <span>{30 - daysWaiting}d left</span>
-                          </span>
-                        )}
+                        <CooldownRing days={daysWaiting} />
                       </td>
 
                       {/* Actions: Edit icon removed, only Bought and Delete */}
