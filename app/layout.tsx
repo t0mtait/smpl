@@ -26,7 +26,7 @@ export const metadata: Metadata = {
  * authenticated shell would leave the login screen permanently light.
  *
  * So it lives here, in the root layout, and it reads three sources in
- * order: an explicit stored choice, then the OS preference, then light.
+ * order: an explicit stored choice, then light. The OS preference is deliberately ignored so the UI never switches on its own.
  * The value it writes is also what the toggle reads back, so the button
  * and the page never disagree about which mode is active.
  *
@@ -44,8 +44,7 @@ const THEME_SCRIPT = `
         localStorage.removeItem('declutter-theme');
       }
     }
-    var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    var theme = stored === 'dark' || stored === 'light' ? stored : (prefersDark ? 'dark' : 'light');
+        var theme = stored === 'dark' || stored === 'light' ? stored : 'light';
     document.documentElement.classList.toggle('dark', theme === 'dark');
     document.documentElement.dataset.theme = theme;
   } catch (e) {

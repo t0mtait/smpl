@@ -4,9 +4,9 @@ import {
   createOAuthState,
   getAppBaseUrl,
   getGoogleAuthUrl,
-  getGithubAuthUrl,
+  getAppleAuthUrl,
   GOOGLE_CLIENT_ID,
-  GITHUB_CLIENT_ID,
+  isAppleConfigured,
 } from "@/lib/oauth";
 
 export const runtime = "nodejs";
@@ -36,18 +36,21 @@ export async function GET(req: Request, { params }: Ctx) {
     return NextResponse.redirect(getGoogleAuthUrl(state, redirectUri));
   }
 
-  if (provider === "github") {
-    if (!GITHUB_CLIENT_ID) {
-      return NextResponse.json({ error: "GitHub OAuth is not configured on this server." }, { status: 400 });
+  if (provider === "apple") {
+    if (!isAppleConfigured) {
+      return NextResponse.json({ error: "Apple sign-in is not configured on this server." }, { status: 400 });
     }
-    const state = createOAuthState("github", returnTo);
+    const state = createOAuthState("apple", returnTo);
+    // Apple POSTs back cross-site (form_post), so a Lax cookie would be
+    // dropped. SameSite=None requires Secure.
     (await cookies()).set("oauth_state", state, {
       httpOnly: true,
-      sameSite: "lax",
+      sameSite: "none",
+      secure: true,
       maxAge: 600,
       path: "/",
     });
-    return NextResponse.redirect(getGithubAuthUrl(state, redirectUri));
+    return NextResponse.redirect(getAppleAuthUrl(state, redirectUri));
   }
 
   return NextResponse.json({ error: `Unsupported provider ${provider}` }, { status: 400 });

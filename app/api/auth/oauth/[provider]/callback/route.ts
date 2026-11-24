@@ -15,7 +15,7 @@ import {
   linkOAuthAccount,
 } from "@/lib/db";
 import {
-  exchangeGithubCode,
+  exchangeAppleCode,
   exchangeGoogleCode,
   getAppBaseUrl,
   parseOAuthState,
@@ -25,17 +25,34 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+// 303 so the browser follows with a GET even after Apple's form POST.
+const see = (url: string) => NextResponse.redirect(url, 303);
+
 type Ctx = { params: Promise<{ provider: string }> };
 
-export async function GET(req: Request, { params }: Ctx) {
-  const { provider } = await params;
+export async function GET(req: Request, ctx: Ctx) {
   const url = new URL(req.url);
-  const code = url.searchParams.get("code");
-  const state = url.searchParams.get("code") ? url.searchParams.get("state") : null;
-  const error = url.searchParams.get("error");
+  return handle(req, ctx, url.searchParams);
+}
+
+// Apple returns via a cross-site form POST (response_mode=form_post).
+export async function POST(req: Request, ctx: Ctx) {
+  const form = await req.formData();
+  const params = new URLSearchParams();
+  form.forEach((v, k) => {
+    if (typeof v === "string") params.set(k, v);
+  });
+  return handle(req, ctx, params);
+}
+
+async function handle(req: Request, { params }: Ctx, query: URLSearchParams) {
+  const { provider } = await params;
+  const code = query.get("code");
+  const state = code ? query.get("state") : null;
+  const error = query.get("error");
 
   if (error) {
-    return NextResponse.redirect(`${getAppBaseUrl(req.headers)}/auth/login?error=${encodeURIComponent(error)}`);
+    return see(`${getAppBaseUrl(req.headers)}/auth/login?error=${encodeURIComponent(error)}`);
   }
 
   const cookieJar = await cookies();
@@ -43,7 +60,7 @@ export async function GET(req: Request, { params }: Ctx) {
   cookieJar.delete("oauth_state");
 
   if (!code || !state || state !== savedState) {
-    return NextResponse.redirect(
+    return see(
       `${getAppBaseUrl(req.headers)}/auth/login?error=Invalid%20or%20expired%20OAuth%20state`
     );
   }
@@ -57,13 +74,13 @@ export async function GET(req: Request, { params }: Ctx) {
   try {
     if (provider === "google") {
       userInfo = await exchangeGoogleCode(code, redirectUri);
-    } else if (provider === "github") {
-      userInfo = await exchangeGithubCode(code, redirectUri);
+    } else if (provider === "apple") {
+      userInfo = await exchangeAppleCode(code, redirectUri, query.get("user"));
     } else {
-      return NextResponse.redirect(`${baseUrl}/auth/login?error=Unsupported%20provider`);
+      return see(`${baseUrl}/auth/login?error=Unsupported%20provider`);
     }
   } catch (err) {
-    return NextResponse.redirect(
+    return see(
       `${baseUrl}/auth/login?error=${encodeURIComponent((err as Error).message || "OAuth exchange failed")}`
     );
   }
@@ -100,5 +117,5 @@ export async function GET(req: Request, { params }: Ctx) {
     sessionCookieOptions(expiresAt, await isSecureRequest())
   );
 
-  return NextResponse.redirect(`${baseUrl}${returnTo}`);
+  return see(`${baseUrl}${returnTo}`);
 }

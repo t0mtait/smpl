@@ -8,6 +8,7 @@ import {
   QuarterlyChangeChart,
   StatTile,
 } from "@/components/ui";
+import { StatusDonut } from "@/components/StatusDonut";
 import { UserAvatar } from "@/components/UserAvatar";
 import {
   IconBox,
@@ -31,6 +32,16 @@ export default async function DashboardPage() {
   const maxCatValue = Math.max(1, ...stats.byCategory.map((c) => c.value));
   const goneCount =
     stats.soldItems + stats.donatedItems + stats.disposedItems + stats.closedItems;
+
+  const keptCount = Math.max(0, stats.ownedItems - purgatoryItems.length);
+  const statusSlices = [
+    { label: "Kept", value: keptCount, stroke: "stroke-accent", dot: "bg-accent" },
+    { label: "In purgatory", value: purgatoryItems.length, stroke: "stroke-clay", dot: "bg-clay" },
+    { label: "Sold", value: stats.soldItems, stroke: "stroke-ink", dot: "bg-ink" },
+    { label: "Donated", value: stats.donatedItems, stroke: "stroke-ink-soft", dot: "bg-ink-soft" },
+    { label: "Disposed", value: stats.disposedItems, stroke: "stroke-muted", dot: "bg-muted" },
+    { label: "Closed", value: stats.closedItems, stroke: "stroke-line", dot: "bg-line" },
+  ];
 
   return (
     <div className="space-y-10">
@@ -179,6 +190,20 @@ export default async function DashboardPage() {
           )}
         </section>
       </div>
+
+      {/* ---------------- Status breakdown ---------------- */}
+      <section className="card p-6">
+        <div className="mb-1 flex items-baseline justify-between gap-3">
+          <h2 className="display text-xl">Where your items stand</h2>
+          <span className="text-xs text-muted">all time</span>
+        </div>
+        <p className="mb-4 text-[13px] text-muted">Every item you have tracked, by current status.</p>
+        <StatusDonut slices={statusSlices} />
+      </section>
+
+      <p className="pb-2 text-center text-[12px] text-muted">
+        iOS &amp; Android apps coming soon.
+      </p>
     </div>
   );
 }

@@ -120,6 +120,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         )}
 
+        <p className="px-6 pb-3 text-[11px] leading-snug text-muted">
+          <span className="font-semibold text-ink-soft">iOS &amp; Android</span> apps coming soon
+        </p>
+
         <div className="border-t border-line p-3">
           <Link
             href="/account"

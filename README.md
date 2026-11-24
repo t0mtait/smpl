@@ -143,3 +143,10 @@ npm test
 ## License
 
 MIT License. Feel free to use, modify, and self-host for your personal inventory management.
+
+## Social sign-in
+
+Google: `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`. Redirect URI: `https://<host>/api/auth/oauth/google/callback`.
+
+Apple: `AUTH_APPLE_ID` (Services ID), `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY` (contents of the `.p8`; `\n` escapes allowed). Return URL: `https://<host>/api/auth/oauth/apple/callback`.
+Buttons for each provider work only when configured.
