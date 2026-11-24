@@ -812,6 +812,8 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                     const active = sort.key === col.key;
                     const isVisibleOnMobile =
                       col.key === "name" || col.key === "priority" || col.key === "waiting" || col.key === "url";
+                    const isPriority = col.key === "priority";
+                    const isUrl = col.key === "url";
 
                     return (
                       <th
@@ -826,6 +828,8 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                         }
                         className={`whitespace-nowrap px-3 sm:px-4 py-2.5 align-middle text-[11px] font-semibold uppercase tracking-[0.12em] ${
                           !isVisibleOnMobile ? "hidden sm:table-cell" : ""
+                        } ${isPriority ? "w-11 sm:w-auto px-1 sm:px-4" : ""} ${
+                          isUrl ? "w-16 sm:w-auto px-1 sm:px-4" : ""
                         } ${col.numeric ? "text-right" : "text-left"}`}
                       >
                         <button
@@ -835,7 +839,13 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                             active ? "text-ink" : "text-muted"
                           }`}
                         >
-                          {col.label}
+                          {col.key === "url" ? (
+                            <>
+                              <span className="hidden sm:inline">Store </span>Link
+                            </>
+                          ) : (
+                            col.label
+                          )}
                           <span
                             aria-hidden="true"
                             className={`text-[9px] leading-none ${active ? "opacity-100" : "opacity-0"}`}
@@ -892,7 +902,7 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                       </th>
 
                       {/* Priority (click to edit field) */}
-                      <td className="px-2 sm:px-4 py-2 sm:py-2.5 align-middle">
+                      <td className="px-1 sm:px-4 py-2 sm:py-2.5 align-middle w-11 sm:w-auto">
                         {editingCell?.itemId === item.id && editingCell?.field === "priority" ? (
                           <div className="flex items-center gap-2">
                             <PriorityRing priority={inlinePriority} size={28} stroke={3} />
@@ -1036,7 +1046,7 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                       </td>
 
                       {/* Store / Shopping Link (click to add/edit field) */}
-                      <td className="px-2 sm:px-4 py-2 sm:py-2.5 align-middle text-[13px]">
+                      <td className="px-1 sm:px-4 py-2 sm:py-2.5 align-middle text-[13px] w-16 sm:w-auto">
                         {editingCell?.itemId === item.id && editingCell?.field === "url" ? (
                           <input
                             type="url"
@@ -1061,11 +1071,11 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={(e) => e.stopPropagation()}
-                              className="inline-flex items-center gap-1 rounded bg-accent-soft px-2 py-0.5 text-[11px] font-medium text-accent hover:opacity-80 transition-opacity"
+                              className="inline-flex items-center gap-1 rounded bg-accent-soft px-1.5 sm:px-2 py-0.5 text-[11px] font-medium text-accent hover:opacity-80 transition-opacity"
                               title={`Visit ${item.url}`}
                             >
                               <IconExternalLink width={11} height={11} />
-                              <span className="max-w-[70px] sm:max-w-[100px] truncate">{getDomain(item.url)}</span>
+                              <span className="max-w-[48px] sm:max-w-[100px] truncate">{getDomain(item.url)}</span>
                             </a>
                             <button
                               type="button"
@@ -1086,11 +1096,11 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
                               e.stopPropagation();
                               setEditingCell({ itemId: item.id, field: "url" });
                             }}
-                            className="inline-flex items-center gap-1 rounded border border-dashed border-line px-2 py-0.5 text-[11px] text-muted hover:border-line-strong hover:text-ink transition-colors"
+                            className="inline-flex items-center gap-1 rounded border border-dashed border-line px-1.5 sm:px-2 py-0.5 text-[11px] text-muted hover:border-line-strong hover:text-ink transition-colors"
                             title="Add shopping link"
                           >
                             <IconPlus width={11} height={11} />
-                            <span>Add link</span>
+                            <span><span className="hidden sm:inline">Add </span>link</span>
                           </button>
                         )}
                       </td>
