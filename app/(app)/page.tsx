@@ -35,13 +35,12 @@ export default async function DashboardPage() {
     stats.soldItems + stats.donatedItems + stats.disposedItems + stats.closedItems;
 
   const keptCount = Math.max(0, stats.ownedItems - purgatoryItems.length);
+  const noReturnCount = stats.donatedItems + stats.disposedItems + stats.closedItems;
   const statusSlices = [
     { label: "Kept", value: keptCount, stroke: "stroke-accent", dot: "bg-accent" },
     { label: "In purgatory", value: purgatoryItems.length, stroke: "stroke-clay", dot: "bg-clay" },
-    { label: "Sold", value: stats.soldItems, stroke: "stroke-ink", dot: "bg-ink" },
-    { label: "Donated", value: stats.donatedItems, stroke: "stroke-ink-soft", dot: "bg-ink-soft" },
-    { label: "Disposed", value: stats.disposedItems, stroke: "stroke-muted", dot: "bg-muted" },
-    { label: "Closed", value: stats.closedItems, stroke: "stroke-line", dot: "bg-line" },
+    { label: "Offloaded for return", value: stats.soldItems, stroke: "stroke-ink", dot: "bg-ink" },
+    { label: "Offloaded for no return", value: noReturnCount, stroke: "stroke-muted", dot: "bg-muted" },
   ];
 
   return (
