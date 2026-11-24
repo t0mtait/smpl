@@ -90,7 +90,7 @@ export default function AdvisorClient({ initialSuggestions, isPro }: Props) {
             Top 10 recommended offloads
           </h1>
           <p className="mt-2 text-[15px] text-muted max-w-2xl">
-            Heuristic intelligence analyzes idle time, expected usage frequency, seasonal timing, depreciation,
+            Analyzes idle time, usage frequency, seasonal timing, depreciation, categorical distribution,
             and duplicates to highlight the top items you should consider parting with.
           </p>
         </div>
