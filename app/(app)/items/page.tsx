@@ -186,6 +186,18 @@ function InventoryInner() {
     }
   };
 
+  useEffect(() => {
+    if (!editingItem) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (deletingItem) return;
+        setEditingItem(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [editingItem, deletingItem]);
+
   // Open general edit popup modal from item name
   const openEditModal = (item: Item) => {
     setEditingItem(item);
@@ -824,30 +836,32 @@ function InventoryInner() {
             )}
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="sm:col-span-2">
-                <label className="label" htmlFor="edit-item-name">
-                  Name *
-                </label>
-                <input
-                  ref={editNameInputRef}
-                  id="edit-item-name"
-                  className="input"
-                  required
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                />
-              </div>
+              <div className="grid grid-cols-2 gap-3 sm:col-span-2">
+                <div>
+                  <label className="label" htmlFor="edit-item-name">
+                    Name *
+                  </label>
+                  <input
+                    ref={editNameInputRef}
+                    id="edit-item-name"
+                    className="input"
+                    required
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                  />
+                </div>
 
-              <div className="sm:col-span-2">
-                <label className="label" htmlFor="edit-item-brand">
-                  Brand
-                </label>
-                <input
-                  id="edit-item-brand"
-                  className="input"
-                  value={editBrand}
-                  onChange={(e) => setEditBrand(e.target.value)}
-                />
+                <div>
+                  <label className="label" htmlFor="edit-item-brand">
+                    Brand
+                  </label>
+                  <input
+                    id="edit-item-brand"
+                    className="input"
+                    value={editBrand}
+                    onChange={(e) => setEditBrand(e.target.value)}
+                  />
+                </div>
               </div>
 
               {/* Category and Subcategory beside each other on mobile */}

@@ -290,6 +290,18 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
     return list;
   };
 
+  useEffect(() => {
+    if (!editingItem) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (deletingItem) return;
+        setEditingItem(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [editingItem, deletingItem]);
+
   const openEditModal = (item: Item) => {
     setEditingItem(item);
     setEditName(item.name);
@@ -891,30 +903,32 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
             )}
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="sm:col-span-2">
-                <label className="label" htmlFor="edit-item-name">
-                  Name *
-                </label>
-                <input
-                  ref={editNameInputRef}
-                  id="edit-item-name"
-                  className="input"
-                  required
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                />
-              </div>
+              <div className="grid grid-cols-2 gap-3 sm:col-span-2">
+                <div>
+                  <label className="label" htmlFor="edit-item-name">
+                    Name *
+                  </label>
+                  <input
+                    ref={editNameInputRef}
+                    id="edit-item-name"
+                    className="input"
+                    required
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                  />
+                </div>
 
-              <div className="sm:col-span-2">
-                <label className="label" htmlFor="edit-item-brand">
-                  Brand
-                </label>
-                <input
-                  id="edit-item-brand"
-                  className="input"
-                  value={editBrand}
-                  onChange={(e) => setEditBrand(e.target.value)}
-                />
+                <div>
+                  <label className="label" htmlFor="edit-item-brand">
+                    Brand
+                  </label>
+                  <input
+                    id="edit-item-brand"
+                    className="input"
+                    value={editBrand}
+                    onChange={(e) => setEditBrand(e.target.value)}
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3 sm:col-span-2">
@@ -1027,34 +1041,35 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                 </div>
               </div>
 
-              <div className="sm:col-span-2">
-                <label className="label" htmlFor="edit-item-date">
-                  Acquisition date
-                </label>
-                <input
-                  id="edit-item-date"
-                  className="input"
-                  placeholder="YYYY-MM-DD or Q1 2024"
-                  value={editPurchaseDate}
-                  onChange={(e) => setEditPurchaseDate(e.target.value)}
-                />
-              </div>
+              <div className="grid grid-cols-2 gap-3 sm:col-span-2">
+                <div>
+                  <label className="label" htmlFor="edit-item-date">
+                    Acquisition date
+                  </label>
+                  <input
+                    id="edit-item-date"
+                    className="input"
+                    placeholder="YYYY-MM-DD or Q1 2024"
+                    value={editPurchaseDate}
+                    onChange={(e) => setEditPurchaseDate(e.target.value)}
+                  />
+                </div>
 
-              <div className="sm:col-span-2">
-                <label className="label" htmlFor="edit-item-purgatory-date">
-                  Added to purgatory
-                  <span className="ml-1 font-normal text-muted">override</span>
-                </label>
-                <input
-                  id="edit-item-purgatory-date"
-                  type="date"
-                  className="input"
-                  value={editPurgatoryDate}
-                  onChange={(e) => setEditPurgatoryDate(e.target.value)}
-                />
-                <p className="mt-1 text-[11px] text-muted">
-                  Overrides the date this item entered purgatory (used to calculate age).
-                </p>
+                <div>
+                  <label className="label" htmlFor="edit-item-purgatory-date">
+                    Added to purgatory
+                  </label>
+                  <input
+                    id="edit-item-purgatory-date"
+                    type="date"
+                    className="input"
+                    value={editPurgatoryDate}
+                    onChange={(e) => setEditPurgatoryDate(e.target.value)}
+                  />
+                  <p className="mt-1 text-[11px] text-muted">
+                    Date item entered purgatory (used to calculate age).
+                  </p>
+                </div>
               </div>
 
               <div className="sm:col-span-2">

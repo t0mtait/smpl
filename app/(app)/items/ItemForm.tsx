@@ -356,6 +356,23 @@ export default function ItemForm({ item }: Props) {
               </select>
             </div>
           </div>
+          {isPurgatory && (
+            <div>
+              <label className="label" htmlFor="purgatoryDate">
+                Added to purgatory
+              </label>
+              <input
+                id="purgatoryDate"
+                type="date"
+                className="input"
+                value={purgatoryDate}
+                onChange={(e) => setPurgatoryDate(e.target.value)}
+              />
+              <p className="mt-1 text-[11px] text-muted">
+                Date this item entered purgatory (used to calculate age).
+              </p>
+            </div>
+          )}
           <div>
             <label className="label" htmlFor="offloadedQuarter">
               Date offloaded
@@ -389,24 +406,6 @@ export default function ItemForm({ item }: Props) {
               </select>
             </div>
           </div>
-          {isPurgatory && (
-            <div>
-              <label className="label" htmlFor="purgatoryDate">
-                Added to purgatory
-                <span className="ml-1 font-normal text-muted">override</span>
-              </label>
-              <input
-                id="purgatoryDate"
-                type="date"
-                className="input"
-                value={purgatoryDate}
-                onChange={(e) => setPurgatoryDate(e.target.value)}
-              />
-              <p className="mt-1 text-[11px] text-muted">
-                Overrides the date this item entered purgatory (used to calculate age).
-              </p>
-            </div>
-          )}
           <div>
             <label className="label" htmlFor="purchasePrice">
               Paid

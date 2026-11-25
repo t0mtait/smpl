@@ -195,7 +195,7 @@ export function IconUndo(props: IconProps) {
   return (
     <svg {...base(props)}>
       <path d="M3 7v6h6" />
-      <path d="M3.5 13a9 9 0 1 0 2.1-6.4L3 9" />
+      <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
     </svg>
   );
 }
