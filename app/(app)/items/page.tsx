@@ -330,7 +330,7 @@ function InventoryInner() {
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
               >
-                <option value="all">All uses</option>
+                <option value="all">All</option>
                 <option value="heavy_use">Heavy</option>
                 <option value="occasional_use">Occasional</option>
                 <option value="rare_use">Rare</option>
@@ -349,7 +349,7 @@ function InventoryInner() {
                   setSubcategory("all");
                 }}
               >
-                <option value="all">All cats</option>
+                <option value="all">All</option>
                 {categories.map((c) => (
                   <option key={c} value={c}>
                     {formatCategory(c)}
@@ -369,7 +369,7 @@ function InventoryInner() {
                 onChange={(e) => setSubcategory(e.target.value)}
               >
                 <option value="all">
-                  {category === "all" ? "—" : "All subs"}
+                  {category === "all" ? "—" : "All"}
                 </option>
                 {subcategories.map((sub) => (
                   <option key={sub} value={sub}>
