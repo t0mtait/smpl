@@ -108,7 +108,7 @@ export default function ItemActions({ item }: { item: Item }) {
               <StatusTag status={{ label: "Purgatory", style: STATUS_STYLES.purgatory }} />
             </div>
             <p className="mt-2 text-[13px] text-muted">
-              Staged in Purgatory to get rid of. You can restore it to inventory or offload it.
+              Staged in Purgatory to get rid of. You can restore it to inventory, offload it, or delete it permanently.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -120,8 +120,25 @@ export default function ItemActions({ item }: { item: Item }) {
               <IconFlame width={15} height={15} />
               Offload in Purgatory
             </Link>
+            <button className="btn-danger" onClick={() => setConfirmDelete(true)} disabled={busy}>
+              <IconTrash width={15} height={15} />
+              Delete permanently
+            </button>
           </div>
         </div>
+        <ConfirmDialog
+          open={confirmDelete}
+          title="Delete item permanently?"
+          message={
+            <>
+              Are you sure you want to permanently delete <strong className="text-ink">{item.name}</strong>? It will be completely removed as if it was made by mistake, and won&apos;t count as offloaded or kept.
+            </>
+          }
+          confirmLabel="Delete permanently"
+          busy={busy}
+          onConfirm={remove}
+          onCancel={() => setConfirmDelete(false)}
+        />
       </section>
     );
   }
@@ -133,14 +150,33 @@ export default function ItemActions({ item }: { item: Item }) {
           <div>
             <StatusTag status={{ label: STATUS_LABELS[item.status] ?? item.status, style: STATUS_STYLES[item.status] }} />
             <p className="mt-2 text-[13px] text-muted">
-              Restoring returns this item to “owned” and removes the disposal record.
+              Restoring returns this item to “owned”. You can also delete it permanently if it was added or offloaded by mistake.
             </p>
           </div>
-          <button className="btn-secondary" onClick={restore} disabled={busy}>
-            <IconUndo width={15} height={15} />
-            Put back in my inventory
-          </button>
+          <div className="flex items-center gap-2">
+            <button className="btn-secondary" onClick={restore} disabled={busy}>
+              <IconUndo width={15} height={15} />
+              Put back in my inventory
+            </button>
+            <button className="btn-danger" onClick={() => setConfirmDelete(true)} disabled={busy}>
+              <IconTrash width={15} height={15} />
+              Delete permanently
+            </button>
+          </div>
         </div>
+        <ConfirmDialog
+          open={confirmDelete}
+          title="Delete item permanently?"
+          message={
+            <>
+              Are you sure you want to permanently delete <strong className="text-ink">{item.name}</strong> and all of its recorded history? It will be completely removed and won&apos;t count in your stats.
+            </>
+          }
+          confirmLabel="Delete permanently"
+          busy={busy}
+          onConfirm={remove}
+          onCancel={() => setConfirmDelete(false)}
+        />
       </section>
     );
   }

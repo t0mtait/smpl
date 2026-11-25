@@ -16,6 +16,7 @@ import {
   IconRecycle,
   IconRobot,
   IconSparkles,
+  IconTag,
 } from "@/components/icons";
 
 export const dynamic = "force-dynamic";
@@ -28,6 +29,7 @@ export default async function DashboardPage() {
   const allItems = listItems(user.id);
   const purgatoryItems = allItems.filter((i) => i.status === "purgatory");
   const purgatoryValue = purgatoryItems.reduce((sum, item) => sum + (item.currentValue ?? 0), 0);
+  const top3Categories = stats.topCategories.slice(0, 3);
 
   const maxCatValue = Math.max(1, ...stats.byCategory.map((c) => c.value));
   const goneCount =
@@ -165,7 +167,7 @@ export default async function DashboardPage() {
             </div>
           </div>
 
-          {/* Net items & Declutter rate tile below it, double its width as well */}
+          {/* Net items & Top categories tile below it, double its width as well */}
           <div className="card p-5 sm:p-6 shadow-sm flex-1 flex flex-col justify-between">
             <div className="grid grid-cols-2 divide-x divide-line h-full items-center">
               <Link href="/items" className="px-4 py-2 group hover:bg-wash/40 rounded-lg transition-colors flex flex-col justify-center h-full">
@@ -189,19 +191,28 @@ export default async function DashboardPage() {
                   </span>
                 </div>
               </Link>
-              <Link href="/offloaded" className="px-4 py-2 group hover:bg-wash/40 rounded-lg transition-colors flex flex-col justify-center h-full">
+              <Link href="/items" className="px-4 py-2 group hover:bg-wash/40 rounded-lg transition-colors flex flex-col justify-center h-full">
                 <div className="flex items-center justify-between text-muted">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider">Declutter rate</span>
-                  <span className="text-moss group-hover:text-ink"><IconSparkles width={15} height={15} /></span>
+                  <span className="text-[11px] font-semibold uppercase tracking-wider">Top categories</span>
+                  <span className="text-muted group-hover:text-ink"><IconTag width={15} height={15} /></span>
                 </div>
-                <div className="mt-3 flex items-baseline gap-2">
-                  <span className="tabular text-3xl sm:text-4xl font-semibold leading-none text-ink">
-                    {stats.declutterRate}%
-                  </span>
-                  <span className="tabular text-xs font-medium text-muted" title={`${goneCount} of ${stats.totalItems} items offloaded`}>
-                    {goneCount} of {stats.totalItems} offloaded
-                  </span>
-                </div>
+                {top3Categories.length === 0 ? (
+                  <div className="mt-3 text-xs text-muted">No items tracked yet</div>
+                ) : (
+                  <div className="mt-2 space-y-1">
+                    {top3Categories.map((cat, idx) => (
+                      <div key={cat.category} className="flex items-center justify-between text-xs">
+                        <span className="truncate text-ink font-medium flex items-center gap-1.5 min-w-0">
+                          <span className="text-muted text-[10px] tabular font-semibold shrink-0">{idx + 1}.</span>
+                          <span className="truncate">{formatCategory(cat.category)}</span>
+                        </span>
+                        <span className="tabular font-semibold text-muted ml-2 shrink-0">
+                          {cat.count} {cat.count === 1 ? "item" : "items"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </Link>
             </div>
           </div>

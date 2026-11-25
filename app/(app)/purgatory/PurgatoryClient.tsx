@@ -8,7 +8,8 @@ import { CATEGORIES, formatCategory, formatMoney, formatQuarter } from "@/lib/fo
 import { currentQuarter, daysSinceDate } from "@/lib/dates";
 import { CategoryTag, Pagination } from "@/components/ui";
 import { IconArrowLeft, IconBox, IconCheck,
-  IconSearch, IconFlame, IconUndo } from "@/components/icons";
+  IconSearch, IconFlame, IconTrash, IconUndo } from "@/components/icons";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 interface OffloadModalProps {
   item: Item;
@@ -216,6 +217,21 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
   // Inline cell editing: click a value to edit it in place, as in Inventory.
   const [editingCell, setEditingCell] = useState<{ itemId: number; field: string } | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [deletingItem, setDeletingItem] = useState<Item | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+
+  const deleteItemPermanently = async (item: Item) => {
+    setDeleteBusy(true);
+    try {
+      const res = await fetch(`/api/items/${item.id}`, { method: "DELETE" });
+      if (res.ok) {
+        setItems((prev) => prev.filter((i) => i.id !== item.id));
+        setDeletingItem(null);
+      }
+    } finally {
+      setDeleteBusy(false);
+    }
+  };
   const [userCategories, setUserCategories] = useState<string[]>([]);
 
   useEffect(() => {
@@ -654,6 +670,19 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                           <IconCheck width={13} height={13} />
                           Offload
                         </button>
+                        <button
+                          type="button"
+                          className="btn border border-line text-muted hover:border-danger hover:bg-danger-soft hover:text-danger px-2 py-1 text-[12px]"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeletingItem(item);
+                          }}
+                          disabled={busyId === item.id}
+                          title="Delete item permanently"
+                        >
+                          <IconTrash width={13} height={13} />
+                          <span className="sr-only">Delete item permanently</span>
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -683,6 +712,24 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
           onSuccess={handleOffloaded}
         />
       )}
+
+      <ConfirmDialog
+        open={Boolean(deletingItem)}
+        title="Delete item permanently?"
+        message={
+          deletingItem ? (
+            <>
+              Are you sure you want to delete <strong className="text-ink">{deletingItem.name}</strong>? It will be completely removed as if it was made by mistake, and won&apos;t count as offloaded or kept.
+            </>
+          ) : ""
+        }
+        confirmLabel="Delete permanently"
+        busy={deleteBusy}
+        onConfirm={() => {
+          if (deletingItem) deleteItemPermanently(deletingItem);
+        }}
+        onCancel={() => setDeletingItem(null)}
+      />
     </div>
   );
 }

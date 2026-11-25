@@ -55,6 +55,7 @@ const now = new Date(2026, 10, 23);
   eq("empty stats possessionsOverTime length is 8", stats.possessionsOverTime.length, 8);
   eq("empty stats last quarter is Q4 2026", stats.possessionsOverTime[7].quarter, "Q4 2026");
   eq("empty stats last quarter count is 0", stats.possessionsOverTime[7].count, 0);
+  eq("empty stats topCategories is empty array", stats.topCategories.length, 0);
 }
 
 /* --------------------------------------------------- Current quarter net & possessions --------------------------------------------------- */
@@ -106,6 +107,26 @@ const now = new Date(2026, 10, 23);
   eq("Q3 2026 count is 3", timeline[6].count, 3);
   // In Q4 2026: Net items is +1 => 3 + 1 = 4 (Items 1, 2, 4, 6 active)
   eq("Q4 2026 count is 4", timeline[7].count, 4);
+}
+
+/* --------------------------------------------------- Top categories according to item count --------------------------------------------------- */
+{
+  const items: Item[] = [
+    makeItem({ id: 1, category: "electronics" }),
+    makeItem({ id: 2, category: "clothing" }),
+    makeItem({ id: 3, category: "electronics" }),
+    makeItem({ id: 4, category: "books" }),
+    makeItem({ id: 5, category: "electronics" }),
+    makeItem({ id: 6, category: "clothing" }),
+    makeItem({ id: 7, category: "home" }),
+  ];
+  const stats = computeStats(items, [], now);
+  eq("topCategories length is 4", stats.topCategories.length, 4);
+  eq("topCategory #1 is electronics", stats.topCategories[0].category, "electronics");
+  eq("topCategory #1 count is 3", stats.topCategories[0].count, 3);
+  eq("topCategory #2 is clothing", stats.topCategories[1].category, "clothing");
+  eq("topCategory #2 count is 2", stats.topCategories[1].count, 2);
+  eq("topCategory #3 count is 1", stats.topCategories[2].count, 1);
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

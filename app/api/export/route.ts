@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { listItems, listWishlist } from "@/lib/db";
+import { listItems, listUserCategories, listWishlist } from "@/lib/db";
 import { apiUser } from "@/lib/auth";
 import { formatCategory, formatQuarter } from "@/lib/format";
 
@@ -42,6 +42,7 @@ export async function GET(req: Request) {
 
   const allItems = listItems(user.id);
   const wishlistItems = listWishlist(user.id);
+  const userCategories = listUserCategories(user.id);
 
   if (type === "json" || format === "json") {
     const exportData = {
@@ -49,6 +50,7 @@ export async function GET(req: Request) {
       user: { name: user.name, email: user.email },
       items: allItems,
       wishlist: wishlistItems,
+      categories: userCategories,
     };
     return new NextResponse(JSON.stringify(exportData, null, 2), {
       status: 200,

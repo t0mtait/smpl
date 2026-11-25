@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { Item, Priority, UseFrequency } from "@/lib/db";
 import { CATEGORIES, FREQUENCY_LABELS, formatCategory } from "@/lib/format";
+import { IconTrash } from "@/components/icons";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 interface Props {
   item?: Item | null;
@@ -14,7 +16,21 @@ export default function ItemForm({ item }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [priority, setPriority] = useState<Priority>(item?.priority ?? "auto");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
   const [userCategories, setUserCategories] = useState<{ category: string; subcategories: string[] }[]>([]);
+
+  const remove = async () => {
+    if (!item) return;
+    setDeleteBusy(true);
+    try {
+      await fetch(`/api/items/${item.id}`, { method: "DELETE" });
+      router.push("/items");
+    } finally {
+      setDeleteBusy(false);
+      setConfirmDelete(false);
+    }
+  };
 
   useEffect(() => {
     fetch("/api/user/categories")
@@ -284,14 +300,43 @@ export default function ItemForm({ item }: Props) {
         </div>
       </section>
 
-      <div className="flex gap-2">
-        <button type="submit" className="btn-primary" disabled={saving}>
-          {saving ? "Saving…" : item ? "Save changes" : "Add item"}
-        </button>
-        <button type="button" className="btn-secondary" onClick={() => router.back()}>
-          Cancel
-        </button>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex gap-2">
+          <button type="submit" className="btn-primary" disabled={saving}>
+            {saving ? "Saving…" : item ? "Save changes" : "Add item"}
+          </button>
+          <button type="button" className="btn-secondary" onClick={() => router.back()}>
+            Cancel
+          </button>
+        </div>
+        {item ? (
+          <button
+            type="button"
+            className="btn-danger inline-flex items-center gap-1.5"
+            onClick={() => setConfirmDelete(true)}
+            disabled={saving || deleteBusy}
+          >
+            <IconTrash width={15} height={15} />
+            Delete permanently
+          </button>
+        ) : null}
       </div>
+
+      {item ? (
+        <ConfirmDialog
+          open={confirmDelete}
+          title="Delete item permanently?"
+          message={
+            <>
+              Are you sure you want to delete <strong className="text-ink">{item.name}</strong>? It will be completely removed as if it was made by mistake, and won&apos;t count as sold, offloaded, or kept.
+            </>
+          }
+          confirmLabel="Delete permanently"
+          busy={deleteBusy}
+          onConfirm={remove}
+          onCancel={() => setConfirmDelete(false)}
+        />
+      ) : null}
     </form>
   );
 }

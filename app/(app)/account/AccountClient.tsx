@@ -105,6 +105,7 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
   );
   const [subBusy, setSubBusy] = useState(false);
   const [subMsg, setSubMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [confirmCancelSub, setConfirmCancelSub] = useState(false);
 
   const mutateCategories = async (body: Record<string, unknown>) => {
     setCatBusy(true);
@@ -709,6 +710,12 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
           </form>
         </div>
 
+        {!isPro && categories.length > 5 && (
+          <p className="mt-2 text-[11px] text-muted shrink-0">
+            All your {categories.length} custom categories and subcategories are safely stored. Creating new categories is paused until you upgrade to Pro or reduce below the free limit.
+          </p>
+        )}
+
         {catError && (
           <div className="mt-3 shrink-0 rounded-lg border border-danger-line bg-danger-soft p-2.5 text-xs text-danger">
             {catError}
@@ -951,7 +958,7 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
             {isPro && (
               <button
                 type="button"
-                onClick={() => handleSubscribe("free")}
+                onClick={() => setConfirmCancelSub(true)}
                 disabled={subBusy}
                 className="text-[11px] text-muted underline hover:text-danger transition-colors"
               >
@@ -1142,6 +1149,38 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
       </div>
 
 
+
+      <ConfirmDialog
+        open={confirmCancelSub}
+        title="Cancel Pro subscription?"
+        message={
+          <div className="space-y-2 text-left">
+            <p className="text-ink">
+              Your account will be moved to the Free tier.
+            </p>
+            <p className="font-semibold text-ink text-xs">
+              All your data is safely preserved:
+            </p>
+            <ul className="list-disc pl-5 space-y-1 text-xs text-muted">
+              <li>All wishlist items, priorities, and cooldown progress are saved.</li>
+              <li>All custom categories and subcategories remain stored.</li>
+              <li>Your inventory items, photos, and histories are never removed.</li>
+            </ul>
+            <p className="text-xs text-muted">
+              You can upgrade back to Pro anytime to resume full access.
+            </p>
+          </div>
+        }
+        confirmLabel="Confirm cancellation"
+        cancelLabel="Keep Pro"
+        variant="warn"
+        busy={subBusy}
+        onConfirm={() => {
+          setConfirmCancelSub(false);
+          handleSubscribe("free");
+        }}
+        onCancel={() => setConfirmCancelSub(false)}
+      />
 
       <ConfirmDialog
         open={confirmRemoveAvatar}

@@ -13,6 +13,7 @@ import {
   IconRobot,
   IconRecycle,
   IconSearch,
+  IconSparkles,
 } from "@/components/icons";
 import {
   FaqAccordion,
@@ -77,7 +78,6 @@ function Check({ children }: { children: React.ReactNode }) {
   );
 }
 
-
 export default async function WelcomePage() {
   // Signed-in visitors belong in the app.
   const user = await currentUser();
@@ -97,6 +97,9 @@ export default async function WelcomePage() {
           <nav className="flex items-center gap-3 sm:gap-6">
             <a href="#features" className="hidden text-sm text-ink-soft hover:text-ink sm:inline">
               Features
+            </a>
+            <a href="#compare" className="hidden text-sm text-ink-soft hover:text-ink lg:inline">
+              Comparison
             </a>
             <a href="#mobile" className="hidden text-sm text-ink-soft hover:text-ink md:inline">
               Mobile
@@ -123,7 +126,7 @@ export default async function WelcomePage() {
 
       <main>
         {/* ---------- Hero with Interactive Preview Sandbox ---------- */}
-        <section className="mx-auto grid max-w-6xl items-center gap-12 px-4 pb-16 pt-14 sm:px-6 lg:grid-cols-2 lg:pb-24 lg:pt-20">
+        <section className="mx-auto grid max-w-6xl items-center gap-12 px-4 pb-12 pt-14 sm:px-6 lg:grid-cols-2 lg:pb-20 lg:pt-20">
           <div className="animate-rise">
             <p className="eyebrow">Mindful inventory &amp; decluttering</p>
             <h1 className="display mt-3 text-3xl sm:text-5xl lg:text-[52px] leading-[1.1] tracking-[-0.02em]">
@@ -143,8 +146,66 @@ export default async function WelcomePage() {
                 Sign in
               </Link>
             </div>
+            {/* Conversion trust badges */}
+            <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-muted">
+              <span className="inline-flex items-center gap-1.5 font-medium text-ink-soft">
+                <span className="font-bold text-accent">✓</span> Free forever tier
+              </span>
+              <span className="hidden text-line-strong sm:inline">•</span>
+              <span className="inline-flex items-center gap-1.5 font-medium text-ink-soft">
+                <span className="font-bold text-accent">✓</span> No credit card required
+              </span>
+              <span className="hidden text-line-strong sm:inline">•</span>
+              <span className="inline-flex items-center gap-1.5 font-medium text-ink-soft">
+                <span className="font-bold text-accent">✓</span> 14-day Pro trial included
+              </span>
+              <span className="hidden text-line-strong sm:inline">•</span>
+              <span className="inline-flex items-center gap-1.5 font-medium text-ink-soft">
+                <span className="font-bold text-accent">✓</span> 100% private &amp; ad-free
+              </span>
+            </div>
           </div>
           <InteractivePreviewWidget />
+        </section>
+
+        {/* ---------- Reality Check / Impact Metric Bar ---------- */}
+        <section className="border-t border-line bg-wash/60">
+          <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+            <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
+              <div className="text-center md:text-left">
+                <div className="display text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+                  $2,400<span className="text-accent">+</span>
+                </div>
+                <p className="mt-1 text-[13px] text-muted">
+                  Average idle household value sitting in closets &amp; drawers
+                </p>
+              </div>
+              <div className="text-center md:text-left">
+                <div className="display text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+                  30 Days
+                </div>
+                <p className="mt-1 text-[13px] text-muted">
+                  Purgatory &amp; Wishlist cooling period to stop impulsive decisions
+                </p>
+              </div>
+              <div className="text-center md:text-left">
+                <div className="display text-2xl font-bold tracking-tight text-accent sm:text-3xl">
+                  82%
+                </div>
+                <p className="mt-1 text-[13px] text-muted">
+                  Impulse cravings that vanish before the 30-day timer expires
+                </p>
+              </div>
+              <div className="text-center md:text-left">
+                <div className="display text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+                  $0
+                </div>
+                <p className="mt-1 text-[13px] text-muted">
+                  To start cataloging today — zero lock-in, export your data anytime
+                </p>
+              </div>
+            </div>
+          </div>
         </section>
 
         {/* ---------- How it works ---------- */}
@@ -183,6 +244,66 @@ export default async function WelcomePage() {
                 <p className="mt-1.5 text-[14px] leading-relaxed text-muted">{f.body}</p>
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* ---------- Why smpl. vs Alternatives ---------- */}
+        <section id="compare" className="scroll-mt-16 border-t border-line bg-shell py-16 sm:py-24">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+            <div className="mx-auto max-w-2xl text-center">
+              <p className="eyebrow">Intentional by design</p>
+              <h2 className="display mt-2 text-3xl sm:text-4xl">
+                Why not just use a spreadsheet or notes app?
+              </h2>
+              <p className="mt-3 text-[16px] text-muted">
+                Spreadsheets list things. smpl. transforms how you purchase, hold, and let go of possessions.
+              </p>
+            </div>
+
+            <div className="mt-12 overflow-x-auto rounded-2xl border border-line bg-card p-1 shadow-sm">
+              <table className="w-full min-w-[620px] border-collapse text-left text-sm">
+                <thead>
+                  <tr className="border-b border-line text-xs uppercase tracking-wider text-muted">
+                    <th className="px-4 py-3.5 font-semibold">Capability</th>
+                    <th className="rounded-t-lg bg-accent-soft/50 px-4 py-3.5 font-bold text-accent">smpl.</th>
+                    <th className="px-4 py-3.5 font-medium">Spreadsheet (Excel / Sheets)</th>
+                    <th className="px-4 py-3.5 font-medium">Notes App (Notion / Notes)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line/60 text-[13.5px] text-ink-soft">
+                  <tr>
+                    <td className="px-4 py-3.5 font-semibold text-ink">Setup &amp; Logging</td>
+                    <td className="bg-accent-soft/30 px-4 py-3.5 font-medium text-accent">Zero setup — camera photos, values &amp; categories ready in seconds</td>
+                    <td className="px-4 py-3.5 text-muted">Hours formatting tables, formulas &amp; manual fields</td>
+                    <td className="px-4 py-3.5 text-muted">Blank page, unstructured photos &amp; inconsistent bullet points</td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-3.5 font-semibold text-ink">Impulse Buy Blocker</td>
+                    <td className="bg-accent-soft/30 px-4 py-3.5 font-medium text-accent">Built-in 30-day Wishlist cooldown with desire decay tracker</td>
+                    <td className="px-4 py-3.5 text-muted">None — static row in a workbook</td>
+                    <td className="px-4 py-3.5 text-muted">None — bookmarks bought on whim</td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-3.5 font-semibold text-ink">Letting Go Pipeline</td>
+                    <td className="bg-accent-soft/30 px-4 py-3.5 font-medium text-accent">30-day Purgatory removes emotional friction before deciding</td>
+                    <td className="px-4 py-3.5 text-muted">Passive row edits with zero momentum</td>
+                    <td className="px-4 py-3.5 text-muted">No decluttering or decision pipeline</td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-3.5 font-semibold text-ink">Usage &amp; Salvage Intelligence</td>
+                    <td className="bg-accent-soft/30 px-4 py-3.5 font-medium text-accent">AI Advisor surfaces idle gear, duplicate categories &amp; resale timing</td>
+                    <td className="px-4 py-3.5 text-muted">Manual formulas with no contextual awareness</td>
+                    <td className="px-4 py-3.5 text-muted">No valuation or idle time insights</td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-3.5 font-semibold text-ink">Data Ownership</td>
+                    <td className="rounded-b-lg bg-accent-soft/30 px-4 py-3.5 font-medium text-accent">1-click JSON/CSV export. Downgrades never delete your data</td>
+                    <td className="px-4 py-3.5 text-muted">Manual local files</td>
+                    <td className="px-4 py-3.5 text-muted">Proprietary exports with broken images</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </section>
 
@@ -242,6 +363,54 @@ export default async function WelcomePage() {
                 <div className="mt-7">
                   <Link href="/auth/register" className="btn-primary w-full">
                     Free Trial
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* Pro Value Equation / ROI banner */}
+            <div className="mt-8 rounded-2xl border border-accent/30 bg-accent-soft/30 p-6 sm:p-8">
+              <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                <div className="max-w-2xl">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-accent text-accent-fg">
+                      <IconSparkles width={14} height={14} />
+                    </span>
+                    <span className="text-xs font-bold uppercase tracking-wider text-accent">
+                      The Pro Value Equation
+                    </span>
+                  </div>
+                  <h3 className="display mt-2 text-xl font-bold sm:text-2xl text-ink">
+                    How smpl. Pro pays for itself in week one
+                  </h3>
+                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                    <div className="rounded-xl border border-line/60 bg-card p-4">
+                      <div className="text-sm font-semibold text-ink">
+                        +$150/mo saved on impulse buys
+                      </div>
+                      <p className="mt-1 text-xs leading-relaxed text-muted">
+                        The 30-day Wishlist cooldown stops regretful purchases before checkout. Preventing just one impulse purchase covers an entire year of Pro.
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-line/60 bg-card p-4">
+                      <div className="text-sm font-semibold text-ink">
+                        +$300+ in forgotten gear recovered
+                      </div>
+                      <p className="mt-1 text-xs leading-relaxed text-muted">
+                        AI Advisor highlights idle electronics, tools, and clothing quietly gathering dust, giving you the clarity and momentum to sell or donate.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex shrink-0 flex-col items-start rounded-xl border border-line/60 bg-card p-5 sm:min-w-[240px]">
+                  <div className="text-xs font-semibold uppercase tracking-wider text-muted">Zero-Risk Promise</div>
+                  <div className="mt-1.5 display text-2xl font-bold text-accent">14-Day Free Trial</div>
+                  <p className="mt-1 text-xs text-muted">
+                    Cancel anytime in 1 click. If you downgrade to Free, <strong className="font-semibold text-ink">100% of your wishlist and category data remains safely preserved</strong>.
+                  </p>
+                  <Link href="/auth/register" className="btn-primary mt-4 w-full text-center text-xs">
+                    Start 14-day free trial
                   </Link>
                 </div>
               </div>

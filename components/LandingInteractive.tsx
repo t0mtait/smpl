@@ -820,6 +820,14 @@ const FAQS = [
     a: "Yes! We offer a full 14-day free trial on smpl. Pro with zero upfront commitment. You can explore the AI Declutter Advisor, Wishlist cooldown tracker, unlimited custom categories, and complete CSV & JSON data exporting completely free for 14 days. You can cancel anytime with a single click.",
   },
   {
+    q: "If I downgrade from Pro to Free, do I lose my wishlist or category data?",
+    a: "Never. All your data — including your saved wishlist candidates, priority scores, custom categories, subcategories, items, and photos — remains safely and permanently stored. If you ever downgrade, you never lose anything you've entered. You can upgrade back to Pro anytime to resume full access.",
+  },
+  {
+    q: "How does smpl. Pro pay for itself?",
+    a: "Most users recover far more than the annual cost of Pro ($34.99/yr) in their very first month — either by selling an idle item surfaced by the AI Declutter Advisor, or by avoiding a single impulse purchase with the 30-day Wishlist cooldown tracker.",
+  },
+  {
     q: "How do I install smpl. on my phone?",
     a: "Native iOS and Android apps are currently in active development. In the meantime, smpl. is built as a Progressive Web App (PWA) that works smoothly on any mobile browser. Simply open gosmpl.app in Safari on iOS and tap 'Share → Add to Home Screen', or tap the menu in Chrome on Android and select 'Install app' to use it full-screen just like a native app.",
   },

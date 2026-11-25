@@ -13,7 +13,8 @@ import {
   getYearStyle,
 } from "@/lib/format";
 import { CategoryTag, Pagination, QualityIcon, StatusTag } from "@/components/ui";
-import { IconBox, IconFlame, IconPlus, IconSearch } from "@/components/icons";
+import { IconBox, IconFlame, IconPlus, IconSearch, IconTrash } from "@/components/icons";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import {
   DEFAULT_SORT,
   SORT_COLUMNS,
@@ -29,7 +30,7 @@ function InventoryInner() {
   const [items, setItems] = useState<Item[] | null>(null);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState(params.get("status") ?? "all");
-  const [category, setCategory] = useState("all");
+  const [category, setCategory] = useState(params.get("category") ?? "all");
   const [subcategory, setSubcategory] = useState("all");
   const [page, setPage] = useState(1);
   const [sort, setSort] = useState<SortState>(DEFAULT_SORT);
@@ -49,6 +50,10 @@ function InventoryInner() {
   const [editDescription, setEditDescription] = useState("");
   const [editBusy, setEditBusy] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
+
+  // Deletion state
+  const [deletingItem, setDeletingItem] = useState<Item | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
 
   // Inline cell edit state: clicking on individual column values
   const [editingCell, setEditingCell] = useState<{ itemId: number; field: string } | null>(null);
@@ -144,6 +149,24 @@ function InventoryInner() {
       }
     } catch {
       setError("Failed to move item to Purgatory.");
+    }
+  };
+
+  const deleteItemPermanently = async (id: number) => {
+    setDeleteBusy(true);
+    try {
+      const res = await fetch(`/api/items/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setItems((prev) => (prev ? prev.filter((item) => item.id !== id) : null));
+        setEditingItem(null);
+        setDeletingItem(null);
+      } else {
+        setError("Failed to delete item.");
+      }
+    } catch {
+      setError("Failed to delete item.");
+    } finally {
+      setDeleteBusy(false);
     }
   };
 
@@ -424,7 +447,7 @@ function InventoryInner() {
                     scope="col"
                     className="hidden sm:table-cell whitespace-nowrap px-4 py-2.5 align-middle text-right text-[11px] font-semibold uppercase tracking-[0.12em] text-muted"
                   >
-                    Purgatory
+                    Actions
                   </th>
                 </tr>
               </thead>
@@ -706,20 +729,34 @@ function InventoryInner() {
                         )}
                       </td>
 
-                      {/* Purgatory: hidden on mobile */}
+                      {/* Actions: hidden on mobile */}
                       <td className="hidden sm:table-cell px-4 py-2 sm:py-2.5 align-middle text-right">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            moveToPurgatory(item.id);
-                          }}
-                          title="Move to Purgatory"
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-clay-soft hover:text-clay"
-                        >
-                          <IconFlame width={16} height={16} />
-                          <span className="sr-only">Move to Purgatory</span>
-                        </button>
+                        <div className="inline-flex items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              moveToPurgatory(item.id);
+                            }}
+                            title="Move to Purgatory"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-clay-soft hover:text-clay"
+                          >
+                            <IconFlame width={16} height={16} />
+                            <span className="sr-only">Move to Purgatory</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeletingItem(item);
+                            }}
+                            title="Delete item permanently"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-danger-soft hover:text-danger"
+                          >
+                            <IconTrash width={16} height={16} />
+                            <span className="sr-only">Delete item permanently</span>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -933,21 +970,49 @@ function InventoryInner() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 pt-2">
+            <div className="flex items-center justify-between gap-3 pt-2">
               <button
                 type="button"
-                onClick={() => setEditingItem(null)}
-                className="btn border border-line"
+                onClick={() => setDeletingItem(editingItem)}
+                className="btn-danger inline-flex items-center gap-1.5 text-xs py-1.5 px-3"
               >
-                Cancel
+                <IconTrash width={14} height={14} />
+                Delete item
               </button>
-              <button type="submit" disabled={editBusy} className="btn-primary">
-                {editBusy ? "Saving…" : "Save changes"}
-              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingItem(null)}
+                  className="btn border border-line"
+                >
+                  Cancel
+                </button>
+                <button type="submit" disabled={editBusy} className="btn-primary">
+                  {editBusy ? "Saving…" : "Save changes"}
+                </button>
+              </div>
             </div>
           </form>
         </div>
       )}
+
+      <ConfirmDialog
+        open={Boolean(deletingItem)}
+        title="Delete item permanently?"
+        message={
+          deletingItem ? (
+            <>
+              Are you sure you want to delete <strong className="text-ink">{deletingItem.name}</strong>? It will be completely removed as if it was made by mistake, and won&apos;t count as sold, offloaded, or kept.
+            </>
+          ) : ""
+        }
+        confirmLabel="Delete permanently"
+        busy={deleteBusy}
+        onConfirm={() => {
+          if (deletingItem) deleteItemPermanently(deletingItem.id);
+        }}
+        onCancel={() => setDeletingItem(null)}
+      />
     </div>
   );
 }

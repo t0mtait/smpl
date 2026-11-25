@@ -8,6 +8,7 @@ export interface BackupCounts {
   items: number;
   disposals: number;
   wishlist: number;
+  categories?: number;
 }
 
 export interface BackupStatus {
@@ -132,6 +133,13 @@ export async function performDatabaseBackup(): Promise<BackupResult> {
     const disposals = db.prepare("SELECT * FROM disposals").all();
     const wishlist = db.prepare("SELECT * FROM wishlist_items").all();
 
+    let userCategories: unknown[] = [];
+    try {
+      userCategories = db.prepare("SELECT * FROM user_categories").all();
+    } catch {
+      // table might not exist in early tests
+    }
+
     let oauthAccounts: unknown[] = [];
     try {
       oauthAccounts = db
@@ -146,6 +154,7 @@ export async function performDatabaseBackup(): Promise<BackupResult> {
       items: items.length,
       disposals: disposals.length,
       wishlist: wishlist.length,
+      categories: userCategories.length,
     };
 
     const jsonExport = {
@@ -158,6 +167,7 @@ export async function performDatabaseBackup(): Promise<BackupResult> {
         items,
         disposals,
         wishlist,
+        categories: userCategories,
         oauthAccounts,
       },
     };

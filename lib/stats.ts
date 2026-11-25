@@ -211,7 +211,7 @@ export function computeStats(items: Item[], disposals: Disposal[], now: Date = n
   }
   const topCategories = [...allCatCounts.entries()]
     .map(([category, count]) => ({ category, count }))
-    .sort((a, b) => b.count - a.count)
+    .sort((a, b) => b.count - a.count || a.category.localeCompare(b.category))
     .slice(0, 8);
 
   const neverUsed = owned.filter((i) => !i.lastUsedAt).length;

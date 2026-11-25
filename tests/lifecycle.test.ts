@@ -271,6 +271,18 @@ check("wishlist item converted into active inventory", convertedItem?.status ===
 check("converted item preserves subcategory", convertedItem?.subcategory === "Appliances");
 check("converted item removed from wishlist", !db.listWishlist(user.id).some((w) => w.id === wishItem.id));
 
+// Add a persistent wishlist item while on Pro to test downgrade preservation
+const savedWishItem = db.createWishlistItem(user.id, {
+  name: "Sony A7 IV Camera",
+  priority: 95,
+  category: "photography",
+  subcategory: "Mirrorless",
+  price: 2499.0,
+  url: "https://example.com/sony-a7iv",
+  notes: "Waiting for seasonal sale",
+});
+check("saved wishlist item created for downgrade test", Boolean(savedWishItem && savedWishItem.id > 0));
+
 // Pro Feature 4: Unlimited custom categories & subcategories unlocked
 db.addUserCategory(user.id, "photography");
 db.addUserSubcategory(user.id, "photography", "Lenses");
@@ -294,6 +306,27 @@ check("cancelled user returns to free tier restrictions", userAfterCancel.plan =
 check("export is re-locked after cancellation", userAfterCancel.plan !== "premium");
 check("AI advisor is re-locked after cancellation", userAfterCancel.plan !== "premium");
 check("wishlist is re-locked after cancellation", userAfterCancel.plan !== "premium");
+
+// Data preservation verification: ensure no user data is lost on downgrade
+const wishlistAfterDowngrade = db.listWishlist(user.id);
+check("wishlist data is preserved in database after downgrade", wishlistAfterDowngrade.length > 0);
+check("preserved wishlist item name matches", wishlistAfterDowngrade.some((w) => w.name === "Sony A7 IV Camera"));
+check("preserved wishlist item priority intact", wishlistAfterDowngrade.some((w) => w.priority === 95));
+check("preserved wishlist item subcategory intact", wishlistAfterDowngrade.some((w) => w.subcategory === "Mirrorless"));
+
+const categoriesAfterDowngrade = db.listUserCategories(user.id);
+const preservedPhotoCat = categoriesAfterDowngrade.find((c) => c.category === "photography");
+check("custom categories preserved after downgrade", Boolean(preservedPhotoCat));
+check("custom subcategories (3+) preserved after downgrade", (preservedPhotoCat?.subcategories.length ?? 0) >= 3);
+
+const itemsAfterDowngrade = db.listItems(user.id);
+check("inventory items with custom subcategories preserved", itemsAfterDowngrade.some((i) => i.subcategory === "Appliances"));
+
+// Re-upgrade to Pro: verify seamless restoration of access without any data loss
+const restoredUser = db.updateUserSubscription(user.id, "premium", "monthly");
+check("user successfully re-upgraded to 'premium'", restoredUser?.plan === "premium");
+check("re-upgraded user sees all saved wishlist items", db.listWishlist(user.id).length === wishlistAfterDowngrade.length);
+check("re-upgraded user sees all custom categories", db.listUserCategories(user.id).length === categoriesAfterDowngrade.length);
 
 /* -------------------------------------------------------------------------- */
 /* SUMMARY                                                                    */

@@ -82,8 +82,15 @@ function CooldownRing({ days }: { days: number }) {
   );
 }
 
-export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
+export default function WishlistClient({
+  isPro = true,
+  initialSavedCount = 0,
+}: {
+  isPro?: boolean;
+  initialSavedCount?: number;
+}) {
   const [items, setItems] = useState<WishlistItem[] | null>(null);
+  const [savedCount, setSavedCount] = useState<number>(initialSavedCount);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -165,6 +172,9 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
         return;
       }
       const data = await res.json();
+      if (data.savedCount !== undefined) {
+        setSavedCount(data.savedCount);
+      }
       setItems(data.items ?? []);
       setError(null);
     } catch {
@@ -578,6 +588,23 @@ export default function WishlistClient({ isPro = true }: { isPro?: boolean }) {
           <p className="mt-2 text-[14px] text-muted max-w-lg mx-auto">
             Upgrade to smpl. Pro to unlock intentional purchasing and cooldown tracking. Give potential buys a 30-day cooling-off period, prioritize candidates from 0 to 100, and convert them seamlessly into owned inventory when ready.
           </p>
+
+          {savedCount > 0 && (
+            <div className="mt-5 mx-auto max-w-md rounded-xl border border-line bg-card p-4 text-left flex items-start gap-3">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                <IconCheck width={18} height={18} />
+              </span>
+              <div>
+                <h3 className="font-semibold text-ink text-sm">
+                  Your wishlist data is safely stored ({savedCount} {savedCount === 1 ? "item" : "items"})
+                </h3>
+                <p className="mt-0.5 text-xs text-muted">
+                  None of your wishlist candidates, priorities, or cooldown tracking progress are lost. Your data is preserved and will be ready when you return to Pro.
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <Link href="/account#subscription" className="btn-primary">
               <IconSparkles width={16} height={16} />

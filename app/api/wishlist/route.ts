@@ -16,7 +16,12 @@ export async function GET() {
   const user = await apiUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
   if (user.plan !== "premium") {
-    return NextResponse.json({ items: [], error: "Wishlist is only available on the Pro plan." }, { status: 403 });
+    const savedCount = listWishlist(user.id).length;
+    return NextResponse.json({
+      items: [],
+      savedCount,
+      error: "Wishlist is only available on the Pro plan."
+    }, { status: 403 });
   }
   return NextResponse.json({ items: listWishlist(user.id) });
 }

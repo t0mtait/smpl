@@ -12,8 +12,10 @@ import {
   IconCash,
   IconRecycle,
   IconSearch,
+  IconTrash,
   IconUndo,
 } from "@/components/icons";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 export default function OffloadedClient({
   initialItems,
@@ -29,6 +31,21 @@ export default function OffloadedClient({
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [busyId, setBusyId] = useState<number | null>(null);
+  const [deletingItem, setDeletingItem] = useState<Item | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+
+  const deleteItemPermanently = async (item: Item) => {
+    setDeleteBusy(true);
+    try {
+      const res = await fetch(`/api/items/${item.id}`, { method: "DELETE" });
+      if (res.ok) {
+        setItems((prev) => prev.filter((i) => i.id !== item.id));
+        setDeletingItem(null);
+      }
+    } finally {
+      setDeleteBusy(false);
+    }
+  };
 
   const categories = useMemo(() => {
     const set = new Set(items.map((i) => i.category));
@@ -228,19 +245,34 @@ export default function OffloadedClient({
                         {formatQuarter(item.offloadedDate)}
                       </td>
                       <td className="hidden sm:table-cell px-4 py-2 sm:py-2.5 align-middle text-right">
-                        <button
-                          type="button"
-                          className="btn-secondary px-2.5 py-1 text-[12px]"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            restore(item);
-                          }}
-                          disabled={busyId === item.id}
-                          title="Restore back to inventory"
-                        >
-                          <IconUndo width={13} height={13} />
-                          Restore
-                        </button>
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            className="btn-secondary px-2.5 py-1 text-[12px]"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              restore(item);
+                            }}
+                            disabled={busyId === item.id}
+                            title="Restore back to inventory"
+                          >
+                            <IconUndo width={13} height={13} />
+                            Restore
+                          </button>
+                          <button
+                            type="button"
+                            className="btn border border-line text-muted hover:border-danger hover:bg-danger-soft hover:text-danger px-2.5 py-1 text-[12px]"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeletingItem(item);
+                            }}
+                            disabled={busyId === item.id}
+                            title="Delete item permanently"
+                          >
+                            <IconTrash width={13} height={13} />
+                            <span className="sr-only">Delete item permanently</span>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -256,6 +288,24 @@ export default function OffloadedClient({
           />
         </div>
       )}
+
+      <ConfirmDialog
+        open={Boolean(deletingItem)}
+        title="Delete item permanently?"
+        message={
+          deletingItem ? (
+            <>
+              Are you sure you want to delete <strong className="text-ink">{deletingItem.name}</strong>? It will be completely removed as if it was made by mistake, and won&apos;t count in your offloaded or sales history.
+            </>
+          ) : ""
+        }
+        confirmLabel="Delete permanently"
+        busy={deleteBusy}
+        onConfirm={() => {
+          if (deletingItem) deleteItemPermanently(deletingItem);
+        }}
+        onCancel={() => setDeletingItem(null)}
+      />
     </div>
   );
 }
