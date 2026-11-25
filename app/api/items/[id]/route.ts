@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { deleteItem, getItem, restoreItem, updateItem } from "@/lib/db";
 import type { ItemStatus, Priority, UseFrequency } from "@/lib/db";
+import { quarterToIso } from "@/lib/dates";
 import { apiUser } from "@/lib/auth";
 
 export const runtime = "nodejs";
@@ -40,10 +41,10 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if (typeof body.description === "string") patch.description = body.description;
   if (typeof body.location === "string") patch.location = body.location;
   if (body.purchaseDate === null || typeof body.purchaseDate === "string") {
-    patch.purchaseDate = body.purchaseDate || null;
+    patch.purchaseDate = body.purchaseDate ? quarterToIso(body.purchaseDate) || body.purchaseDate : null;
   }
   if (body.offloadedDate === null || typeof body.offloadedDate === "string") {
-    patch.offloadedDate = body.offloadedDate || null;
+    patch.offloadedDate = body.offloadedDate ? quarterToIso(body.offloadedDate) || body.offloadedDate : null;
   }
   if (body.lastUsedAt === null || typeof body.lastUsedAt === "string") {
     patch.lastUsedAt = body.lastUsedAt || null;

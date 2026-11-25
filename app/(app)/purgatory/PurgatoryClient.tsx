@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { Item } from "@/lib/db";
 import { CATEGORIES, formatCategory, formatMoney, formatQuarter } from "@/lib/format";
 import { currentQuarter, daysSinceDate } from "@/lib/dates";
@@ -187,17 +187,37 @@ function DaysRing({ days }: { days: number | null }) {
   );
 }
 
+type PurgatorySortKey = "name" | "brand" | "category" | "value" | "acquired" | "purgatoryDate";
+type SortDirection = "asc" | "desc";
+
 export default function PurgatoryClient({ initialItems }: { initialItems: Item[] }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const initialQuery = searchParams.get("q") ?? "";
+  const initialCategory = searchParams.get("category") ?? "all";
+  const initialPage = parseInt(searchParams.get("page") ?? "1", 10) || 1;
+  const rawSortKey = searchParams.get("sortKey") as PurgatorySortKey | null;
+  const initialSortKey: PurgatorySortKey =
+    rawSortKey && ["name", "brand", "category", "value", "acquired", "purgatoryDate"].includes(rawSortKey)
+      ? rawSortKey
+      : "purgatoryDate";
+  const rawSortDir = searchParams.get("sortDir") as SortDirection | null;
+  const initialSortDir: SortDirection = rawSortDir === "asc" ? "asc" : "desc";
+
   const [items, setItems] = useState<Item[]>(initialItems);
   const categories = useMemo(() => {
     const set = new Set(items.map((i) => i.category));
     return [...set].sort();
   }, [items]);
 
-  const [query, setQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("all");
-  const [page, setPage] = useState(1);
+  const [query, setQuery] = useState(initialQuery);
+  const [categoryFilter, setCategoryFilter] = useState(initialCategory);
+  const [page, setPage] = useState(initialPage);
+  const [sort, setSort] = useState<{ key: PurgatorySortKey; direction: SortDirection }>({
+    key: initialSortKey,
+    direction: initialSortDir,
+  });
 
   const filteredItems = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -268,14 +288,6 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
   const cellBtn =
     "inline-block py-1 px-1.5 -mx-1.5 rounded hover:bg-wash cursor-pointer transition-colors";
 
-  type PurgatorySortKey = "name" | "brand" | "category" | "value" | "acquired" | "purgatoryDate";
-  type SortDirection = "asc" | "desc";
-
-  const [sort, setSort] = useState<{ key: PurgatorySortKey; direction: SortDirection }>({
-    key: "purgatoryDate",
-    direction: "desc",
-  });
-
   const toggleSort = (key: PurgatorySortKey) => {
     setSort((curr) => {
       if (curr.key === key) {
@@ -284,6 +296,32 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
       return { key, direction: key === "purgatoryDate" || key === "value" ? "desc" : "asc" };
     });
   };
+
+  const buildPurgatoryQuery = (p = page, q = query, cat = categoryFilter, s = sort) => {
+    const sp = new URLSearchParams();
+    if (p > 1) sp.set("page", String(p));
+    if (q.trim()) sp.set("q", q.trim());
+    if (cat && cat !== "all") sp.set("category", cat);
+    if (s.key !== "purgatoryDate") sp.set("sortKey", s.key);
+    if (s.direction !== "desc") sp.set("sortDir", s.direction);
+    const qs = sp.toString();
+    return qs ? `?${qs}` : "";
+  };
+
+  useEffect(() => {
+    const qs = buildPurgatoryQuery(page, query, categoryFilter, sort);
+    const newUrl = `/purgatory${qs}`;
+    window.history.replaceState(null, "", newUrl);
+  }, [page, query, categoryFilter, sort]);
+
+  const isInitialMount = useRef(true);
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    setPage(1);
+  }, [query, categoryFilter]);
 
   const sortedItems = useMemo(() => {
     const dir = sort.direction === "asc" ? 1 : -1;
@@ -315,10 +353,6 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
       return 0;
     });
   }, [filteredItems, sort]);
-
-  useEffect(() => {
-    setPage(1);
-  }, [query, categoryFilter]);
 
   const totalPages = Math.max(1, Math.ceil(sortedItems.length / 10));
   const safePage = Math.min(page, totalPages);
@@ -513,14 +547,15 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                     key={item.id}
                     onClick={() => {
                       if (typeof window !== "undefined" && window.innerWidth < 640) {
-                        router.push(`/items/${item.id}`);
+                        const returnUrl = `/purgatory${buildPurgatoryQuery()}`;
+                        router.push(`/items/${item.id}?returnTo=${encodeURIComponent(returnUrl)}`);
                       }
                     }}
                     className="h-[52px] sm:h-[54px] border-b border-line-soft transition-colors last:border-0 even:bg-wash/60 dark:even:bg-shell/70 hover:bg-wash dark:hover:bg-wash/40 cursor-pointer sm:cursor-default"
                   >
                     <th scope="row" className="px-3 sm:px-4 py-2 sm:py-2.5 align-middle text-left font-normal">
                       <Link
-                        href={`/items/${item.id}`}
+                        href={`/items/${item.id}?returnTo=${encodeURIComponent(`/purgatory${buildPurgatoryQuery()}`)}`}
                         className="font-medium text-ink hover:text-accent"
                       >
                         {item.name}

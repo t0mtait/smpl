@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import type { WishlistItem } from "@/lib/db";
 import { formatMoney, formatCategory, CATEGORIES } from "@/lib/format";
 import { daysSinceDate } from "@/lib/dates";
+import { shouldAutoSelectInput } from "@/lib/device";
 import { CategoryTag, Pagination, PriorityRing } from "@/components/ui";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import {
@@ -116,6 +117,7 @@ export default function WishlistClient({
 
   // General edit popup state
   const [editingItem, setEditingItem] = useState<WishlistItem | null>(null);
+  const editNameInputRef = useRef<HTMLInputElement>(null);
   const [deletingItem, setDeletingItem] = useState<WishlistItem | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [editName, setEditName] = useState("");
@@ -127,6 +129,20 @@ export default function WishlistClient({
   const [editPriority, setEditPriority] = useState<number>(50);
   const [editBusy, setEditBusy] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
+
+  // Auto-select item name on desktop devices when the edit modal opens,
+  // but avoid focusing on phones/ipads to prevent keyboard clutter.
+  useEffect(() => {
+    if (editingItem) {
+      const timer = setTimeout(() => {
+        if (editNameInputRef.current && shouldAutoSelectInput()) {
+          editNameInputRef.current.focus();
+          editNameInputRef.current.select();
+        }
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [editingItem]);
 
   // Inline cell edit state
   const [editingCell, setEditingCell] = useState<{ itemId: number; field: string } | null>(null);
@@ -1213,6 +1229,7 @@ export default function WishlistClient({
                   Item name *
                 </label>
                 <input
+                  ref={editNameInputRef}
                   id="edit-name"
                   className="input"
                   required

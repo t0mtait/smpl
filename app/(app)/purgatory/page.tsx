@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { listItems } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import PurgatoryClient from "./PurgatoryClient";
@@ -9,5 +10,9 @@ export default async function PurgatoryPage() {
   const allItems = listItems(user.id);
   const purgatoryItems = allItems.filter((i) => i.status === "purgatory");
 
-  return <PurgatoryClient initialItems={purgatoryItems} />;
+  return (
+    <Suspense fallback={null}>
+      <PurgatoryClient initialItems={purgatoryItems} />
+    </Suspense>
+  );
 }

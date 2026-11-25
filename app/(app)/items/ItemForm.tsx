@@ -1,11 +1,52 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import type { Item, Priority, UseFrequency } from "@/lib/db";
 import { CATEGORIES, FREQUENCY_LABELS, formatCategory } from "@/lib/format";
+import { quarterToIso } from "@/lib/dates";
 import { IconTrash } from "@/components/icons";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+
+const CURRENT_YEAR = new Date().getFullYear();
+
+function parseQuarterYear(value: string | null | undefined): { quarter: string; year: string } {
+  if (!value) return { quarter: "", year: "" };
+  const trimmed = value.trim();
+  if (!trimmed) return { quarter: "", year: "" };
+
+  const qy = /^Q([1-4])\s*(\d{4})$/i.exec(trimmed);
+  if (qy) return { quarter: `Q${qy[1]}`, year: qy[2] };
+
+  const yq = /^(\d{4})[-\s]*Q([1-4])$/i.exec(trimmed);
+  if (yq) return { quarter: `Q${yq[2]}`, year: yq[1] };
+
+  const iso = /^(\d{4})-(\d{2})(?:-\d{2})?/.exec(trimmed);
+  if (iso) {
+    const y = iso[1];
+    const m = parseInt(iso[2], 10);
+    if (m >= 1 && m <= 12) {
+      return { quarter: `Q${Math.ceil(m / 3)}`, year: y };
+    }
+  }
+
+  const d = new Date(trimmed.includes("T") ? trimmed : `${trimmed}T00:00:00`);
+  if (!Number.isNaN(d.getTime())) {
+    return { quarter: `Q${Math.ceil((d.getMonth() + 1) / 3)}`, year: String(d.getFullYear()) };
+  }
+
+  return { quarter: "", year: "" };
+}
+
+function normalizeUsage(val: string | null | undefined): string {
+  if (!val) return "monthly";
+  const v = val.toLowerCase();
+  if (v === "heavy" || v === "daily" || v === "weekly") return "daily";
+  if (v === "occasional" || v === "monthly") return "monthly";
+  if (v === "rare" || v === "never") return "rare";
+  if (v === "seasonal") return "seasonal";
+  return "monthly";
+}
 
 interface Props {
   item?: Item | null;
@@ -15,10 +56,46 @@ export default function ItemForm({ item }: Props) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [priority, setPriority] = useState<Priority>(item?.priority ?? "auto");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [userCategories, setUserCategories] = useState<{ category: string; subcategories: string[] }[]>([]);
+
+  const initialAcq = parseQuarterYear(item?.purchaseDate);
+  const initialOff = parseQuarterYear(item?.offloadedDate);
+  const [purchaseQuarter, setPurchaseQuarter] = useState(initialAcq.quarter);
+  const [purchaseYear, setPurchaseYear] = useState(initialAcq.year);
+  const [offloadedQuarter, setOffloadedQuarter] = useState(initialOff.quarter);
+  const [offloadedYear, setOffloadedYear] = useState(initialOff.year);
+
+  const years = useMemo(() => {
+    const list: number[] = [];
+    for (let y = CURRENT_YEAR + 1; y >= 1950; y--) {
+      list.push(y);
+    }
+    const acqY = Number(purchaseYear);
+    if (acqY && !list.includes(acqY)) list.push(acqY);
+    const offY = Number(offloadedYear);
+    if (offY && !list.includes(offY)) list.push(offY);
+    return list.sort((a, b) => b - a);
+  }, [purchaseYear, offloadedYear]);
+
+  const handleAcquiredQuarterChange = (q: string) => {
+    setPurchaseQuarter(q);
+    if (!q) {
+      setPurchaseYear("");
+    } else if (!purchaseYear) {
+      setPurchaseYear(String(CURRENT_YEAR));
+    }
+  };
+
+  const handleOffloadedQuarterChange = (q: string) => {
+    setOffloadedQuarter(q);
+    if (!q) {
+      setOffloadedYear("");
+    } else if (!offloadedYear) {
+      setOffloadedYear(String(CURRENT_YEAR));
+    }
+  };
 
   const remove = async () => {
     if (!item) return;
@@ -48,8 +125,6 @@ export default function ItemForm({ item }: Props) {
     subcategory: item?.subcategory ?? "",
     quality: item?.quality ?? "",
     description: item?.description ?? "",
-    purchaseDate: item?.purchaseDate ?? "",
-    offloadedDate: item?.offloadedDate ?? "",
     // An empty money field means "never recorded" — it must not become $0.
     purchasePrice:
       item?.purchasePrice === null || item?.purchasePrice === undefined
@@ -59,7 +134,7 @@ export default function ItemForm({ item }: Props) {
       item?.currentValue === null || item?.currentValue === undefined
         ? ""
         : String(item.currentValue),
-    useFrequency: item?.useFrequency ?? "unknown",
+    useFrequency: normalizeUsage(item?.useFrequency),
   });
 
   const set = (key: keyof typeof form) => (e: { target: { value: string } }) =>
@@ -69,6 +144,21 @@ export default function ItemForm({ item }: Props) {
     e.preventDefault();
     setSaving(true);
     setError(null);
+
+    const purchaseDate =
+      purchaseQuarter && purchaseYear
+        ? quarterToIso(`${purchaseQuarter} ${purchaseYear}`)
+        : purchaseYear
+        ? `${purchaseYear}-01-01`
+        : null;
+
+    const offloadedDate =
+      offloadedQuarter && offloadedYear
+        ? quarterToIso(`${offloadedQuarter} ${offloadedYear}`)
+        : offloadedYear
+        ? `${offloadedYear}-01-01`
+        : null;
+
     const payload = {
       name: form.name,
       brand: form.brand,
@@ -77,13 +167,13 @@ export default function ItemForm({ item }: Props) {
       quality: form.quality,
       description: form.description,
       location: "",
-      purchaseDate: form.purchaseDate || null,
-      offloadedDate: form.offloadedDate || null,
+      purchaseDate,
+      offloadedDate,
       purchasePrice: form.purchasePrice.trim() === "" ? null : Number(form.purchasePrice),
       currentValue: form.currentValue.trim() === "" ? null : Number(form.currentValue),
       lastUsedAt: null,
       useFrequency: form.useFrequency,
-      priority,
+      priority: item?.priority ?? "auto",
       photoPath: null,
     };
     try {
@@ -116,7 +206,7 @@ export default function ItemForm({ item }: Props) {
       <section className="card p-6">
         <h2 className="display text-lg">The basics</h2>
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          <div className="sm:col-span-2">
+          <div>
             <label className="label" htmlFor="name">
               Name *
             </label>
@@ -145,7 +235,10 @@ export default function ItemForm({ item }: Props) {
             <label className="label" htmlFor="category">
               Category
             </label>
-            <select id="category" className="input" value={form.category}
+            <select
+              id="category"
+              className="input"
+              value={form.category}
               onChange={(e) => setForm((f) => ({ ...f, category: e.target.value, subcategory: "" }))}
             >
               {(userCategories.length > 0 ? userCategories.map((u) => u.category) : CATEGORIES).map((c) => (
@@ -176,13 +269,33 @@ export default function ItemForm({ item }: Props) {
             <label className="label" htmlFor="quality">
               Quality
             </label>
-            <input
+            <select
               id="quality"
               className="input"
-              value={form.quality}
-              onChange={set("quality")}
-              placeholder="e.g. High, Medium, Budget"
-            />
+              value={form.quality ? form.quality.toLowerCase() : ""}
+              onChange={(e) => setForm((f) => ({ ...f, quality: e.target.value }))}
+            >
+              <option value="">— None —</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+          <div>
+            <label className="label" htmlFor="useFrequency">
+              Usage
+            </label>
+            <select
+              id="useFrequency"
+              className="input"
+              value={form.useFrequency}
+              onChange={set("useFrequency")}
+            >
+              <option value="daily">Heavy</option>
+              <option value="monthly">Occasional</option>
+              <option value="rare">Rare</option>
+              <option value="seasonal">Seasonal</option>
+            </select>
           </div>
           <div className="sm:col-span-2">
             <label className="label" htmlFor="description">
@@ -202,30 +315,72 @@ export default function ItemForm({ item }: Props) {
 
       <section className="card p-6">
         <h2 className="display text-lg">Money & Dates</h2>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="label" htmlFor="purchaseDate">
+            <label className="label" htmlFor="purchaseQuarter">
               Date acquired
+              <span className="ml-1 font-normal text-muted">optional</span>
             </label>
-            <input
-              id="purchaseDate"
-              type="date"
-              className="input"
-              value={form.purchaseDate ?? ""}
-              onChange={set("purchaseDate")}
-            />
+            <div className="grid grid-cols-2 gap-2">
+              <select
+                id="purchaseQuarter"
+                className="input"
+                value={purchaseQuarter}
+                onChange={(e) => handleAcquiredQuarterChange(e.target.value)}
+              >
+                <option value="">Quarter</option>
+                <option value="Q1">Q1 (Jan–Mar)</option>
+                <option value="Q2">Q2 (Apr–Jun)</option>
+                <option value="Q3">Q3 (Jul–Sep)</option>
+                <option value="Q4">Q4 (Oct–Dec)</option>
+              </select>
+              <select
+                id="purchaseYear"
+                className="input"
+                value={purchaseYear}
+                onChange={(e) => setPurchaseYear(e.target.value)}
+              >
+                <option value="">Year</option>
+                {years.map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
           <div>
-            <label className="label" htmlFor="offloadedDate">
+            <label className="label" htmlFor="offloadedQuarter">
               Date offloaded
+              <span className="ml-1 font-normal text-muted">optional</span>
             </label>
-            <input
-              id="offloadedDate"
-              type="date"
-              className="input"
-              value={form.offloadedDate ?? ""}
-              onChange={set("offloadedDate")}
-            />
+            <div className="grid grid-cols-2 gap-2">
+              <select
+                id="offloadedQuarter"
+                className="input"
+                value={offloadedQuarter}
+                onChange={(e) => handleOffloadedQuarterChange(e.target.value)}
+              >
+                <option value="">Quarter</option>
+                <option value="Q1">Q1 (Jan–Mar)</option>
+                <option value="Q2">Q2 (Apr–Jun)</option>
+                <option value="Q3">Q3 (Jul–Sep)</option>
+                <option value="Q4">Q4 (Oct–Dec)</option>
+              </select>
+              <select
+                id="offloadedYear"
+                className="input"
+                value={offloadedYear}
+                onChange={(e) => setOffloadedYear(e.target.value)}
+              >
+                <option value="">Year</option>
+                {years.map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
           <div>
             <label className="label" htmlFor="purchasePrice">
@@ -245,7 +400,7 @@ export default function ItemForm({ item }: Props) {
           </div>
           <div>
             <label className="label" htmlFor="currentValue">
-              Worth today
+              Value
               <span className="ml-1 font-normal text-muted">optional</span>
             </label>
             <input
@@ -258,44 +413,6 @@ export default function ItemForm({ item }: Props) {
               onChange={set("currentValue")}
               placeholder="not recorded"
             />
-          </div>
-        </div>
-      </section>
-
-      <section className="card p-6">
-        <h2 className="display text-lg">Usage</h2>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className="label" htmlFor="useFrequency">
-              How often
-            </label>
-            <select
-              id="useFrequency"
-              className="input"
-              value={form.useFrequency}
-              onChange={set("useFrequency")}
-            >
-              {Object.entries(FREQUENCY_LABELS).map(([k, v]) => (
-                <option key={k} value={k}>
-                  {v}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="label" htmlFor="priority">
-              Your call
-            </label>
-            <select
-              id="priority"
-              className="input"
-              value={priority}
-              onChange={(e) => setPriority(e.target.value as Priority)}
-            >
-              <option value="auto">Let the app decide</option>
-              <option value="keep">Keep it</option>
-              <option value="get_rid">Get rid of it</option>
-            </select>
           </div>
         </div>
       </section>

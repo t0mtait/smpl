@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState, Suspense } from "react";
+import { useEffect, useMemo, useRef, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type { Item } from "@/lib/db";
+import { shouldAutoSelectInput } from "@/lib/device";
 import {
   CATEGORIES,
   formatCategory,
@@ -38,6 +39,7 @@ function InventoryInner() {
 
   // General edit popup state (opened from clicking on the item name)
   const [editingItem, setEditingItem] = useState<Item | null>(null);
+  const editNameInputRef = useRef<HTMLInputElement>(null);
   const [editName, setEditName] = useState("");
   const [editBrand, setEditBrand] = useState("");
   const [editCategory, setEditCategory] = useState("misc");
@@ -50,6 +52,20 @@ function InventoryInner() {
   const [editDescription, setEditDescription] = useState("");
   const [editBusy, setEditBusy] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
+
+  // Auto-select item name on desktop devices when the edit modal opens,
+  // but avoid focusing on phones/ipads to prevent keyboard clutter.
+  useEffect(() => {
+    if (editingItem) {
+      const timer = setTimeout(() => {
+        if (editNameInputRef.current && shouldAutoSelectInput()) {
+          editNameInputRef.current.focus();
+          editNameInputRef.current.select();
+        }
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [editingItem]);
 
   // Deletion state
   const [deletingItem, setDeletingItem] = useState<Item | null>(null);
@@ -183,6 +199,8 @@ function InventoryInner() {
         ? "daily"
         : item.useFrequency === "rare" || item.useFrequency === "never"
         ? "rare"
+        : item.useFrequency === "seasonal"
+        ? "seasonal"
         : "monthly"
     );
     setEditValue(item.currentValue === null ? "" : String(item.currentValue));
@@ -811,6 +829,7 @@ function InventoryInner() {
                   Name *
                 </label>
                 <input
+                  ref={editNameInputRef}
                   id="edit-item-name"
                   className="input"
                   required
@@ -906,15 +925,16 @@ function InventoryInner() {
                     <option value="daily">Heavy</option>
                     <option value="monthly">Occasional</option>
                     <option value="rare">Rare</option>
+                    <option value="seasonal">Seasonal</option>
                   </select>
                 </div>
               </div>
 
-              {/* Worth today and Paid beside each other on mobile */}
+              {/* Value and Paid beside each other on mobile */}
               <div className="grid grid-cols-2 gap-3 sm:col-span-2">
                 <div>
                   <label className="label" htmlFor="edit-item-value">
-                    Worth today ($)
+                    Value ($)
                   </label>
                   <input
                     id="edit-item-value"

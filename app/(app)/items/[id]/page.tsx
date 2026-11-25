@@ -10,11 +10,40 @@ import ItemActions from "./ItemActions";
 
 export const dynamic = "force-dynamic";
 
-export default async function ItemPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ItemPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { id } = await params;
+  const sp = searchParams ? await searchParams : {};
   const user = await requireUser(`/items/${id}`);
   const item = getItem(user.id, Number(id));
   if (!item) notFound();
+
+  // Determine back navigation link and label
+  const rawReturnTo = typeof sp.returnTo === "string" ? sp.returnTo : null;
+  let backHref = "/items";
+  let backLabel = "Inventory";
+
+  if (rawReturnTo && rawReturnTo.startsWith("/")) {
+    backHref = rawReturnTo;
+    if (rawReturnTo.startsWith("/purgatory")) {
+      backLabel = "Purgatory";
+    } else if (rawReturnTo.startsWith("/offloaded")) {
+      backLabel = "Offloaded";
+    } else if (rawReturnTo.startsWith("/wishlist")) {
+      backLabel = "Wishlist";
+    }
+  } else if (item.status === "purgatory") {
+    backHref = "/purgatory";
+    backLabel = "Purgatory";
+  } else if (item.status === "offloaded" || Boolean(item.offloadedDate && item.status !== "owned")) {
+    backHref = "/offloaded";
+    backLabel = "Offloaded";
+  }
 
   const disposals = listDisposals(user.id).filter((d) => d.itemId === item.id);
   // Duplicate detection needs the whole owned set, not just this item.
@@ -28,7 +57,7 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
     { label: "Subcategory", value: item.subcategory || "—" },
     { label: "Quality", value: item.quality || "—" },
     { label: "Paid", value: <span className="tabular">{formatMoney(item.purchasePrice)}</span> },
-    { label: "Worth today", value: <span className="tabular">{formatMoney(item.currentValue)}</span> },
+    { label: "Value", value: <span className="tabular">{formatMoney(item.currentValue)}</span> },
     { label: "Date acquired", value: formatQuarter(item.purchaseDate) },
     { label: "Date offloaded", value: formatQuarter(item.offloadedDate) },
     { label: "Frequency", value: FREQUENCY_LABELS[item.useFrequency] ?? item.useFrequency },
@@ -37,11 +66,11 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
   return (
     <div className="space-y-7">
       <Link
-        href="/items"
+        href={backHref}
         className="inline-flex items-center gap-1.5 text-[13px] font-medium text-muted transition-colors hover:text-ink"
       >
         <IconArrowLeft width={15} height={15} />
-        Inventory
+        {backLabel}
       </Link>
 
       <div className="grid gap-6 lg:grid-cols-[300px_1fr] lg:gap-8">
