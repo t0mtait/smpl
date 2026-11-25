@@ -194,7 +194,21 @@ export function getDb(): DatabaseSync {
   consolidateTopQuality(db);
   consolidateCategories(db);
   initUserCategoriesTable(db);
+  backfillPurgatoryDates(db);
   return db;
+}
+
+function backfillPurgatoryDates(d: DatabaseSync): void {
+  try {
+    d.exec(`
+      UPDATE items
+      SET purgatory_date = substr(COALESCE(updated_at, created_at), 1, 10)
+      WHERE status = 'purgatory' AND (purgatory_date IS NULL OR purgatory_date = '');
+      UPDATE items
+      SET purgatory_date = NULL
+      WHERE status != 'purgatory' AND purgatory_date IS NOT NULL;
+    `);
+  } catch {}
 }
 
 function initUserCategoriesTable(d: DatabaseSync): void {
@@ -334,7 +348,7 @@ function toItem(row: Record<string, unknown>): Item {
     purgatoryDate:
       (row.purgatory_date as string) ??
       (row.status === "purgatory"
-        ? ((row.updated_at as string) || (row.created_at as string))
+        ? (row.created_at ? String(row.created_at).slice(0, 10) : null)
         : null),
     disposalAmount:
       row.disposal_amount != null ? Number(row.disposal_amount) : null,
@@ -729,11 +743,15 @@ export interface ItemInput {
 export function createItem(ownerId: number, input: ItemInput): Item {
   const rawQuality = (input.quality ?? "").trim();
   const quality = rawQuality.toLowerCase() === "top" ? "High" : rawQuality;
+  const purgatoryDate =
+    input.status === "purgatory"
+      ? (input.purgatoryDate ? input.purgatoryDate.slice(0, 10) : today())
+      : (input.purgatoryDate ? input.purgatoryDate.slice(0, 10) : null);
   const res = getDb()
     .prepare(
       `INSERT INTO items (owner_id, name, brand, category, subcategory, quality, description, location, purchase_date, offloaded_date,
-                          purchase_price, current_value, status, last_used_at, use_frequency, photo_path, priority)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+                          purgatory_date, purchase_price, current_value, status, last_used_at, use_frequency, photo_path, priority)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       ownerId,
@@ -746,6 +764,7 @@ export function createItem(ownerId: number, input: ItemInput): Item {
       input.location,
       input.purchaseDate,
       input.offloadedDate ?? null,
+      purgatoryDate,
       input.purchasePrice,
       input.currentValue,
       input.status,
@@ -762,6 +781,19 @@ export function createItem(ownerId: number, input: ItemInput): Item {
 export function updateItem(ownerId: number, id: number, input: Partial<ItemInput>): Item | null {
   const existing = getItem(ownerId, id);
   if (!existing) return null;
+  const newStatus = input.status ?? existing.status;
+  let purgatoryDate: string | null = null;
+  if (input.purgatoryDate !== undefined) {
+    purgatoryDate = input.purgatoryDate ? input.purgatoryDate.slice(0, 10) : null;
+  } else if (newStatus === "purgatory") {
+    purgatoryDate = existing.purgatoryDate ? existing.purgatoryDate.slice(0, 10) : today();
+  } else {
+    purgatoryDate =
+      input.status !== undefined && input.status !== "purgatory"
+        ? null
+        : (existing.purgatoryDate ? existing.purgatoryDate.slice(0, 10) : null);
+  }
+
   const merged: ItemInput = {
     name: input.name ?? existing.name,
     brand: input.brand !== undefined ? input.brand : existing.brand,
@@ -776,10 +808,11 @@ export function updateItem(ownerId: number, id: number, input: Partial<ItemInput
     purchaseDate: input.purchaseDate !== undefined ? input.purchaseDate : existing.purchaseDate,
     offloadedDate:
       input.offloadedDate !== undefined ? input.offloadedDate : existing.offloadedDate,
+    purgatoryDate,
     purchasePrice:
       input.purchasePrice !== undefined ? input.purchasePrice : existing.purchasePrice,
     currentValue: input.currentValue !== undefined ? input.currentValue : existing.currentValue,
-    status: input.status ?? existing.status,
+    status: newStatus,
     lastUsedAt: input.lastUsedAt !== undefined ? input.lastUsedAt : existing.lastUsedAt,
     useFrequency: input.useFrequency ?? existing.useFrequency,
     photoPath: input.photoPath !== undefined ? input.photoPath : existing.photoPath,
@@ -788,6 +821,7 @@ export function updateItem(ownerId: number, id: number, input: Partial<ItemInput
   getDb()
     .prepare(
       `UPDATE items SET name = ?, brand = ?, category = ?, subcategory = ?, quality = ?, description = ?, location = ?, purchase_date = ?, offloaded_date = ?,
+              purgatory_date = ?,
               purchase_price = ?, current_value = ?, status = ?, last_used_at = ?, use_frequency = ?,
               photo_path = ?, priority = ?, updated_at = datetime('now')
        WHERE id = ? AND owner_id = ?`
@@ -802,6 +836,7 @@ export function updateItem(ownerId: number, id: number, input: Partial<ItemInput
       merged.location,
       merged.purchaseDate,
       merged.offloadedDate ?? null,
+      merged.purgatoryDate ?? null,
       merged.purchasePrice,
       merged.currentValue,
       merged.status,

@@ -49,6 +49,13 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if (body.lastUsedAt === null || typeof body.lastUsedAt === "string") {
     patch.lastUsedAt = body.lastUsedAt || null;
   }
+  if (body.purgatoryDate !== undefined) {
+    if (body.purgatoryDate === null || body.purgatoryDate === "") {
+      patch.purgatoryDate = null;
+    } else if (typeof body.purgatoryDate === "string") {
+      patch.purgatoryDate = body.purgatoryDate.trim().slice(0, 10);
+    }
+  }
   // Money accepts a number, an explicit null (unknown) or an empty string
   // (also unknown). A blank field must never become $0.
   for (const key of ["purchasePrice", "currentValue"]) {

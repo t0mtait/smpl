@@ -62,6 +62,10 @@ function parseInput(body: Record<string, unknown>): ItemInput {
       typeof body.offloadedDate === "string" && body.offloadedDate
         ? quarterToIso(body.offloadedDate) || body.offloadedDate
         : null,
+    purgatoryDate:
+      typeof body.purgatoryDate === "string" && body.purgatoryDate
+        ? body.purgatoryDate.trim().slice(0, 10)
+        : null,
     purchasePrice: money(body.purchasePrice),
     currentValue: money(body.currentValue),
     status,

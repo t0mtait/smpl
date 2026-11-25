@@ -4,6 +4,7 @@ import { getItem, listDisposals, listItems } from "@/lib/db";
 import { scoreItem, findDuplicateItemIds } from "@/lib/scoring";
 import { formatDate, formatMoney, formatQuarter, formatCategory, FREQUENCY_LABELS, getItemStatusInfo, STATUS_LABELS } from "@/lib/format";
 import { requireUser } from "@/lib/auth";
+import { ActiveSectionSync } from "@/components/NavigationContext";
 import { ScoreRing, StatusTag, CategoryTag } from "@/components/ui";
 import { IconArrowLeft, IconPencil } from "@/components/icons";
 import ItemActions from "./ItemActions";
@@ -28,6 +29,14 @@ export default async function ItemPage({
   let backHref = "/items";
   let backLabel = "Inventory";
 
+  const isOffloaded =
+    item.status === "sold" ||
+    item.status === "donated" ||
+    item.status === "disposed" ||
+    item.status === "closed" ||
+    item.status === "offloaded" ||
+    Boolean(item.offloadedDate && item.status !== "owned");
+
   if (rawReturnTo && rawReturnTo.startsWith("/")) {
     backHref = rawReturnTo;
     if (rawReturnTo.startsWith("/purgatory")) {
@@ -40,10 +49,19 @@ export default async function ItemPage({
   } else if (item.status === "purgatory") {
     backHref = "/purgatory";
     backLabel = "Purgatory";
-  } else if (item.status === "offloaded" || Boolean(item.offloadedDate && item.status !== "owned")) {
+  } else if (isOffloaded) {
     backHref = "/offloaded";
     backLabel = "Offloaded";
   }
+
+  const navSection =
+    item.status === "purgatory" || rawReturnTo?.startsWith("/purgatory")
+      ? "purgatory"
+      : isOffloaded || rawReturnTo?.startsWith("/offloaded")
+      ? "offloaded"
+      : rawReturnTo?.startsWith("/wishlist")
+      ? "wishlist"
+      : "items";
 
   const disposals = listDisposals(user.id).filter((d) => d.itemId === item.id);
   // Duplicate detection needs the whole owned set, not just this item.
@@ -59,12 +77,15 @@ export default async function ItemPage({
     { label: "Paid", value: <span className="tabular">{formatMoney(item.purchasePrice)}</span> },
     { label: "Value", value: <span className="tabular">{formatMoney(item.currentValue)}</span> },
     { label: "Date acquired", value: formatQuarter(item.purchaseDate) },
-    { label: "Date offloaded", value: formatQuarter(item.offloadedDate) },
+    ...(item.status === "purgatory"
+      ? [{ label: "Added to purgatory", value: formatDate(item.purgatoryDate) }]
+      : [{ label: "Date offloaded", value: formatQuarter(item.offloadedDate) }]),
     { label: "Frequency", value: FREQUENCY_LABELS[item.useFrequency] ?? item.useFrequency },
   ];
 
   return (
     <div className="space-y-7">
+      <ActiveSectionSync section={navSection} />
       <Link
         href={backHref}
         className="inline-flex items-center gap-1.5 text-[13px] font-medium text-muted transition-colors hover:text-ink"
@@ -123,7 +144,10 @@ export default async function ItemPage({
               </p>
             ) : null}
             <div className="mt-4 flex flex-wrap gap-2">
-              <Link href={`/items/${item.id}/edit`} className="btn-secondary">
+              <Link
+                href={`/items/${item.id}/edit${rawReturnTo ? `?returnTo=${encodeURIComponent(rawReturnTo)}` : item.status === "purgatory" ? "?returnTo=/purgatory" : isOffloaded ? "?returnTo=/offloaded" : ""}`}
+                className="btn-secondary"
+              >
                 <IconPencil width={15} height={15} />
                 Edit details
               </Link>

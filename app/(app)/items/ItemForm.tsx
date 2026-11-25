@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import type { Item, Priority, UseFrequency } from "@/lib/db";
 import { CATEGORIES, FREQUENCY_LABELS, formatCategory } from "@/lib/format";
-import { quarterToIso } from "@/lib/dates";
+import { quarterToIso, today } from "@/lib/dates";
 import { IconTrash } from "@/components/icons";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 
@@ -62,6 +62,10 @@ export default function ItemForm({ item }: Props) {
 
   const initialAcq = parseQuarterYear(item?.purchaseDate);
   const initialOff = parseQuarterYear(item?.offloadedDate);
+  const isPurgatory = item?.status === "purgatory";
+  const [purgatoryDate, setPurgatoryDate] = useState(
+    item?.purgatoryDate ? item.purgatoryDate.slice(0, 10) : today()
+  );
   const [purchaseQuarter, setPurchaseQuarter] = useState(initialAcq.quarter);
   const [purchaseYear, setPurchaseYear] = useState(initialAcq.year);
   const [offloadedQuarter, setOffloadedQuarter] = useState(initialOff.quarter);
@@ -159,7 +163,7 @@ export default function ItemForm({ item }: Props) {
         ? `${offloadedYear}-01-01`
         : null;
 
-    const payload = {
+    const payload: Record<string, unknown> = {
       name: form.name,
       brand: form.brand,
       category: form.category,
@@ -176,6 +180,9 @@ export default function ItemForm({ item }: Props) {
       priority: item?.priority ?? "auto",
       photoPath: null,
     };
+    if (isPurgatory) {
+      payload.purgatoryDate = purgatoryDate.trim() || null;
+    }
     try {
       const res = await fetch(item ? `/api/items/${item.id}` : "/api/items", {
         method: item ? "PATCH" : "POST",
@@ -382,6 +389,24 @@ export default function ItemForm({ item }: Props) {
               </select>
             </div>
           </div>
+          {isPurgatory && (
+            <div>
+              <label className="label" htmlFor="purgatoryDate">
+                Added to purgatory
+                <span className="ml-1 font-normal text-muted">override</span>
+              </label>
+              <input
+                id="purgatoryDate"
+                type="date"
+                className="input"
+                value={purgatoryDate}
+                onChange={(e) => setPurgatoryDate(e.target.value)}
+              />
+              <p className="mt-1 text-[11px] text-muted">
+                Overrides the date this item entered purgatory (used to calculate age).
+              </p>
+            </div>
+          )}
           <div>
             <label className="label" htmlFor="purchasePrice">
               Paid

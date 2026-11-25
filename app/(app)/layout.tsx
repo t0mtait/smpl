@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { NavLinks } from "@/components/NavLinks";
 import { BottomNav } from "@/components/BottomNav";
+import { NavigationProvider } from "@/components/NavigationContext";
 import { SignOutButton } from "@/components/SignOutButton";
 import { SignOutIconButton } from "@/components/SignOutIconButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -41,7 +42,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const isPro = user.plan === "premium";
 
   return (
-    <div className="flex min-h-screen flex-col lg:flex-row">
+    <NavigationProvider>
+      <div className="flex min-h-screen flex-col lg:flex-row">
       {/* ---------------- Sidebar (desktop) ---------------- */}
       <aside className="hidden w-64 shrink-0 border-r border-line bg-shell lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col">
         <div className="flex items-center gap-3 px-6 pb-6 pt-7">
@@ -165,5 +167,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       {/* ---------------- Mobile bottom nav ---------------- */}
       <BottomNav />
     </div>
+  </NavigationProvider>
   );
 }

@@ -1,14 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useActiveNav } from "@/components/NavigationContext";
 
 export function NavLinks({
   href,
   label,
   icon,
   badge,
-  exclude,
 }: {
   href: string;
   label: string;
@@ -16,8 +15,8 @@ export function NavLinks({
   badge?: React.ReactNode;
   exclude?: string[];
 }) {
-  const pathname = usePathname();
-  const active = href === "/" ? pathname === "/" : pathname.startsWith(href) && !(exclude ?? []).some((e) => pathname.startsWith(e));
+  const { isNavActive } = useActiveNav();
+  const active = isNavActive(href);
 
   return (
     <Link

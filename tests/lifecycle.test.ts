@@ -131,6 +131,26 @@ const inPurgatory = db.moveItemToPurgatory(user.id, item1.id);
 check("item staged to purgatory has purgatory status", inPurgatory?.status === "purgatory");
 check("item has purgatoryDate recorded", Boolean(inPurgatory?.purgatoryDate));
 
+// Editing an item in purgatory should NOT reset its age / purgatoryDate
+const editedPurgatory = db.updateItem(user.id, item1.id, {
+  name: "Sony WH-1000XM5 (Staged in Purgatory)",
+  currentValue: 275.0,
+});
+check("editing item in purgatory keeps name update", editedPurgatory?.name === "Sony WH-1000XM5 (Staged in Purgatory)");
+check("editing item in purgatory does not reset purgatoryDate", editedPurgatory?.purgatoryDate === inPurgatory?.purgatoryDate);
+
+// Overriding 'added to purgatory' (purgatoryDate) field
+const overriddenPurgatory = db.updateItem(user.id, item1.id, {
+  purgatoryDate: "2026-11-01",
+});
+check("override added to purgatory field saves custom date", overriddenPurgatory?.purgatoryDate === "2026-11-01");
+
+// Subsequent edit does not reset the overridden purgatoryDate
+const editedAgain = db.updateItem(user.id, item1.id, {
+  brand: "Sony Corp",
+});
+check("subsequent edit retains overridden purgatoryDate", editedAgain?.purgatoryDate === "2026-11-01");
+
 // Restore back to inventory
 const restored = db.restoreItem(user.id, item1.id);
 check("item restored from purgatory returns to owned", restored?.status === "owned");

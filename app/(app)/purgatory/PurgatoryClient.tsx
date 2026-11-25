@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { Item } from "@/lib/db";
 import { CATEGORIES, formatCategory, formatMoney, formatQuarter } from "@/lib/format";
 import { currentQuarter, daysSinceDate } from "@/lib/dates";
+import { shouldAutoSelectInput } from "@/lib/device";
 import { CategoryTag, Pagination } from "@/components/ui";
 import { IconArrowLeft, IconBox, IconCheck,
   IconSearch, IconFlame, IconTrash, IconUndo } from "@/components/icons";
@@ -240,6 +241,125 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
   const [deletingItem, setDeletingItem] = useState<Item | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
 
+  // General edit popup state (opened from clicking on the item name, matching Inventory)
+  const [editingItem, setEditingItem] = useState<Item | null>(null);
+  const editNameInputRef = useRef<HTMLInputElement>(null);
+  const [editName, setEditName] = useState("");
+  const [editBrand, setEditBrand] = useState("");
+  const [editCategory, setEditCategory] = useState("misc");
+  const [editSubcategory, setEditSubcategory] = useState("");
+  const [editQuality, setEditQuality] = useState("");
+  const [editUsage, setEditUsage] = useState("monthly");
+  const [editValue, setEditValue] = useState("");
+  const [editPrice, setEditPrice] = useState("");
+  const [editPurchaseDate, setEditPurchaseDate] = useState("");
+  const [editPurgatoryDate, setEditPurgatoryDate] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editBusy, setEditBusy] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (editingItem) {
+      const timer = setTimeout(() => {
+        if (editNameInputRef.current && shouldAutoSelectInput()) {
+          editNameInputRef.current.focus();
+          editNameInputRef.current.select();
+        }
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [editingItem]);
+
+  const [userCategories, setUserCategories] = useState<{ category: string; subcategories: string[] }[]>([]);
+
+  useEffect(() => {
+    fetch("/api/user/categories")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.categories) setUserCategories(data.categories);
+      })
+      .catch(() => {});
+  }, []);
+
+  const subOptions = (cat: string, currentSub?: string) => {
+    const found = userCategories.find((u) => u.category === cat);
+    const list = found ? found.subcategories : [];
+    if (currentSub && !list.includes(currentSub)) {
+      return [currentSub, ...list];
+    }
+    return list;
+  };
+
+  const openEditModal = (item: Item) => {
+    setEditingItem(item);
+    setEditName(item.name);
+    setEditBrand(item.brand || "");
+    setEditCategory(item.category || "misc");
+    setEditSubcategory(item.subcategory || "");
+    setEditQuality(item.quality || "");
+    setEditUsage(
+      item.useFrequency === "daily" || item.useFrequency === "weekly"
+        ? "daily"
+        : item.useFrequency === "rare" || item.useFrequency === "never"
+        ? "rare"
+        : item.useFrequency === "seasonal"
+        ? "seasonal"
+        : "monthly"
+    );
+    setEditValue(item.currentValue === null ? "" : String(item.currentValue));
+    setEditPrice(item.purchasePrice === null ? "" : String(item.purchasePrice));
+    setEditPurchaseDate(item.purchaseDate || "");
+    setEditPurgatoryDate(item.purgatoryDate ? item.purgatoryDate.slice(0, 10) : "");
+    setEditDescription(item.description || "");
+    setEditError(null);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingItem || !editName.trim()) return;
+    setEditBusy(true);
+    setEditError(null);
+
+    try {
+      const res = await fetch(`/api/items/${editingItem.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editName.trim(),
+          brand: editBrand.trim(),
+          category: editCategory.trim() || "uncategorized",
+          subcategory: editSubcategory.trim(),
+          quality: editQuality.trim(),
+          location: "",
+          useFrequency: editUsage,
+          status: "purgatory",
+          currentValue: editValue.trim() === "" ? null : Number(editValue),
+          purchasePrice: editPrice.trim() === "" ? null : Number(editPrice),
+          purchaseDate: editPurchaseDate.trim() || null,
+          purgatoryDate: editPurgatoryDate.trim() || null,
+          description: editDescription.trim(),
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setEditError(data.error ?? "Failed to update item.");
+        setEditBusy(false);
+        return;
+      }
+
+      const data = await res.json();
+      setItems((prev) =>
+        prev.map((it) => (it.id === editingItem.id ? { ...it, ...data.item } : it))
+      );
+      setEditingItem(null);
+      setEditBusy(false);
+    } catch {
+      setEditError("Network error. Try again.");
+      setEditBusy(false);
+    }
+  };
+
   const deleteItemPermanently = async (item: Item) => {
     setDeleteBusy(true);
     try {
@@ -252,17 +372,7 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
       setDeleteBusy(false);
     }
   };
-  const [userCategories, setUserCategories] = useState<string[]>([]);
 
-  useEffect(() => {
-    fetch("/api/user/categories")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        const list = data?.categories as { category: string }[] | undefined;
-        if (list?.length) setUserCategories(list.map((u) => u.category));
-      })
-      .catch(() => {});
-  }, []);
 
   const saveInline = async (id: number, patch: Record<string, unknown>) => {
     setEditingCell(null);
@@ -546,20 +656,20 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                   <tr
                     key={item.id}
                     onClick={() => {
-                      if (typeof window !== "undefined" && window.innerWidth < 640) {
-                        const returnUrl = `/purgatory${buildPurgatoryQuery()}`;
-                        router.push(`/items/${item.id}?returnTo=${encodeURIComponent(returnUrl)}`);
-                      }
+                      openEditModal(item);
                     }}
-                    className="h-[52px] sm:h-[54px] border-b border-line-soft transition-colors last:border-0 even:bg-wash/60 dark:even:bg-shell/70 hover:bg-wash dark:hover:bg-wash/40 cursor-pointer sm:cursor-default"
+                    className="h-[52px] sm:h-[54px] border-b border-line-soft transition-colors last:border-0 even:bg-wash/60 dark:even:bg-shell/70 hover:bg-wash dark:hover:bg-wash/40 cursor-pointer"
                   >
                     <th scope="row" className="px-3 sm:px-4 py-2 sm:py-2.5 align-middle text-left font-normal">
-                      <Link
-                        href={`/items/${item.id}?returnTo=${encodeURIComponent(`/purgatory${buildPurgatoryQuery()}`)}`}
-                        className="font-medium text-ink hover:text-accent"
+                      <span
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEditModal(item);
+                        }}
+                        className="font-medium text-ink hover:text-accent transition-colors inline-block cursor-pointer"
                       >
                         {item.name}
-                      </Link>
+                      </span>
                     </th>
                     <td className="hidden sm:table-cell px-4 py-2 sm:py-2.5 align-middle text-[13px] text-ink-soft">
                       {isEditing(item.id, "brand") ? (
@@ -596,7 +706,7 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                           onBlur={() => setEditingCell(null)}
                           className="input py-0.5 px-2 text-xs h-7"
                         >
-                          {(userCategories.length > 0 ? userCategories : CATEGORIES).map((c) => (
+                          {(userCategories.length > 0 ? userCategories.map((u) => u.category) : CATEGORIES).map((c) => (
                             <option key={c} value={c}>
                               {formatCategory(c)}
                             </option>
@@ -746,6 +856,245 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
           onClose={() => setOffloadingItem(null)}
           onSuccess={handleOffloaded}
         />
+      )}
+
+      {/* ---------------- General Edit Modal (matching Inventory) ---------------- */}
+      {editingItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+          <form
+            onSubmit={handleEditSubmit}
+            className="card animate-rise w-full max-w-lg space-y-4 p-6 shadow-xl max-h-[90vh] overflow-y-auto"
+          >
+            <div className="flex items-center justify-between border-b border-line pb-3">
+              <div>
+                <h2 className="display text-xl">Edit item</h2>
+                <Link
+                  href={`/items/${editingItem.id}?returnTo=${encodeURIComponent(`/purgatory${buildPurgatoryQuery()}`)}`}
+                  className="text-xs text-muted hover:text-accent underline transition-colors"
+                >
+                  View full item page &rarr;
+                </Link>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingItem(null)}
+                className="text-xs text-muted hover:text-ink"
+              >
+                Close
+              </button>
+            </div>
+
+            {editError && (
+              <div className="rounded-lg border border-danger-line bg-danger-soft p-3 text-sm text-danger">
+                {editError}
+              </div>
+            )}
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <label className="label" htmlFor="edit-item-name">
+                  Name *
+                </label>
+                <input
+                  ref={editNameInputRef}
+                  id="edit-item-name"
+                  className="input"
+                  required
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="label" htmlFor="edit-item-brand">
+                  Brand
+                </label>
+                <input
+                  id="edit-item-brand"
+                  className="input"
+                  value={editBrand}
+                  onChange={(e) => setEditBrand(e.target.value)}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 sm:col-span-2">
+                <div>
+                  <label className="label" htmlFor="edit-item-cat">
+                    Category
+                  </label>
+                  <select
+                    id="edit-item-cat"
+                    className="input"
+                    value={editCategory}
+                    onChange={(e) => {
+                      setEditCategory(e.target.value);
+                      setEditSubcategory("");
+                    }}
+                  >
+                    {(userCategories.length > 0 ? userCategories.map((u) => u.category) : CATEGORIES).map((c) => (
+                      <option key={c} value={c}>
+                        {formatCategory(c)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="label" htmlFor="edit-item-subcat">
+                    Subcategory
+                  </label>
+                  <select
+                    id="edit-item-subcat"
+                    className="input"
+                    value={editSubcategory}
+                    onChange={(e) => setEditSubcategory(e.target.value)}
+                  >
+                    <option value="">None</option>
+                    {subOptions(editCategory, editSubcategory).map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 sm:col-span-2">
+                <div>
+                  <label className="label" htmlFor="edit-item-quality">
+                    Quality
+                  </label>
+                  <select
+                    id="edit-item-quality"
+                    className="input"
+                    value={editQuality}
+                    onChange={(e) => setEditQuality(e.target.value)}
+                  >
+                    <option value="">— None —</option>
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="label" htmlFor="edit-item-usage">
+                    Usage
+                  </label>
+                  <select
+                    id="edit-item-usage"
+                    className="input"
+                    value={editUsage}
+                    onChange={(e) => setEditUsage(e.target.value)}
+                  >
+                    <option value="daily">Heavy</option>
+                    <option value="monthly">Occasional</option>
+                    <option value="rare">Rare</option>
+                    <option value="seasonal">Seasonal</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 sm:col-span-2">
+                <div>
+                  <label className="label" htmlFor="edit-item-value">
+                    Value ($)
+                  </label>
+                  <input
+                    id="edit-item-value"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className="input"
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className="label" htmlFor="edit-item-price">
+                    Paid ($)
+                  </label>
+                  <input
+                    id="edit-item-price"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className="input"
+                    value={editPrice}
+                    onChange={(e) => setEditPrice(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="label" htmlFor="edit-item-date">
+                  Acquisition date
+                </label>
+                <input
+                  id="edit-item-date"
+                  className="input"
+                  placeholder="YYYY-MM-DD or Q1 2024"
+                  value={editPurchaseDate}
+                  onChange={(e) => setEditPurchaseDate(e.target.value)}
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="label" htmlFor="edit-item-purgatory-date">
+                  Added to purgatory
+                  <span className="ml-1 font-normal text-muted">override</span>
+                </label>
+                <input
+                  id="edit-item-purgatory-date"
+                  type="date"
+                  className="input"
+                  value={editPurgatoryDate}
+                  onChange={(e) => setEditPurgatoryDate(e.target.value)}
+                />
+                <p className="mt-1 text-[11px] text-muted">
+                  Overrides the date this item entered purgatory (used to calculate age).
+                </p>
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="label" htmlFor="edit-item-desc">
+                  Notes / Description
+                </label>
+                <textarea
+                  id="edit-item-desc"
+                  rows={2}
+                  className="input"
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeletingItem(editingItem)}
+                className="btn-danger inline-flex items-center gap-1.5 text-xs py-1.5 px-3"
+              >
+                <IconTrash width={14} height={14} />
+                Delete item
+              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingItem(null)}
+                  className="btn border border-line"
+                >
+                  Cancel
+                </button>
+                <button type="submit" disabled={editBusy} className="btn-primary">
+                  {editBusy ? "Saving…" : "Save changes"}
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
       )}
 
       <ConfirmDialog

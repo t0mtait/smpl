@@ -757,7 +757,7 @@ export default function WishlistClient({
                   max="100"
                   value={addPriority}
                   onChange={(e) => setAddPriority(Number(e.target.value))}
-                  className="flex-1 accent-brand h-2 bg-wash rounded-lg cursor-pointer"
+                  className="flex-1 min-w-0 accent-brand h-2 bg-wash rounded-lg cursor-pointer"
                 />
                 <input
                   type="number"
@@ -768,7 +768,7 @@ export default function WishlistClient({
                     const val = e.target.value === "" ? 0 : Math.min(100, Math.max(0, Number(e.target.value)));
                     setAddPriority(val);
                   }}
-                  className="input w-16 py-1 px-2 text-center text-sm font-semibold tabular"
+                  className="input w-16 shrink-0 py-1 px-2 text-center text-sm font-semibold tabular"
                 />
               </div>
             </div>
@@ -1255,7 +1255,7 @@ export default function WishlistClient({
               </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className="label" htmlFor="edit-cat">
                   Category
@@ -1291,35 +1291,35 @@ export default function WishlistClient({
                   ))}
                 </datalist>
               </div>
+            </div>
 
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="label mb-0" htmlFor="edit-priority">Priority</label>
-                  <span className="text-xs font-semibold tabular text-muted">{editPriority}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <PriorityRing priority={editPriority} size={38} stroke={3.5} />
-                  <input
-                    id="edit-priority"
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={editPriority}
-                    onChange={(e) => setEditPriority(Number(e.target.value))}
-                    className="flex-1 accent-brand h-2 bg-wash rounded-lg cursor-pointer"
-                  />
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={editPriority}
-                    onChange={(e) => {
-                      const val = e.target.value === "" ? 0 : Math.min(100, Math.max(0, Number(e.target.value)));
-                      setEditPriority(val);
-                    }}
-                    className="input w-16 py-1 px-2 text-center text-sm font-semibold tabular"
-                  />
-                </div>
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="label mb-0" htmlFor="edit-priority">Priority</label>
+                <span className="text-xs font-semibold tabular text-muted">{editPriority}</span>
+              </div>
+              <div className="flex items-center gap-3 min-w-0">
+                <PriorityRing priority={editPriority} size={38} stroke={3.5} />
+                <input
+                  id="edit-priority"
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={editPriority}
+                  onChange={(e) => setEditPriority(Number(e.target.value))}
+                  className="flex-1 min-w-0 accent-brand h-2 bg-wash rounded-lg cursor-pointer"
+                />
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={editPriority}
+                  onChange={(e) => {
+                    const val = e.target.value === "" ? 0 : Math.min(100, Math.max(0, Number(e.target.value)));
+                    setEditPriority(val);
+                  }}
+                  className="input w-16 shrink-0 py-1 px-2 text-center text-sm font-semibold tabular"
+                />
               </div>
             </div>
 

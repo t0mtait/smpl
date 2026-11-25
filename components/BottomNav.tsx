@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useActiveNav } from "@/components/NavigationContext";
 import {
   IconArchive,
   IconBox,
@@ -19,7 +19,7 @@ const NAV_ITEMS = [
 ];
 
 export function BottomNav() {
-  const pathname = usePathname();
+  const { isNavActive } = useActiveNav();
 
   return (
     <nav
@@ -27,10 +27,7 @@ export function BottomNav() {
       aria-label="Mobile navigation"
     >
       {NAV_ITEMS.map((item) => {
-        const isActive =
-          item.href === "/"
-            ? pathname === "/"
-            : pathname.startsWith(item.href);
+        const isActive = isNavActive(item.href);
 
         return (
           <Link
