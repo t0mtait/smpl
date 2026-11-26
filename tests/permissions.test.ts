@@ -481,6 +481,62 @@ async function run(): Promise<void> {
     /* ignore */
   }
 
+  /* -------------------------------------------------------------------------- */
+  console.log("\n── 8. Stripe Webhook & Subscription Lifecycle Security ──");
+
+  // Verify middleware config prevents regression where stripe webhook is blocked by session auth
+  const middlewareSource = fs.readFileSync(path.join(process.cwd(), "middleware.ts"), "utf8");
+  check(
+    "middleware PUBLIC_PREFIXES MUST include /api/stripe/webhook",
+    middlewareSource.includes('"/api/stripe/webhook"')
+  );
+
+  // Test subscription lifecycle with Stripe customer and trial interval
+  const testSubUser = db.createUser("stripe-test-sub@example.com", "SecurePass123!", "Stripe Tester");
+  eq("New stripe test user defaults to free", testSubUser.plan, "free");
+  eq("New stripe test user has no stripe customer id", testSubUser.stripeCustomerId, null);
+
+  // Set Stripe customer ID
+  const testCustomerId = "cus_test_123456789";
+  const testSubId = "sub_test_trial_987654321";
+  db.setStripeCustomerId(testSubUser.id, testCustomerId);
+
+  const customerLookup = db.getUserByStripeCustomer(testCustomerId);
+  check("getUserByStripeCustomer finds user by customer ID", customerLookup !== null);
+  eq("Customer lookup matches test user", customerLookup?.id, testSubUser.id);
+
+  // Upgrade to trial subscription
+  const trialRenewsAt = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
+  const upgradedUser = db.updateUserSubscription(
+    testSubUser.id,
+    "premium",
+    "trial",
+    trialRenewsAt,
+    testCustomerId,
+    testSubId
+  );
+
+  check("User upgraded to premium", upgradedUser?.plan === "premium");
+  eq("User subscription interval is trial", upgradedUser?.subscriptionInterval, "trial");
+  eq("User renewsAt is set", upgradedUser?.subscriptionRenewsAt, trialRenewsAt);
+  eq("User stripeCustomerId is saved", upgradedUser?.stripeCustomerId, testCustomerId);
+  eq("User stripeSubscriptionId is saved", upgradedUser?.stripeSubscriptionId, testSubId);
+
+  // Test cancellation
+  const cancelledUser = db.updateUserSubscription(
+    testSubUser.id,
+    "free",
+    null,
+    null,
+    testCustomerId,
+    null
+  );
+  eq("Cancelled user reverts to free plan", cancelledUser?.plan, "free");
+  eq("Cancelled user has null interval", cancelledUser?.subscriptionInterval, null);
+  eq("Cancelled user has null renewsAt", cancelledUser?.subscriptionRenewsAt, null);
+  eq("Cancelled user retains customer ID for billing history", cancelledUser?.stripeCustomerId, testCustomerId);
+  eq("Cancelled user clears subscription ID", cancelledUser?.stripeSubscriptionId, null);
+
   console.log(`\nPermissions Suite Completed: ${passed} passed, ${failed} failed.`);
   if (failed > 0) process.exit(1);
 }
