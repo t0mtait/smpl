@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { listItems, listUserCategories, listWishlist } from "@/lib/db";
 import { apiUser } from "@/lib/auth";
 import { formatCategory, formatQuarter } from "@/lib/format";
+import { createZip } from "@/lib/zip";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -36,7 +37,7 @@ export async function GET(req: Request) {
   }
 
   const url = new URL(req.url);
-  const type = url.searchParams.get("type") || "inventory";
+  const type = url.searchParams.get("type");
   const format = url.searchParams.get("format");
   const dateStr = new Date().toISOString().slice(0, 10);
 
@@ -44,28 +45,21 @@ export async function GET(req: Request) {
   const wishlistItems = listWishlist(user.id);
   const userCategories = listUserCategories(user.id);
 
-  if (type === "json" || format === "json") {
-    const exportData = {
-      exportedAt: new Date().toISOString(),
-      user: { name: user.name, email: user.email },
-      items: allItems,
-      wishlist: wishlistItems,
-      categories: userCategories,
-    };
-    return new NextResponse(JSON.stringify(exportData, null, 2), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json; charset=utf-8",
-        "Content-Disposition": `attachment; filename="smpl-backup-${dateStr}.json"`,
-        "Cache-Control": "no-store",
+  // Builders for individual data representations
+  const buildJson = () =>
+    JSON.stringify(
+      {
+        exportedAt: new Date().toISOString(),
+        user: { name: user.name, email: user.email },
+        items: allItems,
+        wishlist: wishlistItems,
+        categories: userCategories,
       },
-    });
-  }
+      null,
+      2
+    );
 
-  let filename = `smpl-${type}-${dateStr}.csv`;
-  let csvContent = "";
-
-  if (type === "inventory") {
+  const buildInventoryCsv = () => {
     const owned = allItems.filter((i) => i.status === "owned");
     const headers = [
       "ID",
@@ -99,8 +93,10 @@ export async function GET(req: Request) {
       i.location || "",
       i.description || "",
     ]);
-    csvContent = toCsv(headers, rows);
-  } else if (type === "purgatory") {
+    return toCsv(headers, rows);
+  };
+
+  const buildPurgatoryCsv = () => {
     const purgatory = allItems.filter((i) => i.status === "purgatory");
     const headers = [
       "ID",
@@ -130,8 +126,10 @@ export async function GET(req: Request) {
       i.location || "",
       i.description || "",
     ]);
-    csvContent = toCsv(headers, rows);
-  } else if (type === "wishlist") {
+    return toCsv(headers, rows);
+  };
+
+  const buildWishlistCsv = () => {
     const headers = [
       "ID",
       "Name",
@@ -150,8 +148,10 @@ export async function GET(req: Request) {
       w.url || "",
       w.notes || "",
     ]);
-    csvContent = toCsv(headers, rows);
-  } else if (type === "offloaded") {
+    return toCsv(headers, rows);
+  };
+
+  const buildOffloadedCsv = () => {
     const offloaded = allItems.filter((i) =>
       ["sold", "donated", "disposed", "closed"].includes(i.status)
     );
@@ -183,9 +183,10 @@ export async function GET(req: Request) {
       i.location || "",
       i.description || "",
     ]);
-    csvContent = toCsv(headers, rows);
-  } else {
-    // All items export
+    return toCsv(headers, rows);
+  };
+
+  const buildAllItemsCsv = () => {
     const headers = [
       "ID",
       "Name",
@@ -218,15 +219,92 @@ export async function GET(req: Request) {
       i.location || "",
       i.description || "",
     ]);
-    csvContent = toCsv(headers, rows);
-    filename = `smpl-all-items-${dateStr}.csv`;
+    return toCsv(headers, rows);
+  };
+
+  // If specific single-file download is explicitly requested
+  if (type === "json" || format === "json") {
+    return new NextResponse(buildJson(), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+        "Content-Disposition": `attachment; filename="smpl-backup-${dateStr}.json"`,
+        "Cache-Control": "no-store",
+      },
+    });
   }
 
-  return new NextResponse(csvContent, {
+  if (type === "inventory") {
+    return new NextResponse(buildInventoryCsv(), {
+      status: 200,
+      headers: {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="smpl-inventory-${dateStr}.csv"`,
+        "Cache-Control": "no-store",
+      },
+    });
+  }
+
+  if (type === "purgatory") {
+    return new NextResponse(buildPurgatoryCsv(), {
+      status: 200,
+      headers: {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="smpl-purgatory-${dateStr}.csv"`,
+        "Cache-Control": "no-store",
+      },
+    });
+  }
+
+  if (type === "wishlist") {
+    return new NextResponse(buildWishlistCsv(), {
+      status: 200,
+      headers: {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="smpl-wishlist-${dateStr}.csv"`,
+        "Cache-Control": "no-store",
+      },
+    });
+  }
+
+  if (type === "offloaded") {
+    return new NextResponse(buildOffloadedCsv(), {
+      status: 200,
+      headers: {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="smpl-offloaded-${dateStr}.csv"`,
+        "Cache-Control": "no-store",
+      },
+    });
+  }
+
+  if (type === "all-items") {
+    return new NextResponse(buildAllItemsCsv(), {
+      status: 200,
+      headers: {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="smpl-all-items-${dateStr}.csv"`,
+        "Cache-Control": "no-store",
+      },
+    });
+  }
+
+  // Default: download zip archive containing all CSVs and JSON inside a folder
+  const folder = `smpl-export-${dateStr}`;
+  const zipBuffer = createZip([
+    { name: `${folder}/inventory.csv`, data: buildInventoryCsv() },
+    { name: `${folder}/purgatory.csv`, data: buildPurgatoryCsv() },
+    { name: `${folder}/offloaded.csv`, data: buildOffloadedCsv() },
+    { name: `${folder}/wishlist.csv`, data: buildWishlistCsv() },
+    { name: `${folder}/all-items.csv`, data: buildAllItemsCsv() },
+    { name: `${folder}/backup.json`, data: buildJson() },
+  ]);
+
+  return new NextResponse(new Uint8Array(zipBuffer), {
     status: 200,
     headers: {
-      "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Content-Type": "application/zip",
+      "Content-Disposition": `attachment; filename="smpl-export-${dateStr}.zip"`,
       "Cache-Control": "no-store",
     },
   });

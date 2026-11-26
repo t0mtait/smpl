@@ -185,6 +185,7 @@ export function getDb(): DatabaseSync {
   ensureColumn(db, "users", "subscription_renews_at", "subscription_renews_at TEXT");
   ensureColumn(db, "users", "stripe_customer_id", "stripe_customer_id TEXT");
   ensureColumn(db, "users", "stripe_subscription_id", "stripe_subscription_id TEXT");
+  ensureColumn(db, "users", "currency", "currency TEXT NOT NULL DEFAULT 'USD'");
   // Money columns must allow NULL ("never recorded") rather than 0 ("free").
   migrateMoneyColumns(db);
   db.exec("CREATE INDEX IF NOT EXISTS idx_items_owner ON items(owner_id);");
@@ -425,6 +426,7 @@ export interface User {
   email: string;
   name: string;
   avatarPath?: string | null;
+  currency: string;
   plan: "free" | "premium";
   subscriptionInterval?: "monthly" | "yearly" | "trial" | null;
   subscriptionRenewsAt?: string | null;
@@ -436,10 +438,22 @@ export interface User {
 /* ------------------------------------------------------------------ users */
 
 export function createUser(email: string, name: string, passwordHash: string): User {
+  const normalizedEmail = email.trim().toLowerCase();
   const res = getDb()
     .prepare("INSERT INTO users (email, name, password_hash) VALUES (?, ?, ?)")
-    .run(email, name, passwordHash);
-  const user = getUserById(Number(res.lastInsertRowid))!;
+    .run(normalizedEmail, name, passwordHash);
+  const newUserId = Number(res.lastInsertRowid);
+
+  // Seed default 5 categories for the new user
+  const defaults = ["clothing", "electronics", "home", "kitchen", "misc"];
+  const insertCat = getDb().prepare(
+    "INSERT OR IGNORE INTO user_categories (user_id, category, subcategory) VALUES (?, ?, '')"
+  );
+  for (const def of defaults) {
+    insertCat.run(newUserId, def);
+  }
+
+  const user = getUserById(newUserId)!;
   scheduleAutoBackup();
   return user;
 }
@@ -457,6 +471,7 @@ export function findOAuthAccount(provider: string, providerId: string): (OAuthAc
   const row = getDb()
     .prepare(
       `SELECT o.*, u.id as u_id, u.email as u_email, u.name as u_name, u.avatar_path as u_avatar,
+              u.currency as u_currency,
               u.plan as u_plan, u.subscription_interval as u_sub_interval, u.subscription_renews_at as u_sub_renews,
               u.created_at as u_created_at
        FROM oauth_accounts o
@@ -477,6 +492,7 @@ export function findOAuthAccount(provider: string, providerId: string): (OAuthAc
       email: String(row.u_email),
       name: String(row.u_name ?? ""),
       avatarPath: (row.u_avatar as string | null) ?? null,
+      currency: (row.u_currency as string) || "USD",
       plan: ((row.u_plan as string) || "free") === "premium" ? "premium" : "free",
       subscriptionInterval: (row.u_sub_interval as "monthly" | "yearly" | "trial") ?? null,
       subscriptionRenewsAt: (row.u_sub_renews as string) ?? null,
@@ -536,6 +552,7 @@ function toUser(row: Record<string, unknown>): User {
     email: String(row.email),
     name: String(row.name ?? ""),
     avatarPath: (row.avatar_path as string | null) ?? null,
+    currency: (row.currency as string) || "USD",
     plan: ((row.plan as string) || "free") === "premium" ? "premium" : "free",
     subscriptionInterval: (row.subscription_interval as "monthly" | "yearly" | "trial") ?? null,
     subscriptionRenewsAt: (row.subscription_renews_at as string) ?? null,
@@ -584,7 +601,13 @@ export function setStripeCustomerId(userId: number, customerId: string): void {
 
 export function updateUserProfile(
   id: number,
-  fields: { name?: string; email?: string; passwordHash?: string; avatarPath?: string | null }
+  fields: {
+    name?: string;
+    email?: string;
+    passwordHash?: string;
+    avatarPath?: string | null;
+    currency?: string;
+  }
 ): User | null {
   const existing = getUserById(id);
   if (!existing) return null;
@@ -607,6 +630,10 @@ export function updateUserProfile(
   if (fields.avatarPath !== undefined) {
     sets.push("avatar_path = ?");
     args.push(fields.avatarPath);
+  }
+  if (typeof fields.currency === "string" && fields.currency.trim()) {
+    sets.push("currency = ?");
+    args.push(fields.currency.trim().toUpperCase());
   }
 
   if (sets.length === 0) return existing;

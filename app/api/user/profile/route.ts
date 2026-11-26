@@ -44,10 +44,14 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const patch: { name?: string; email?: string; passwordHash?: string } = {};
+  const patch: { name?: string; email?: string; passwordHash?: string; currency?: string } = {};
 
   if (typeof body.name === "string") {
     patch.name = body.name.trim();
+  }
+
+  if (typeof body.currency === "string" && /^[A-Za-z]{3}$/.test(body.currency.trim())) {
+    patch.currency = body.currency.trim().toUpperCase();
   }
 
   const newEmail = typeof body.email === "string" ? body.email.trim().toLowerCase() : null;

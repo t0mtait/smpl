@@ -264,6 +264,12 @@ const d = db.getDb();
   db.deleteUserCategory(catUser.id, "camera gear");
   updatedCats = db.listUserCategories(catUser.id);
   check("category deleted", !updatedCats.some((c) => c.category === "camera gear"));
+
+  check("user default currency is USD", catUser.currency === "USD");
+  const updatedUser = db.updateUserProfile(catUser.id, { currency: "EUR" });
+  check("user currency updated to EUR", updatedUser?.currency === "EUR");
+  const reloadedUser = db.getUserById(catUser.id);
+  check("persisted user currency is EUR", reloadedUser?.currency === "EUR");
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

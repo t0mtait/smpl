@@ -112,13 +112,17 @@ const now = new Date(2026, 10, 23);
 /* --------------------------------------------------- Top categories according to item count --------------------------------------------------- */
 {
   const items: Item[] = [
-    makeItem({ id: 1, category: "electronics" }),
-    makeItem({ id: 2, category: "clothing" }),
-    makeItem({ id: 3, category: "electronics" }),
-    makeItem({ id: 4, category: "books" }),
-    makeItem({ id: 5, category: "electronics" }),
-    makeItem({ id: 6, category: "clothing" }),
-    makeItem({ id: 7, category: "home" }),
+    makeItem({ id: 1, category: "electronics", status: "owned" }),
+    makeItem({ id: 2, category: "clothing", status: "owned" }),
+    makeItem({ id: 3, category: "electronics", status: "owned" }),
+    makeItem({ id: 4, category: "books", status: "owned" }),
+    makeItem({ id: 5, category: "electronics", status: "owned" }),
+    makeItem({ id: 6, category: "clothing", status: "owned" }),
+    makeItem({ id: 7, category: "home", status: "owned" }),
+    // Offloaded or staged items should NOT be counted in current inventory top categories
+    makeItem({ id: 8, category: "books", status: "sold" }),
+    makeItem({ id: 9, category: "books", status: "donated" }),
+    makeItem({ id: 10, category: "home", status: "purgatory" }),
   ];
   const stats = computeStats(items, [], now);
   eq("topCategories length is 4", stats.topCategories.length, 4);
@@ -127,6 +131,8 @@ const now = new Date(2026, 10, 23);
   eq("topCategory #2 is clothing", stats.topCategories[1].category, "clothing");
   eq("topCategory #2 count is 2", stats.topCategories[1].count, 2);
   eq("topCategory #3 count is 1", stats.topCategories[2].count, 1);
+  eq("books count remains 1 (sold/donated excluded)", stats.topCategories.find((c) => c.category === "books")?.count, 1);
+  eq("home count remains 1 (purgatory excluded)", stats.topCategories.find((c) => c.category === "home")?.count, 1);
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

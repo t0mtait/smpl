@@ -6,6 +6,7 @@ import { SignOutButton } from "@/components/SignOutButton";
 import { SignOutIconButton } from "@/components/SignOutIconButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { UserAvatar } from "@/components/UserAvatar";
+import { CurrencySync } from "@/components/CurrencySync";
 import { CommandPalette } from "@/components/CommandPalette";
 import { CommandPaletteTrigger, CommandPaletteIconButton } from "@/components/CommandPaletteTrigger";
 import {
@@ -45,6 +46,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <NavigationProvider>
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `document.documentElement.dataset.currency = ${JSON.stringify(user.currency || "USD")};`,
+        }}
+      />
+      <CurrencySync currency={user.currency || "USD"} />
       <CommandPalette />
       <div className="flex min-h-screen flex-col lg:flex-row">
       {/* ---------------- Sidebar (desktop) ---------------- */}
@@ -102,7 +109,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
         <div className="px-3 pb-2">
           <a
-            href="mailto:support@gosmpl.app?subject=smpl.%20Feature%20Request"
+            href="mailto:mail@tomjt.com?subject=smpl.%20Feature%20Request"
             className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-muted transition-colors hover:bg-paper hover:text-ink"
             title="Send a feature request or feedback"
           >

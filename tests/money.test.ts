@@ -12,7 +12,15 @@
  *   without a sale, a donation or a throw-out. It must be counted as
  *   gone without pretending an outcome happened.
  */
-import { formatMoney, isUnknownMoney, STATUS_LABELS, TERMINAL_STATUSES } from "../lib/format.ts";
+import {
+  formatMoney,
+  isUnknownMoney,
+  setClientCurrency,
+  getCurrencySymbol,
+  SUPPORTED_CURRENCIES,
+  STATUS_LABELS,
+  TERMINAL_STATUSES,
+} from "../lib/format.ts";
 import { scoreItem, scoreAll, findDuplicateItemIds } from "../lib/scoring.ts";
 import { computeStats } from "../lib/stats.ts";
 import type { Item, Disposal } from "../lib/db.ts";
@@ -77,6 +85,17 @@ eq("null money renders as an em dash", formatMoney(null), "—");
 eq("undefined money renders as an em dash", formatMoney(undefined), "—");
 eq("zero money renders as zero, not a dash", formatMoney(0), "$0");
 eq("a known amount renders normally", formatMoney(1234.5), "$1,234.50");
+eq("explicit EUR currency formats with euro", formatMoney(1234, "EUR"), "€1,234");
+eq("explicit GBP currency formats with pound", formatMoney(1234, "GBP"), "£1,234");
+eq("explicit JPY currency formats with yen", formatMoney(1234, "JPY"), "¥1,234");
+
+setClientCurrency("EUR");
+eq("setting client currency formats default money with euro", formatMoney(50), "€50");
+eq("getCurrencySymbol returns euro symbol", getCurrencySymbol(), "€");
+setClientCurrency("USD");
+eq("resetting client currency formats with USD", formatMoney(50), "$50");
+eq("getCurrencySymbol returns dollar symbol", getCurrencySymbol("USD"), "$");
+eq("getCurrencySymbol returns pound for GBP", getCurrencySymbol("GBP"), "£");
 
 check("null money is unknown", isUnknownMoney(null));
 check("undefined money is unknown", isUnknownMoney(undefined));

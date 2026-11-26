@@ -11,6 +11,14 @@ export const metadata = {
 
 export default async function WishlistPage() {
   const user = await requireUser("/wishlist");
-  const savedCount = listWishlist(user.id).length;
-  return <WishlistClient isPro={user.plan === "premium"} initialSavedCount={savedCount} />;
+  const wishlistItems = listWishlist(user.id);
+  const savedCount = wishlistItems.length;
+  const initialSumCost = wishlistItems.reduce((acc, i) => acc + (i.price ?? 0), 0);
+  return (
+    <WishlistClient
+      isPro={user.plan === "premium"}
+      initialSavedCount={savedCount}
+      initialSumCost={initialSumCost}
+    />
+  );
 }

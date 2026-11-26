@@ -668,9 +668,11 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                   <tr
                     key={item.id}
                     onClick={() => {
-                      openEditModal(item);
+                      if (typeof window !== "undefined" && window.innerWidth < 640) {
+                        openEditModal(item);
+                      }
                     }}
-                    className="h-[52px] sm:h-[54px] border-b border-line-soft transition-colors last:border-0 even:bg-wash/60 dark:even:bg-shell/70 hover:bg-wash dark:hover:bg-wash/40 cursor-pointer"
+                    className="h-[52px] sm:h-[54px] border-b border-line-soft transition-colors last:border-0 even:bg-wash/60 dark:even:bg-shell/70 hover:bg-wash dark:hover:bg-wash/40 cursor-pointer sm:cursor-default"
                   >
                     <th scope="row" className="px-3 sm:px-4 py-2 sm:py-2.5 align-middle text-left font-normal">
                       <span

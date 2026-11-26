@@ -86,9 +86,11 @@ function CooldownRing({ days }: { days: number }) {
 export default function WishlistClient({
   isPro = true,
   initialSavedCount = 0,
+  initialSumCost = 0,
 }: {
   isPro?: boolean;
   initialSavedCount?: number;
+  initialSumCost?: number;
 }) {
   const [items, setItems] = useState<WishlistItem[] | null>(null);
   const [savedCount, setSavedCount] = useState<number>(initialSavedCount);
@@ -503,7 +505,20 @@ export default function WishlistClient({
             </span>
             <p className="eyebrow">Intentional Living</p>
           </div>
-          <h1 className="display mt-2 text-4xl leading-[1.1] sm:text-5xl">Wishlist</h1>
+          <div className="mt-2 flex flex-wrap items-baseline gap-2.5">
+            <h1 className="display text-4xl leading-[1.1] sm:text-5xl">Wishlist</h1>
+            <span className="text-sm sm:text-base text-muted font-medium">
+              · {items !== null ? items.length : initialSavedCount}{" "}
+              {(items !== null ? items.length : initialSavedCount) === 1 ? "item" : "items"} ·{" "}
+              <span className="tabular font-semibold text-ink">
+                {formatMoney(
+                  items !== null
+                    ? items.reduce((sum, i) => sum + (i.price ?? 0), 0)
+                    : initialSumCost
+                )}
+              </span>
+            </span>
+          </div>
         </div>
 
         {isPro && (

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Item } from "@/lib/db";
-import { CATEGORIES, formatCategory, formatMoney, formatQuarter, getItemStatusInfo } from "@/lib/format";
+import { CATEGORIES, formatCategory, formatMoney, formatQuarter, getItemStatusInfo, getYearStyle } from "@/lib/format";
 import { shouldAutoSelectInput } from "@/lib/device";
 import { CategoryTag, Pagination, StatusTag } from "@/components/ui";
 import {
@@ -34,6 +34,28 @@ export default function OffloadedClient({
   const [busyId, setBusyId] = useState<number | null>(null);
   const [deletingItem, setDeletingItem] = useState<Item | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
+
+  // Inline cell editing state
+  const [editingCell, setEditingCell] = useState<{ itemId: number; field: string } | null>(null);
+
+  const saveInline = async (id: number, patch: Record<string, unknown>) => {
+    setEditingCell(null);
+    try {
+      const res = await fetch(`/api/items/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setItems((prev) =>
+          prev.map((it) => (it.id === id ? { ...it, ...data.item } : it))
+        );
+      }
+    } catch {
+      // non-fatal
+    }
+  };
 
   // General edit popup state (matching Inventory)
   const [editingItem, setEditingItem] = useState<Item | null>(null);
@@ -346,36 +368,212 @@ export default function OffloadedClient({
                     <tr
                       key={item.id}
                       onClick={() => {
-                        openEditModal(item);
+                        if (typeof window !== "undefined" && window.innerWidth < 640) {
+                          openEditModal(item);
+                        }
                       }}
-                      className="h-[52px] sm:h-[54px] border-b border-line-soft transition-colors last:border-0 even:bg-wash/60 dark:even:bg-shell/70 hover:bg-wash dark:hover:bg-wash/40 cursor-pointer"
+                      className="h-[52px] sm:h-[54px] border-b border-line-soft transition-colors last:border-0 even:bg-wash/60 dark:even:bg-shell/70 hover:bg-wash dark:hover:bg-wash/40 cursor-pointer sm:cursor-default"
                     >
                       <th scope="row" className="px-3 sm:px-4 py-2 sm:py-2.5 align-middle text-left font-normal">
-                        <span
+                        <button
+                          type="button"
                           onClick={(e) => {
                             e.stopPropagation();
                             openEditModal(item);
                           }}
-                          className="font-medium text-ink hover:text-accent transition-colors inline-block cursor-pointer"
+                          className="font-medium text-ink hover:text-accent transition-colors text-left inline-block cursor-pointer"
+                          title="Click to edit item"
                         >
                           {item.name}
-                        </span>
+                        </button>
                       </th>
-                      <td className="hidden sm:table-cell px-4 py-2 sm:py-2.5 align-middle text-[13px] text-ink-soft">{item.brand || "—"}</td>
+                      {/* Brand: inline editable on desktop */}
+                      <td className="hidden sm:table-cell px-4 py-2 sm:py-2.5 align-middle text-[13px] text-ink-soft">
+                        {editingCell?.itemId === item.id && editingCell?.field === "brand" ? (
+                          <input
+                            type="text"
+                            autoFocus
+                            defaultValue={item.brand}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                saveInline(item.id, { brand: e.currentTarget.value.trim() });
+                              }
+                              if (e.key === "Escape") setEditingCell(null);
+                            }}
+                            onBlur={(e) =>
+                              saveInline(item.id, { brand: e.currentTarget.value.trim() })
+                            }
+                            className="input py-0.5 px-2 text-xs h-7 max-w-[120px]"
+                          />
+                        ) : (
+                          <span
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingCell({ itemId: item.id, field: "brand" });
+                            }}
+                            className="inline-block py-1 px-1.5 -mx-1.5 rounded hover:bg-wash cursor-pointer transition-colors"
+                            title="Click to edit brand"
+                          >
+                            {item.brand || <span className="text-muted/60">—</span>}
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Category: inline editable */}
                       <td className="px-3 sm:px-4 py-2 sm:py-2.5 align-middle">
-                        <CategoryTag category={item.category} />
+                        {editingCell?.itemId === item.id && editingCell?.field === "category" ? (
+                          <select
+                            autoFocus
+                            defaultValue={item.category}
+                            onChange={(e) => saveInline(item.id, { category: e.target.value })}
+                            onBlur={() => setEditingCell(null)}
+                            className="input py-0.5 px-2 text-xs h-7"
+                          >
+                            {(userCategories.length > 0 ? userCategories.map((u) => u.category) : CATEGORIES).map((c) => (
+                              <option key={c} value={c}>
+                                {formatCategory(c)}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingCell({ itemId: item.id, field: "category" });
+                            }}
+                            className="inline-block cursor-pointer hover:opacity-80 transition-opacity"
+                            title="Click to edit category"
+                          >
+                            <CategoryTag category={item.category} />
+                          </span>
+                        )}
                       </td>
+
+                      {/* Status: inline editable on desktop */}
                       <td className="hidden sm:table-cell px-4 py-2 sm:py-2.5 align-middle">
-                        <StatusTag status={statusInfo} />
+                        {editingCell?.itemId === item.id && editingCell?.field === "status" ? (
+                          <select
+                            autoFocus
+                            defaultValue={item.status}
+                            onChange={(e) => saveInline(item.id, { status: e.target.value })}
+                            onBlur={() => setEditingCell(null)}
+                            className="input py-0.5 px-2 text-xs h-7"
+                          >
+                            <option value="sold">Sold</option>
+                            <option value="donated">Donated</option>
+                            <option value="disposed">Disposed</option>
+                            <option value="closed">Closed</option>
+                          </select>
+                        ) : (
+                          <span
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingCell({ itemId: item.id, field: "status" });
+                            }}
+                            className="inline-block cursor-pointer hover:opacity-80 transition-opacity"
+                            title="Click to edit status"
+                          >
+                            <StatusTag status={statusInfo} />
+                          </span>
+                        )}
                       </td>
+
                       <td className="tabular px-3 sm:px-4 py-2 sm:py-2.5 align-middle text-right text-[13px] font-medium text-ink">
                         {item.status === "sold" ? formatMoney(saleAmounts[item.id] ?? null) : "—"}
                       </td>
-                      <td className="hidden sm:table-cell tabular px-4 py-2 sm:py-2.5 align-middle text-right text-[13px] text-muted">
-                        {formatQuarter(item.purchaseDate)}
+
+                      {/* Acquired: inline editable on desktop */}
+                      <td className="hidden sm:table-cell tabular px-4 py-2 sm:py-2.5 align-middle text-right text-[13px]">
+                        {editingCell?.itemId === item.id && editingCell?.field === "acquired" ? (
+                          <input
+                            type="text"
+                            autoFocus
+                            placeholder="YYYY-MM-DD or Q1 2024"
+                            defaultValue={item.purchaseDate || ""}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                saveInline(item.id, {
+                                  purchaseDate: e.currentTarget.value.trim() || null,
+                                });
+                              }
+                              if (e.key === "Escape") setEditingCell(null);
+                            }}
+                            onBlur={(e) =>
+                              saveInline(item.id, {
+                                purchaseDate: e.currentTarget.value.trim() || null,
+                              })
+                            }
+                            className="input py-0.5 px-2 text-xs h-7 tabular text-right max-w-[120px]"
+                          />
+                        ) : (
+                          <span
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingCell({ itemId: item.id, field: "acquired" });
+                            }}
+                            className="inline-block py-1 px-1.5 -mx-1.5 rounded hover:bg-wash cursor-pointer transition-colors"
+                            title="Click to edit acquired date"
+                          >
+                            {item.purchaseDate ? (
+                              <span
+                                className={`inline-block rounded px-2 py-0.5 text-[11px] font-medium tabular ${getYearStyle(
+                                  item.purchaseDate
+                                )}`}
+                              >
+                                {formatQuarter(item.purchaseDate)}
+                              </span>
+                            ) : (
+                              <span className="text-muted/60">—</span>
+                            )}
+                          </span>
+                        )}
                       </td>
-                      <td className="hidden sm:table-cell tabular px-4 py-2 sm:py-2.5 align-middle text-right text-[13px] text-muted">
-                        {formatQuarter(item.offloadedDate)}
+
+                      {/* Offloaded: inline editable on desktop */}
+                      <td className="hidden sm:table-cell tabular px-4 py-2 sm:py-2.5 align-middle text-right text-[13px]">
+                        {editingCell?.itemId === item.id && editingCell?.field === "offloaded" ? (
+                          <input
+                            type="text"
+                            autoFocus
+                            placeholder="YYYY-MM-DD or Q1 2024"
+                            defaultValue={item.offloadedDate || ""}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                saveInline(item.id, {
+                                  offloadedDate: e.currentTarget.value.trim() || null,
+                                });
+                              }
+                              if (e.key === "Escape") setEditingCell(null);
+                            }}
+                            onBlur={(e) =>
+                              saveInline(item.id, {
+                                offloadedDate: e.currentTarget.value.trim() || null,
+                              })
+                            }
+                            className="input py-0.5 px-2 text-xs h-7 tabular text-right max-w-[120px]"
+                          />
+                        ) : (
+                          <span
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingCell({ itemId: item.id, field: "offloaded" });
+                            }}
+                            className="inline-block py-1 px-1.5 -mx-1.5 rounded hover:bg-wash cursor-pointer transition-colors"
+                            title="Click to edit offloaded date"
+                          >
+                            {item.offloadedDate ? (
+                              <span
+                                className={`inline-block rounded px-2 py-0.5 text-[11px] font-medium tabular ${getYearStyle(
+                                  item.offloadedDate
+                                )}`}
+                              >
+                                {formatQuarter(item.offloadedDate)}
+                              </span>
+                            ) : (
+                              <span className="text-muted/60">—</span>
+                            )}
+                          </span>
+                        )}
                       </td>
                       <td className="hidden sm:table-cell px-4 py-2 sm:py-2.5 align-middle text-right">
                         <div className="flex items-center justify-end gap-2">

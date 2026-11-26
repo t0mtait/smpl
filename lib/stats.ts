@@ -205,7 +205,7 @@ export function computeStats(items: Item[], disposals: Disposal[], now: Date = n
   }));
 
   const allCatCounts = new Map<string, number>();
-  for (const item of items) {
+  for (const item of owned) {
     const key = item.category || "uncategorized";
     allCatCounts.set(key, (allCatCounts.get(key) ?? 0) + 1);
   }

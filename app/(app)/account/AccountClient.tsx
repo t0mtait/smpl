@@ -29,7 +29,7 @@ import {
   IconSparkles,
   IconTrash,
 } from "@/components/icons";
-import { formatCategory, getCategoryStyle } from "@/lib/format";
+import { formatCategory, getCategoryStyle, SUPPORTED_CURRENCIES, setClientCurrency } from "@/lib/format";
 
 interface AccountStats {
   totalItems?: number;
@@ -82,6 +82,7 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
   const [subcatToDelete, setSubcatToDelete] = useState<{ category: string; sub: string } | null>(null);
   const [name, setName] = useState(initialUser.name || "");
   const [email, setEmail] = useState(initialUser.email || "");
+  const [currency, setCurrency] = useState(initialUser.currency || "USD");
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -286,34 +287,6 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
     setConfirmRemoveAvatar(true);
   };
 
-  const [cleanupBusy, setCleanupBusy] = useState(false);
-  const [cleanupMsg, setCleanupMsg] = useState<{ text: string; type: "success" | "error" } | null>(null);
-
-  const handleCleanupOrphans = async () => {
-    setCleanupBusy(true);
-    setCleanupMsg(null);
-    try {
-      const res = await fetch("/api/storage/cleanup", { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Storage cleanup failed");
-      const { deleted, freedBytes } = data.result;
-      setCleanupMsg({
-        type: "success",
-        text:
-          deleted > 0
-            ? `Cleaned up ${deleted} orphaned file${deleted === 1 ? "" : "s"} (${formatFileSize(freedBytes)} reclaimed).`
-            : "Storage is clean: no orphaned photos found.",
-      });
-    } catch (err: unknown) {
-      setCleanupMsg({
-        type: "error",
-        text: err instanceof Error ? err.message : "Cleanup failed",
-      });
-    } finally {
-      setCleanupBusy(false);
-    }
-  };
-
   const confirmDeleteAvatar = async () => {
     setConfirmRemoveAvatar(false);
     setAvatarBusy(true);
@@ -345,9 +318,16 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
     setProfileBusy(true);
     setProfileMsg(null);
 
-    const payload: { name: string; email: string; currentPassword?: string; newPassword?: string } = {
+    const payload: {
+      name: string;
+      email: string;
+      currency?: string;
+      currentPassword?: string;
+      newPassword?: string;
+    } = {
       name,
       email,
+      currency,
     };
 
     if (newPassword || currentPassword) {
@@ -379,6 +359,9 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
 
       const data = await res.json();
       setUser(data.user);
+      if (data.user?.currency) {
+        setClientCurrency(data.user.currency);
+      }
       setCurrentPassword("");
       setNewPassword("");
       setProfileMsg({ type: "success", text: "Account updated successfully." });
@@ -449,10 +432,10 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
               )}
             </div>
 
-            {/* Inputs: Display Name and Email on top line, Current Password and New Password on bottom line */}
+            {/* Inputs: Display Name, Email, and Currency on top line, Current Password and New Password on bottom line */}
             <div className="flex-1 space-y-2.5">
-              {/* Top line: Display Name & Email Address */}
-              <div className="grid gap-3 sm:grid-cols-2">
+              {/* Top line: Display Name, Email Address & Currency */}
+              <div className="grid gap-3 sm:grid-cols-3">
                 <div>
                   <label className="label text-xs mb-1" htmlFor="user-name">
                     Display Name
@@ -478,6 +461,23 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                     onChange={(e) => setEmail(e.target.value)}
                     required
                   />
+                </div>
+                <div>
+                  <label className="label text-xs mb-1" htmlFor="user-currency">
+                    Currency
+                  </label>
+                  <select
+                    id="user-currency"
+                    className="input text-xs sm:text-sm py-1.5 h-8.5"
+                    value={currency}
+                    onChange={(e) => setCurrency(e.target.value)}
+                  >
+                    {SUPPORTED_CURRENCIES.map((c) => (
+                      <option key={c.code} value={c.code}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -561,7 +561,32 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
             </div>
           )}
 
-          <div className="flex justify-end pt-1">
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+            {isPro ? (
+              <a
+                href="/api/export"
+                download
+                className="btn-secondary px-3.5 py-1.5 text-xs inline-flex items-center gap-1.5 hover:border-line-strong transition-colors"
+                title="Download folder containing all CSV spreadsheets and JSON archive"
+              >
+                <IconExport width={13} height={13} />
+                <span>Export data</span>
+              </a>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById("subscription");
+                  el?.scrollIntoView({ behavior: "smooth" });
+                }}
+                className="btn-secondary px-3.5 py-1.5 text-xs inline-flex items-center gap-1.5 text-muted hover:text-ink transition-colors"
+                title="Pro feature: download folder with all CSV spreadsheets and JSON archive"
+              >
+                <IconLock width={13} height={13} />
+                <span>Export data (Pro)</span>
+              </button>
+            )}
+
             <button
               type="submit"
               className="btn-primary px-4 py-1.5 text-xs"
@@ -572,157 +597,6 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
             </button>
           </div>
         </form>
-
-        {/* Data Export inside Account Settings Card */}
-        <div className="border-t border-line-soft pt-3 mt-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <div className="flex items-center gap-1.5">
-                <h2 className="display text-sm font-semibold">Export data</h2>
-                <span className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-2 py-0.5 text-[9px] font-bold text-accent uppercase tracking-wider">
-                  <IconSparkles width={9} height={9} />
-                  Pro
-                </span>
-              </div>
-              <p className="text-[11px] text-muted">
-                Download your smpl. data as CSV spreadsheets and JSON archives.
-              </p>
-            </div>
-
-            {!isPro && (
-              <button
-                type="button"
-                onClick={() => {
-                  const el = document.getElementById("subscription");
-                  el?.scrollIntoView({ behavior: "smooth" });
-                }}
-                className="btn-primary text-xs flex items-center gap-1.5 py-1 px-2.5"
-              >
-                <IconLock width={12} height={12} />
-                Upgrade to Pro to export
-              </button>
-            )}
-          </div>
-
-          {!isPro && (
-            <div className="mt-2.5 rounded-lg border border-line bg-paper p-2.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
-              <div className="flex items-center gap-2">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-wash text-muted">
-                  <IconLock width={13} height={13} />
-                </span>
-                <div>
-                  <p className="text-xs font-semibold text-ink">Data export is locked on the Free tier</p>
-                  <p className="text-[10px] text-muted">
-                    Upgrade to Pro to download CSV spreadsheets and full JSON database backups anytime.
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => handleSubscribe("premium", subInterval)}
-                disabled={subBusy}
-                className="btn-secondary text-xs shrink-0 py-1 px-2.5"
-              >
-                Unlock with Pro
-              </button>
-            </div>
-          )}
-
-          <div className={`mt-2.5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 ${!isPro ? "opacity-60 pointer-events-none select-none" : ""}`}>
-            <a
-              href={isPro ? "/api/export?type=inventory" : "#"}
-              download
-              className="flex items-center justify-between gap-2 rounded-lg border border-line bg-paper px-2.5 py-2 transition hover:border-line-strong hover:shadow-sm"
-            >
-              <div className="min-w-0">
-                <div className="text-xs font-semibold text-ink truncate">Inventory</div>
-                <div className="text-[10px] text-accent font-medium truncate">{isPro ? "Download CSV ↓" : "CSV (Pro)"}</div>
-              </div>
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-accent-soft text-accent">
-                <IconBox width={12} height={12} />
-              </span>
-            </a>
-
-            <a
-              href={isPro ? "/api/export?type=purgatory" : "#"}
-              download
-              className="flex items-center justify-between gap-2 rounded-lg border border-line bg-paper px-2.5 py-2 transition hover:border-line-strong hover:shadow-sm"
-            >
-              <div className="min-w-0">
-                <div className="text-xs font-semibold text-ink truncate">Purgatory</div>
-                <div className="text-[10px] text-clay font-medium truncate">{isPro ? "Download CSV ↓" : "CSV (Pro)"}</div>
-              </div>
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-clay-soft text-clay">
-                <IconFlame width={12} height={12} />
-              </span>
-            </a>
-
-            <a
-              href={isPro ? "/api/export?type=wishlist" : "#"}
-              download
-              className="flex items-center justify-between gap-2 rounded-lg border border-line bg-paper px-2.5 py-2 transition hover:border-line-strong hover:shadow-sm"
-            >
-              <div className="min-w-0">
-                <div className="text-xs font-semibold text-ink truncate">Wishlist</div>
-                <div className="text-[10px] text-warn font-medium truncate">{isPro ? "Download CSV ↓" : "CSV (Pro)"}</div>
-              </div>
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-warn-soft text-warn">
-                <IconHeart width={12} height={12} />
-              </span>
-            </a>
-
-            <a
-              href={isPro ? "/api/export?type=offloaded" : "#"}
-              download
-              className="flex items-center justify-between gap-2 rounded-lg border border-line bg-paper px-2.5 py-2 transition hover:border-line-strong hover:shadow-sm"
-            >
-              <div className="min-w-0">
-                <div className="text-xs font-semibold text-ink truncate">Offloaded</div>
-                <div className="text-[10px] text-ink font-medium truncate">{isPro ? "Download CSV ↓" : "CSV (Pro)"}</div>
-              </div>
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-wash text-ink-soft">
-                <IconArchive width={12} height={12} />
-              </span>
-            </a>
-
-            <a
-              href={isPro ? "/api/export?type=json" : "#"}
-              download
-              className="flex items-center justify-between gap-2 rounded-lg border border-line bg-paper px-2.5 py-2 transition hover:border-line-strong hover:shadow-sm"
-            >
-              <div className="min-w-0">
-                <div className="text-xs font-semibold text-ink truncate">Backup</div>
-                <div className="text-[10px] text-brand font-medium truncate">{isPro ? "Download JSON ↓" : "JSON (Pro)"}</div>
-              </div>
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-brand/10 text-brand">
-                <IconBox width={12} height={12} />
-              </span>
-            </a>
-          </div>
-
-          {/* Storage Maintenance: Clean up orphaned photos */}
-          <div className="mt-4 pt-3 border-t border-line/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
-            <div>
-              <div className="text-xs font-semibold text-ink">Storage Maintenance</div>
-              <p className="text-[11px] text-muted">
-                Scan disk and remove orphaned photo files left behind from removed items.
-              </p>
-              {cleanupMsg && (
-                <p className={`mt-1 text-xs font-medium ${cleanupMsg.type === "success" ? "text-accent" : "text-danger"}`}>
-                  {cleanupMsg.text}
-                </p>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={handleCleanupOrphans}
-              disabled={cleanupBusy}
-              className="btn-secondary text-xs shrink-0 py-1.5 px-3 whitespace-nowrap"
-            >
-              {cleanupBusy ? "Scanning..." : "Clean Orphaned Photos"}
-            </button>
-          </div>
-        </div>
       </section>
 
       {/* Categories & Membership Side by Side */}
@@ -1142,6 +1016,10 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                     <IconExport width={14} height={14} className="text-accent shrink-0" />
                     <span>Complete CSV & JSON data exporting</span>
                   </li>
+                  <li className="flex items-center gap-1.5">
+                    <IconSparkles width={14} height={14} className="text-accent shrink-0" />
+                    <span>API Access (Coming Soon!)</span>
+                  </li>
                 </ul>
               </div>
 
@@ -1194,7 +1072,7 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
           <div className="flex items-start gap-2 text-[11px] text-muted leading-relaxed">
             <span className="font-semibold text-ink shrink-0">14-Day Free Trial:</span>
             <span>
-              We offer a 14-day free Pro trial so you can experience all premium features risk-free. Subscriptions can be cancelled anytime with a single click in your account or Stripe billing portal.
+              We offer a 14-day free Pro trial so you can experience all premium features risk-free.
             </span>
           </div>
         </div>

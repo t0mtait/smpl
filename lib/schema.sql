@@ -8,10 +8,11 @@
 
 CREATE TABLE IF NOT EXISTS users (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
-  email         TEXT    NOT NULL UNIQUE,
+  email         TEXT    NOT NULL UNIQUE COLLATE NOCASE,
   name          TEXT    NOT NULL DEFAULT '',
   password_hash TEXT    NOT NULL DEFAULT '',
   avatar_path   TEXT,
+  currency      TEXT    NOT NULL DEFAULT 'USD',
   -- A bootstrap account holds data that predates accounts. It has no
   -- password, cannot log in, and is claimed by the first real registration.
   is_bootstrap  INTEGER NOT NULL DEFAULT 0,

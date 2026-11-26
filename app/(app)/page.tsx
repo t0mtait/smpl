@@ -10,6 +10,7 @@ import {
 import { StatusDonut } from "@/components/StatusDonut";
 import { UserAvatar } from "@/components/UserAvatar";
 import {
+  IconArchive,
   IconBox,
   IconChart,
   IconFlame,
@@ -99,17 +100,17 @@ export default async function DashboardPage() {
             <Link href="/items?status=owned" className="px-1 py-0.5 block hover:opacity-80">
               <div className="text-[9px] font-semibold uppercase tracking-wider text-muted">Owned</div>
               <div className="mt-1 text-base font-bold tabular text-ink leading-none">{stats.ownedItems}</div>
-              <div className="mt-1 text-[9px] tabular font-medium text-moss">{formatMoney(stats.totalValueOwned)}</div>
+              <div className="mt-1 text-[9px] tabular font-medium text-accent">{formatMoney(stats.totalValueOwned, user.currency)}</div>
             </Link>
             <Link href="/purgatory" className="px-1 py-0.5 block hover:opacity-80">
               <div className="text-[9px] font-semibold uppercase tracking-wider text-muted">Purgatory</div>
               <div className="mt-1 text-base font-bold tabular text-clay leading-none">{purgatoryItems.length}</div>
-              <div className="mt-1 text-[9px] tabular text-muted">{purgatoryValue > 0 ? formatMoney(purgatoryValue) : "—"}</div>
+              <div className="mt-1 text-[9px] tabular text-muted">{purgatoryValue > 0 ? formatMoney(purgatoryValue, user.currency) : "—"}</div>
             </Link>
             <Link href="/offloaded" className="px-1 py-0.5 block hover:opacity-80">
               <div className="text-[9px] font-semibold uppercase tracking-wider text-muted">Declutter</div>
               <div className="mt-1 text-base font-bold tabular text-ink leading-none">{goneCount}</div>
-              <div className="mt-1 text-[9px] tabular font-medium text-accent">{formatMoney(stats.lifetimeSalesEarnings)}</div>
+              <div className="mt-1 text-[9px] tabular font-medium text-accent">{formatMoney(stats.lifetimeSalesEarnings, user.currency)}</div>
             </Link>
             <Link href="/items" className="px-1 py-0.5 block hover:opacity-80">
               <div className="text-[9px] font-semibold uppercase tracking-wider text-muted">Net Qtr</div>
@@ -133,8 +134,8 @@ export default async function DashboardPage() {
                 </div>
                 <div className="mt-3 flex items-baseline gap-2">
                   <span className="tabular text-3xl sm:text-4xl font-semibold leading-none text-ink">{stats.ownedItems}</span>
-                  <span className="tabular text-xs font-medium text-moss" title="Total estimated value">
-                    {formatMoney(stats.totalValueOwned)}
+                  <span className="tabular text-xs font-medium text-accent" title="Total estimated value">
+                    {formatMoney(stats.totalValueOwned, user.currency)}
                   </span>
                 </div>
               </Link>
@@ -147,7 +148,7 @@ export default async function DashboardPage() {
                   <span className="tabular text-3xl sm:text-4xl font-semibold leading-none text-ink">{purgatoryItems.length}</span>
                   {purgatoryValue > 0 && (
                     <span className="tabular text-xs font-medium text-muted">
-                      {formatMoney(purgatoryValue)}
+                      {formatMoney(purgatoryValue, user.currency)}
                     </span>
                   )}
                 </div>
@@ -155,12 +156,12 @@ export default async function DashboardPage() {
               <Link href="/offloaded" className="px-4 py-2 group hover:bg-wash/40 rounded-lg transition-colors flex flex-col justify-center h-full">
                 <div className="flex items-center justify-between text-muted">
                   <span className="text-[11px] font-semibold uppercase tracking-wider">Decluttered</span>
-                  <span className="text-moss"><IconRecycle width={15} height={15} /></span>
+                  <span className="text-accent"><IconArchive width={15} height={15} /></span>
                 </div>
                 <div className="mt-3 flex items-baseline gap-2">
                   <span className="tabular text-3xl sm:text-4xl font-semibold leading-none text-ink">{goneCount}</span>
                   <span className="tabular text-xs font-medium text-accent" title="Total sales proceeds">
-                    {formatMoney(stats.lifetimeSalesEarnings)}
+                    {formatMoney(stats.lifetimeSalesEarnings, user.currency)}
                   </span>
                 </div>
               </Link>
@@ -177,7 +178,7 @@ export default async function DashboardPage() {
                 </div>
                 <div className="mt-3 flex items-baseline gap-2.5">
                   <span className={`tabular text-3xl sm:text-4xl font-semibold leading-none ${
-                    stats.currentQuarterNet > 0 ? "text-clay" : stats.currentQuarterNet < 0 ? "text-moss" : "text-ink"
+                    stats.currentQuarterNet > 0 ? "text-clay" : stats.currentQuarterNet < 0 ? "text-accent" : "text-ink"
                   }`}>
                     {stats.currentQuarterNet > 0 ? `+${stats.currentQuarterNet}` : stats.currentQuarterNet}
                   </span>
@@ -222,7 +223,7 @@ export default async function DashboardPage() {
         <section className="card flex flex-col p-4 sm:p-6">
           <div className="mb-1 flex items-baseline justify-between gap-3">
             <h2 className="display text-xl">Where your items stand</h2>
-            <span className="text-xs text-muted">all time</span>
+            <span className="text-xs text-muted">All-time</span>
           </div>
           <p className="hidden sm:block mb-4 text-[13px] text-muted">Every item you have tracked, by current status.</p>
           <StatusDonut slices={statusSlices} />
@@ -247,7 +248,7 @@ export default async function DashboardPage() {
             <h2 className="display text-xl">Where the value sits</h2>
             <span className="text-xs text-muted">owned</span>
           </div>
-          <p className="mb-3 text-[13px] text-muted">by category</p>
+          <p className="mb-3 text-[13px] text-muted">By category</p>
           {stats.byCategory.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted">Nothing tracked yet.</p>
           ) : (
@@ -257,7 +258,7 @@ export default async function DashboardPage() {
                   key={cat.category}
                   label={formatCategory(cat.category)}
                   value={cat.value}
-                  valueDisplay={formatMoney(cat.value)}
+                  valueDisplay={formatMoney(cat.value, user.currency)}
                   max={maxCatValue}
                   suffix={` · ${cat.count}`}
                   tone={i === 0 ? "clay" : "moss"}

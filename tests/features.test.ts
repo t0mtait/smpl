@@ -3,6 +3,7 @@ import path from "node:path";
 import { UPLOAD_DIR, createUser, createItem, getItem, listItems, getDb } from "../lib/db.ts";
 import { cleanupOrphanedPhotos } from "../lib/storage.ts";
 import { formatFileSize } from "../lib/image-compression.ts";
+import { createZip } from "../lib/zip.ts";
 
 let passed = 0;
 let failed = 0;
@@ -136,6 +137,14 @@ async function run() {
 
   eq("Item 1 priority updated to keep", getItem(user.id, item1.id)?.priority, "keep");
   eq("Item 2 priority updated to keep", getItem(user.id, item2.id)?.priority, "keep");
+
+  // 4. Test zip archive creation
+  const zipBuffer = createZip([
+    { name: "smpl-export/inventory.csv", data: "id,name\n1,laptop" },
+    { name: "smpl-export/backup.json", data: JSON.stringify({ test: true }) },
+  ]);
+  check("createZip produces non-empty buffer", zipBuffer.length > 0);
+  check("createZip has standard zip header signature", zipBuffer.readUInt32LE(0) === 0x04034b50);
 
   console.log(`\nFeatures tests: ${passed} passed, ${failed} failed.`);
   if (failed > 0) process.exit(1);

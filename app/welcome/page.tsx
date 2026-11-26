@@ -358,6 +358,7 @@ export default async function WelcomePage() {
                     <Check>Wishlist: Track items you don&apos;t yet own, with a 30-day cooldown tracker</Check>
                     <Check>Unlimited custom categories &amp; subcategories</Check>
                     <Check>Complete CSV &amp; JSON data exporting</Check>
+                    <Check>API Access (Coming Soon!)</Check>
                   </ul>
                 </div>
                 <div className="mt-7">

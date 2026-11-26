@@ -1,14 +1,78 @@
+export const SUPPORTED_CURRENCIES = [
+  { code: "USD", symbol: "$", label: "USD ($) - US Dollar" },
+  { code: "EUR", symbol: "€", label: "EUR (€) - Euro" },
+  { code: "GBP", symbol: "£", label: "GBP (£) - British Pound" },
+  { code: "CAD", symbol: "CA$", label: "CAD ($) - Canadian Dollar" },
+  { code: "AUD", symbol: "A$", label: "AUD ($) - Australian Dollar" },
+  { code: "JPY", symbol: "¥", label: "JPY (¥) - Japanese Yen" },
+  { code: "CNY", symbol: "¥", label: "CNY (¥) - Chinese Yuan" },
+  { code: "INR", symbol: "₹", label: "INR (₹) - Indian Rupee" },
+  { code: "CHF", symbol: "CHF", label: "CHF - Swiss Franc" },
+  { code: "NZD", symbol: "NZ$", label: "NZD ($) - New Zealand Dollar" },
+  { code: "SGD", symbol: "SG$", label: "SGD ($) - Singapore Dollar" },
+  { code: "HKD", symbol: "HK$", label: "HKD ($) - Hong Kong Dollar" },
+  { code: "SEK", symbol: "kr", label: "SEK (kr) - Swedish Krona" },
+  { code: "NOK", symbol: "kr", label: "NOK (kr) - Norwegian Krone" },
+  { code: "DKK", symbol: "kr", label: "DKK (kr) - Danish Krone" },
+  { code: "BRL", symbol: "R$", label: "BRL (R$) - Brazilian Real" },
+  { code: "MXN", symbol: "MX$", label: "MXN ($) - Mexican Peso" },
+] as const;
+
+let clientCurrency = "USD";
+
+export function setClientCurrency(code: string): void {
+  if (code && typeof code === "string") {
+    clientCurrency = code.toUpperCase();
+    if (typeof document !== "undefined" && document.documentElement) {
+      document.documentElement.dataset.currency = clientCurrency;
+    }
+  }
+}
+
+export function getClientCurrency(): string {
+  if (typeof document !== "undefined" && document.documentElement?.dataset?.currency) {
+    return document.documentElement.dataset.currency;
+  }
+  return clientCurrency;
+}
+
+export function getCurrencySymbol(currency?: string): string {
+  const code = (currency || getClientCurrency()).toUpperCase();
+  const match = SUPPORTED_CURRENCIES.find((c) => c.code === code);
+  if (match) return match.symbol;
+  try {
+    const formatted = (0).toLocaleString("en-US", {
+      style: "currency",
+      currency: code,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    });
+    return formatted.replace(/[\d\s,.]/g, "") || "$";
+  } catch {
+    return "$";
+  }
+}
+
 /**
  * Money formatter. `null` means "never recorded" and renders as an em dash —
  * never as $0, which would be a claim we cannot back up.
  */
-export function formatMoney(value: number | null | undefined): string {
+export function formatMoney(value: number | null | undefined, currency?: string): string {
   if (value === null || value === undefined || !Number.isFinite(value)) return "—";
-  return value.toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: value % 1 === 0 ? 0 : 2,
-  });
+  const curr = (currency || getClientCurrency()).toUpperCase();
+  try {
+    return value.toLocaleString("en-US", {
+      style: "currency",
+      currency: curr,
+      maximumFractionDigits: value % 1 === 0 ? 0 : 2,
+    });
+  } catch {
+    return value.toLocaleString("en-US", {
+      style: "currency",
+      currency: "USD",
+      maximumFractionDigits: value % 1 === 0 ? 0 : 2,
+    });
+  }
 }
 
 /** True when a monetary value was never recorded. */
