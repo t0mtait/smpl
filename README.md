@@ -3,6 +3,8 @@
 > **A mindful, self-hosted personal inventory and decluttering companion.**  
 > Know what you own, curb impulse buys, and let intelligent signals guide what to let go.
 
+[![smpl. — Mindful inventory & decluttering](https://gosmpl.app/og-image.png)](https://gosmpl.app)
+
 ---
 
 ## Overview

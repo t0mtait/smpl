@@ -13,8 +13,9 @@
 - **Product Name**: smpl.
 - **Tagline**: Mindful possession tracking & decluttering with a 30-day cooldown
 - **Category / Topics**: Productivity, Personal Finance, Anti-Consumerism, Organization, Web App
-- **Thumbnail / Icon**: Minimalist clay/terracotta tile with geometric `S` monogram.
+- **Thumbnail / Icon**: Minimalist clay/terracotta tile with geometric `S` monogram (`smpl-logo.png`).
 - **Direct Link**: `https://gosmpl.app`
+- **Link Image Embed (Open Graph / Preview)**: `https://gosmpl.app/og-image.png` (Landing page hero: *"Mindful inventory & decluttering — Know what you own. Let go of what you don't."*)
 
 ### First Comment from Maker (Post immediately upon launch)
 ```markdown

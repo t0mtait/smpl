@@ -3,8 +3,37 @@ import "./globals.css";
 import { lora } from "./fonts";
 
 export const metadata: Metadata = {
-  title: "smpl.",
-  description: "liv_smply",
+  metadataBase: new URL("https://gosmpl.app"),
+  title: {
+    default: "smpl. — know what you own, let go of what you don't",
+    template: "%s | smpl.",
+  },
+  description:
+    "smpl. is a calm, simple place to keep track of your things. See what's quietly sitting unused, and decide what to sell, donate, or keep. Less clutter, clearer numbers.",
+  openGraph: {
+    title: "smpl. — Know what you own. Let go of what you don't.",
+    description:
+      "smpl. is a calm, simple place to keep track of your things. See what's quietly sitting unused, and decide what to sell, donate, or keep. Less clutter, clearer numbers.",
+    url: "https://gosmpl.app",
+    siteName: "smpl.",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "smpl. — Mindful inventory & decluttering. Know what you own. Let go of what you don't.",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "smpl. — Know what you own. Let go of what you don't.",
+    description:
+      "smpl. is a calm, simple place to keep track of your things. See what's quietly sitting unused, and decide what to sell, donate, or keep. Less clutter, clearer numbers.",
+    images: ["/og-image.png"],
+  },
   icons: {
     icon: [
       { url: "/icon.svg", type: "image/svg+xml" },
