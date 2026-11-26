@@ -1,8 +1,10 @@
+import path from "node:path";
 import { NextResponse } from "next/server";
 import { deleteItem, getItem, restoreItem, updateItem } from "@/lib/db";
 import type { ItemStatus, Priority, UseFrequency } from "@/lib/db";
 import { quarterToIso } from "@/lib/dates";
 import { apiUser } from "@/lib/auth";
+import { deleteFile } from "@/lib/storage";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,7 +25,8 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
   const { id } = await params;
   const itemId = Number(id);
-  if (!getItem(user.id, itemId)) return NextResponse.json({ error: "Item not found" }, { status: 404 });
+  const existing = getItem(user.id, itemId);
+  if (!existing) return NextResponse.json({ error: "Item not found" }, { status: 404 });
 
   let body: Record<string, unknown>;
   try {
@@ -81,19 +84,31 @@ export async function PATCH(req: Request, { params }: Ctx) {
   const priorities: Priority[] = ["auto", "keep", "get_rid"];
   if (priorities.includes(body.priority as Priority)) patch.priority = body.priority;
   if (typeof body.photoPath === "string" || body.photoPath === null) {
-    patch.photoPath = body.photoPath || null;
+    const newPath = body.photoPath || null;
+    if (existing.photoPath && existing.photoPath !== newPath) {
+      await deleteFile(path.basename(existing.photoPath));
+    }
+    patch.photoPath = newPath;
   }
 
   const item = updateItem(user.id, itemId, patch);
   return NextResponse.json({ item });
 }
 
-/** Delete an item outright (with its disposal history). */
+/** Delete an item outright (with its disposal history and photo file). */
 export async function DELETE(_req: Request, { params }: Ctx) {
   const user = await apiUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
   const { id } = await params;
-  const ok = deleteItem(user.id, Number(id));
+  const itemId = Number(id);
+  const existing = getItem(user.id, itemId);
+  if (!existing) return NextResponse.json({ error: "Item not found" }, { status: 404 });
+
+  if (existing.photoPath) {
+    await deleteFile(path.basename(existing.photoPath));
+  }
+
+  const ok = deleteItem(user.id, itemId);
   if (!ok) return NextResponse.json({ error: "Item not found" }, { status: 404 });
   return NextResponse.json({ ok: true });
 }

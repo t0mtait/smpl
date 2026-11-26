@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { Item, Priority, UseFrequency } from "@/lib/db";
 import { CATEGORIES, FREQUENCY_LABELS, formatCategory } from "@/lib/format";
 import { quarterToIso, today } from "@/lib/dates";
 import { IconTrash } from "@/components/icons";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { compressImage } from "@/lib/image-compression";
 
 const CURRENT_YEAR = new Date().getFullYear();
 
@@ -59,6 +60,14 @@ export default function ItemForm({ item }: Props) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [userCategories, setUserCategories] = useState<{ category: string; subcategories: string[] }[]>([]);
+
+  // Photo upload & compression state
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(
+    item?.photoPath ? `/api/photos/${item.photoPath}` : null
+  );
+  const [removePhoto, setRemovePhoto] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const initialAcq = parseQuarterYear(item?.purchaseDate);
   const initialOff = parseQuarterYear(item?.offloadedDate);
@@ -178,7 +187,7 @@ export default function ItemForm({ item }: Props) {
       lastUsedAt: null,
       useFrequency: form.useFrequency,
       priority: item?.priority ?? "auto",
-      photoPath: null,
+      photoPath: removePhoto && !photoFile ? null : (item?.photoPath ?? null),
     };
     if (isPurgatory) {
       payload.purgatoryDate = purgatoryDate.trim() || null;
@@ -196,7 +205,28 @@ export default function ItemForm({ item }: Props) {
         return;
       }
       const data = await res.json();
-      router.push(`/items/${data.item.id}`);
+      const savedItemId = data.item.id;
+
+      // If a photo was selected, compress and upload it to /api/items/[id]/photo
+      if (photoFile) {
+        try {
+          const compressed = await compressImage(photoFile, {
+            maxWidth: 1600,
+            maxHeight: 1600,
+            quality: 0.82,
+          });
+          const fd = new FormData();
+          fd.append("photo", compressed);
+          await fetch(`/api/items/${savedItemId}/photo`, {
+            method: "POST",
+            body: fd,
+          });
+        } catch {
+          // Non-fatal if photo upload fails after item is saved
+        }
+      }
+
+      router.push(`/items/${savedItemId}`);
       router.refresh();
     } catch {
       setError("Network error while saving.");
@@ -437,6 +467,89 @@ export default function ItemForm({ item }: Props) {
               onChange={set("currentValue")}
               placeholder="not recorded"
             />
+          </div>
+        </div>
+      </section>
+
+      {/* Photo Attachment Section */}
+      <section className="card p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="display text-lg">Photo</h2>
+            <p className="mt-0.5 text-xs text-muted">
+              Attached photos are automatically compressed before uploading to save storage.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          {photoPreview && !removePhoto ? (
+            <div className="relative group shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={photoPreview}
+                alt="Item preview"
+                className="h-28 w-28 rounded-xl object-cover border border-line ring-2 ring-line/50"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setPhotoFile(null);
+                  setRemovePhoto(true);
+                  if (fileInputRef.current) fileInputRef.current.value = "";
+                }}
+                className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-danger text-white shadow-md hover:bg-danger/90 transition-colors"
+                title="Remove photo"
+              >
+                ×
+              </button>
+            </div>
+          ) : (
+            <div className="flex h-28 w-28 shrink-0 items-center justify-center rounded-xl border border-dashed border-line bg-wash/60 text-muted">
+              <span className="text-xs font-medium text-muted/70">No photo</span>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/avif,image/heic"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) {
+                  setPhotoFile(f);
+                  setRemovePhoto(false);
+                  setPhotoPreview(URL.createObjectURL(f));
+                }
+              }}
+            />
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="btn-secondary text-xs py-1.5 px-3"
+              >
+                {photoPreview && !removePhoto ? "Replace photo…" : "Choose photo…"}
+              </button>
+              {photoPreview && !removePhoto && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPhotoFile(null);
+                    setRemovePhoto(true);
+                    if (fileInputRef.current) fileInputRef.current.value = "";
+                  }}
+                  className="text-xs text-danger hover:underline py-1 px-2"
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+            <p className="text-[11px] text-muted">
+              JPEG, PNG, WebP, AVIF up to 10MB.
+            </p>
           </div>
         </div>
       </section>

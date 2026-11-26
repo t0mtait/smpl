@@ -6,6 +6,8 @@ import { SignOutButton } from "@/components/SignOutButton";
 import { SignOutIconButton } from "@/components/SignOutIconButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { UserAvatar } from "@/components/UserAvatar";
+import { CommandPalette } from "@/components/CommandPalette";
+import { CommandPaletteTrigger, CommandPaletteIconButton } from "@/components/CommandPaletteTrigger";
 import {
   IconArchive,
   IconBox,
@@ -43,6 +45,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <NavigationProvider>
+      <CommandPalette />
       <div className="flex min-h-screen flex-col lg:flex-row">
       {/* ---------------- Sidebar (desktop) ---------------- */}
       <aside className="hidden w-64 shrink-0 border-r border-line bg-shell lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col">
@@ -56,6 +59,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               go_smpl
             </div>
           </div>
+        </div>
+
+        <div className="px-3 pb-3">
+          <CommandPaletteTrigger />
         </div>
 
         <nav className="flex-1 space-y-0.5 px-3">
@@ -143,6 +150,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <span className="display text-[17px] leading-none tracking-[-0.01em]">smpl.</span>
         </Link>
         <div className="flex items-center gap-2">
+          <CommandPaletteIconButton />
           <Link
             href="/account"
             className="flex items-center gap-2 rounded-lg py-1 px-1.5 transition-colors hover:bg-paper"

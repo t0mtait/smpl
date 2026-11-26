@@ -8,6 +8,7 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SignOutButton } from "@/components/SignOutButton";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { compressImage, formatFileSize } from "@/lib/image-compression";
 import {
   IconArchive,
   IconArrowLeft,
@@ -251,10 +252,11 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
     setAvatarBusy(true);
     setAvatarMsg(null);
 
-    const formData = new FormData();
-    formData.append("photo", file);
-
     try {
+      const compressed = await compressImage(file, { maxWidth: 800, maxHeight: 800, quality: 0.85 });
+      const formData = new FormData();
+      formData.append("photo", compressed);
+
       const res = await fetch("/api/user/avatar", {
         method: "POST",
         body: formData,
@@ -282,6 +284,34 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
 
   const handleRemoveAvatar = () => {
     setConfirmRemoveAvatar(true);
+  };
+
+  const [cleanupBusy, setCleanupBusy] = useState(false);
+  const [cleanupMsg, setCleanupMsg] = useState<{ text: string; type: "success" | "error" } | null>(null);
+
+  const handleCleanupOrphans = async () => {
+    setCleanupBusy(true);
+    setCleanupMsg(null);
+    try {
+      const res = await fetch("/api/storage/cleanup", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Storage cleanup failed");
+      const { deleted, freedBytes } = data.result;
+      setCleanupMsg({
+        type: "success",
+        text:
+          deleted > 0
+            ? `Cleaned up ${deleted} orphaned file${deleted === 1 ? "" : "s"} (${formatFileSize(freedBytes)} reclaimed).`
+            : "Storage is clean: no orphaned photos found.",
+      });
+    } catch (err: unknown) {
+      setCleanupMsg({
+        type: "error",
+        text: err instanceof Error ? err.message : "Cleanup failed",
+      });
+    } finally {
+      setCleanupBusy(false);
+    }
   };
 
   const confirmDeleteAvatar = async () => {
@@ -668,6 +698,29 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                 <IconBox width={12} height={12} />
               </span>
             </a>
+          </div>
+
+          {/* Storage Maintenance: Clean up orphaned photos */}
+          <div className="mt-4 pt-3 border-t border-line/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+            <div>
+              <div className="text-xs font-semibold text-ink">Storage Maintenance</div>
+              <p className="text-[11px] text-muted">
+                Scan disk and remove orphaned photo files left behind from removed items.
+              </p>
+              {cleanupMsg && (
+                <p className={`mt-1 text-xs font-medium ${cleanupMsg.type === "success" ? "text-accent" : "text-danger"}`}>
+                  {cleanupMsg.text}
+                </p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={handleCleanupOrphans}
+              disabled={cleanupBusy}
+              className="btn-secondary text-xs shrink-0 py-1.5 px-3 whitespace-nowrap"
+            >
+              {cleanupBusy ? "Scanning..." : "Clean Orphaned Photos"}
+            </button>
           </div>
         </div>
       </section>

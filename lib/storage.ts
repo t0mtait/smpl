@@ -6,7 +6,7 @@ import {
   GetObjectCommand,
   DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
-import { UPLOAD_DIR } from "./db.ts";
+import { UPLOAD_DIR, getDb } from "./db.ts";
 
 // Cloudflare R2 / S3 Configuration from environment
 const S3_ENDPOINT = process.env.R2_ENDPOINT || process.env.S3_ENDPOINT;
@@ -172,3 +172,61 @@ export function getPublicUrl(filename: string): string | null {
   }
   return null;
 }
+
+export interface CleanupResult {
+  scanned: number;
+  deleted: number;
+  freedBytes: number;
+  errors: number;
+}
+
+/**
+ * Scans storage for orphaned photos that are no longer referenced by any
+ * item or user avatar in the database, and deletes them to reclaim disk space.
+ */
+export async function cleanupOrphanedPhotos(): Promise<CleanupResult> {
+  const d = getDb();
+  const itemPhotos = d
+    .prepare("SELECT photo_path FROM items WHERE photo_path IS NOT NULL")
+    .all() as { photo_path: string }[];
+  const userAvatars = d
+    .prepare("SELECT avatar_path FROM users WHERE avatar_path IS NOT NULL")
+    .all() as { avatar_path: string }[];
+
+  const activeBasenames = new Set<string>();
+  for (const row of itemPhotos) {
+    if (row.photo_path) activeBasenames.add(path.basename(row.photo_path));
+  }
+  for (const row of userAvatars) {
+    if (row.avatar_path) activeBasenames.add(path.basename(row.avatar_path));
+  }
+
+  let scanned = 0;
+  let deleted = 0;
+  let freedBytes = 0;
+  let errors = 0;
+
+  if (fs.existsSync(UPLOAD_DIR)) {
+    const files = fs.readdirSync(UPLOAD_DIR);
+    for (const f of files) {
+      if (f.startsWith(".")) continue;
+      scanned++;
+      if (!activeBasenames.has(f)) {
+        try {
+          const filePath = path.join(UPLOAD_DIR, f);
+          const stat = fs.statSync(filePath);
+          if (stat.isFile()) {
+            freedBytes += stat.size;
+            fs.unlinkSync(filePath);
+            deleted++;
+          }
+        } catch {
+          errors++;
+        }
+      }
+    }
+  }
+
+  return { scanned, deleted, freedBytes, errors };
+}
+

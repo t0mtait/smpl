@@ -14,7 +14,7 @@ import {
   getYearStyle,
 } from "@/lib/format";
 import { CategoryTag, Pagination, QualityIcon, StatusTag } from "@/components/ui";
-import { IconBox, IconFlame, IconPlus, IconSearch, IconTrash } from "@/components/icons";
+import { IconBox, IconFlame, IconPlus, IconSearch, IconSparkles, IconTag, IconTrash } from "@/components/icons";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import {
   DEFAULT_SORT,
@@ -70,6 +70,14 @@ function InventoryInner() {
   // Deletion state
   const [deletingItem, setDeletingItem] = useState<Item | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
+
+  // Bulk action state
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+  const [confirmBulkPurgatory, setConfirmBulkPurgatory] = useState(false);
+  const [bulkCategory, setBulkCategory] = useState<string>("misc");
+  const [showBulkCategoryModal, setShowBulkCategoryModal] = useState(false);
 
   // Inline cell edit state: clicking on individual column values
   const [editingCell, setEditingCell] = useState<{ itemId: number; field: string } | null>(null);
@@ -153,6 +161,81 @@ function InventoryInner() {
   const paginatedItems = sorted.slice((safePage - 1) * 10, safePage * 10);
 
   const onSort = (key: SortKey) => setSort((current) => toggleSort(current, key));
+
+  const toggleSelectOne = (id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAllPage = () => {
+    const pageIds = paginatedItems.map((i) => i.id);
+    const allSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.has(id));
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allSelected) {
+        pageIds.forEach((id) => next.delete(id));
+      } else {
+        pageIds.forEach((id) => next.add(id));
+      }
+      return next;
+    });
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const executeBulkAction = async (
+    action: "purgatory" | "delete" | "category" | "priority",
+    extra: Record<string, unknown> = {}
+  ) => {
+    if (selectedIds.size === 0) return;
+    setBulkBusy(true);
+    setError(null);
+    try {
+      const ids = Array.from(selectedIds);
+      const res = await fetch("/api/items/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, itemIds: ids, ...extra }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Bulk action failed");
+      }
+
+      if (action === "purgatory" || action === "delete") {
+        setItems((prev) => (prev ? prev.filter((i) => !selectedIds.has(i.id)) : null));
+      } else if (action === "category" && typeof extra.category === "string") {
+        setItems((prev) =>
+          prev
+            ? prev.map((i) =>
+                selectedIds.has(i.id) ? { ...i, category: extra.category as string, subcategory: "" } : i
+              )
+            : null
+        );
+      } else if (action === "priority" && typeof extra.priority === "string") {
+        setItems((prev) =>
+          prev
+            ? prev.map((i) =>
+                selectedIds.has(i.id) ? { ...i, priority: extra.priority as any } : i
+              )
+            : null
+        );
+      }
+
+      clearSelection();
+      setConfirmBulkDelete(false);
+      setConfirmBulkPurgatory(false);
+      setShowBulkCategoryModal(false);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Bulk action failed");
+    } finally {
+      setBulkBusy(false);
+    }
+  };
 
   const moveToPurgatory = async (id: number) => {
     try {
@@ -442,6 +525,21 @@ function InventoryInner() {
               </caption>
               <thead>
                 <tr className="h-11 border-b border-line text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
+                  <th
+                    scope="col"
+                    className="w-10 px-3 sm:px-4 py-2.5 align-middle text-center"
+                  >
+                    <input
+                      type="checkbox"
+                      aria-label="Select all items on this page"
+                      checked={
+                        paginatedItems.length > 0 &&
+                        paginatedItems.every((i) => selectedIds.has(i.id))
+                      }
+                      onChange={toggleSelectAllPage}
+                      className="h-4 w-4 rounded border-line text-brand focus:ring-accent cursor-pointer"
+                    />
+                  </th>
                   {SORT_COLUMNS.map((col) => {
                     const active = sort.key === col.key;
                     const isVisibleOnMobile = col.key === "name" || col.key === "quality" || col.key === "status";
@@ -494,6 +592,20 @@ function InventoryInner() {
                       }}
                       className="h-[52px] sm:h-[54px] border-b border-line-soft transition-colors last:border-0 even:bg-wash/60 dark:even:bg-shell/70 hover:bg-wash dark:hover:bg-wash/40 cursor-pointer sm:cursor-default"
                     >
+                      {/* Selection Checkbox */}
+                      <td
+                        className="w-10 px-3 sm:px-4 py-2 sm:py-2.5 align-middle text-center"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <input
+                          type="checkbox"
+                          aria-label={`Select ${item.name}`}
+                          checked={selectedIds.has(item.id)}
+                          onChange={() => toggleSelectOne(item.id)}
+                          className="h-4 w-4 rounded border-line text-brand focus:ring-accent cursor-pointer"
+                        />
+                      </td>
+
                       {/* Item Name */}
                       <th scope="row" className="px-3 sm:px-4 py-2 sm:py-2.5 align-middle text-left font-normal">
                         <button
@@ -1047,6 +1159,162 @@ function InventoryInner() {
         }}
         onCancel={() => setDeletingItem(null)}
       />
+
+      {/* ---------------- Floating Bulk Action Bar ---------------- */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 sm:gap-3 rounded-2xl border border-line bg-card/95 px-4 py-3 shadow-2xl backdrop-blur-md animate-rise max-w-[95vw] overflow-x-auto ring-1 ring-black/5 dark:ring-white/10">
+          <div className="flex items-center gap-2 border-r border-line pr-3">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand text-xs font-bold text-brand-fg">
+              {selectedIds.size}
+            </span>
+            <span className="text-xs font-semibold text-ink whitespace-nowrap">
+              {selectedIds.size === 1 ? "item" : "items"} selected
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <button
+              type="button"
+              onClick={() => setConfirmBulkPurgatory(true)}
+              disabled={bulkBusy}
+              className="btn-secondary text-xs py-1.5 px-2.5 sm:px-3 flex items-center gap-1.5 text-clay hover:bg-clay-soft whitespace-nowrap"
+              title="Move selected items to Purgatory"
+            >
+              <IconFlame width={14} height={14} className="shrink-0" />
+              <span>Purgatory</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowBulkCategoryModal(true)}
+              disabled={bulkBusy}
+              className="btn-secondary text-xs py-1.5 px-2.5 sm:px-3 flex items-center gap-1.5 whitespace-nowrap"
+              title="Change category for selected items"
+            >
+              <IconTag width={14} height={14} className="shrink-0" />
+              <span>Category</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => executeBulkAction("priority", { priority: "keep" })}
+              disabled={bulkBusy}
+              className="btn-secondary text-xs py-1.5 px-2.5 sm:px-3 flex items-center gap-1.5 text-accent hover:bg-accent-soft whitespace-nowrap"
+              title="Mark selected as keep"
+            >
+              <IconSparkles width={14} height={14} className="shrink-0" />
+              <span>Mark Keep</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setConfirmBulkDelete(true)}
+              disabled={bulkBusy}
+              className="btn-danger text-xs py-1.5 px-2.5 sm:px-3 flex items-center gap-1.5 whitespace-nowrap"
+              title="Delete selected items permanently"
+            >
+              <IconTrash width={14} height={14} className="shrink-0" />
+              <span>Delete</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={clearSelection}
+              className="text-xs text-muted hover:text-ink px-2 py-1 ml-1 whitespace-nowrap transition-colors"
+              title="Deselect all"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Bulk Delete Dialog */}
+      <ConfirmDialog
+        open={confirmBulkDelete}
+        title={`Delete ${selectedIds.size} item${selectedIds.size === 1 ? "" : "s"} permanently?`}
+        message={
+          <>
+            Are you sure you want to permanently delete <strong>{selectedIds.size}</strong> selected item
+            {selectedIds.size === 1 ? "" : "s"}? Their photos and histories will be permanently removed.
+          </>
+        }
+        confirmLabel="Delete selected"
+        busy={bulkBusy}
+        onConfirm={() => executeBulkAction("delete")}
+        onCancel={() => setConfirmBulkDelete(false)}
+      />
+
+      {/* Confirm Bulk Purgatory Dialog */}
+      <ConfirmDialog
+        open={confirmBulkPurgatory}
+        title={`Move ${selectedIds.size} item${selectedIds.size === 1 ? "" : "s"} to Purgatory?`}
+        message={
+          <>
+            Move <strong>{selectedIds.size}</strong> selected item{selectedIds.size === 1 ? "" : "s"} to Purgatory? They will be removed from active inventory to test living without them.
+          </>
+        }
+        confirmLabel="Move to Purgatory"
+        busy={bulkBusy}
+        onConfirm={() => executeBulkAction("purgatory")}
+        onCancel={() => setConfirmBulkPurgatory(false)}
+      />
+
+      {/* Bulk Category Change Modal */}
+      {showBulkCategoryModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          onClick={() => setShowBulkCategoryModal(false)}
+        >
+          <div
+            className="card w-full max-w-sm border border-line bg-card p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="display text-lg">Change Category</h3>
+            <p className="mt-1 text-xs text-muted">
+              Select a new category for the {selectedIds.size} selected item{selectedIds.size === 1 ? "" : "s"}.
+            </p>
+
+            <div className="mt-4">
+              <label className="label" htmlFor="bulk-cat-select">
+                New Category
+              </label>
+              <select
+                id="bulk-cat-select"
+                value={bulkCategory}
+                onChange={(e) => setBulkCategory(e.target.value)}
+                className="input text-sm"
+              >
+                {(userCategories.length > 0 ? userCategories.map((u) => u.category) : CATEGORIES).map((c) => (
+                  <option key={c} value={c}>
+                    {formatCategory(c)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowBulkCategoryModal(false)}
+                className="btn border border-line text-xs"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={bulkBusy}
+                onClick={() => executeBulkAction("category", { category: bulkCategory })}
+                className="btn-primary text-xs"
+              >
+                {bulkBusy ? "Updating…" : "Apply Category"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
