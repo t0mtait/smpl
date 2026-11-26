@@ -4,6 +4,7 @@ import type Stripe from "stripe";
 import { stripe } from "@/lib/stripe";
 import {
   getUserById,
+  getUserByEmail,
   getUserByStripeCustomer,
   updateUserSubscription,
 } from "@/lib/db";
@@ -40,22 +41,28 @@ export async function POST(req: Request) {
         const subscriptionId = session.subscription as string;
         const userIdStr = session.client_reference_id || session.metadata?.userId;
 
-        if (userIdStr && subscriptionId) {
-          const userId = Number(userIdStr);
+        let userId = userIdStr ? Number(userIdStr) : null;
+        if (!userId && session.customer_details?.email) {
+          const userByEmail = getUserByEmail(session.customer_details.email);
+          if (userByEmail) userId = userByEmail.id;
+        }
+
+        if (userId && subscriptionId) {
           const sub = (await stripe.subscriptions.retrieve(subscriptionId)) as any;
           const recurringInterval = sub.items?.data?.[0]?.price?.recurring?.interval;
           const interval =
             recurringInterval === "year" ? "yearly" : recurringInterval === "week" ? "trial" : "monthly";
-          const currentPeriodEnd = (sub.current_period_end || sub.items?.data?.[0]?.current_period_end) as number;
+          const currentPeriodEnd = (sub.current_period_end || sub.items?.data?.[0]?.current_period_end || sub.trial_end) as number | undefined;
           const renewsAt = currentPeriodEnd
             ? new Date(currentPeriodEnd * 1000).toISOString().slice(0, 10)
-            : null;
+            : new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
 
           updateUserSubscription(userId, "premium", interval, renewsAt, customerId, subscriptionId);
         }
         break;
       }
 
+      case "customer.subscription.created":
       case "customer.subscription.updated": {
         const sub = event.data.object as any;
         const customerId = sub.customer as string;
@@ -66,16 +73,24 @@ export async function POST(req: Request) {
         if (!user && sub.metadata?.userId) {
           user = getUserById(Number(sub.metadata.userId));
         }
+        if (!user) {
+          try {
+            const customer = (await stripe.customers.retrieve(customerId)) as any;
+            if (customer && !customer.deleted && customer.email) {
+              user = getUserByEmail(customer.email);
+            }
+          } catch {}
+        }
 
         if (user) {
           if (status === "active" || status === "trialing") {
             const recurringInterval = sub.items?.data?.[0]?.price?.recurring?.interval;
             const interval =
               recurringInterval === "year" ? "yearly" : recurringInterval === "week" ? "trial" : "monthly";
-            const currentPeriodEnd = (sub.current_period_end || sub.items?.data?.[0]?.current_period_end) as number;
+            const currentPeriodEnd = (sub.current_period_end || sub.items?.data?.[0]?.current_period_end || sub.trial_end) as number | undefined;
             const renewsAt = currentPeriodEnd
               ? new Date(currentPeriodEnd * 1000).toISOString().slice(0, 10)
-              : null;
+              : new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
 
             updateUserSubscription(user.id, "premium", interval, renewsAt, customerId, subscriptionId);
           } else if (status === "canceled" || status === "unpaid") {
@@ -91,6 +106,14 @@ export async function POST(req: Request) {
         let user = getUserByStripeCustomer(customerId);
         if (!user && sub.metadata?.userId) {
           user = getUserById(Number(sub.metadata.userId));
+        }
+        if (!user) {
+          try {
+            const customer = (await stripe.customers.retrieve(customerId)) as any;
+            if (customer && !customer.deleted && customer.email) {
+              user = getUserByEmail(customer.email);
+            }
+          } catch {}
         }
 
         if (user) {

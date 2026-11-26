@@ -17,7 +17,16 @@ const SESSION_COOKIE = "smpl_session";
 const LEGACY_SESSION_COOKIE = "declutter_session";
 
 /** Paths that must stay reachable without a session. */
-const PUBLIC_PREFIXES = ["/auth/", "/api/auth/", "/welcome", "/_next/", "/favicon"];
+const PUBLIC_PREFIXES = [
+  "/auth/",
+  "/api/auth/",
+  "/api/stripe/webhook",
+  "/welcome",
+  "/opengraph-image",
+  "/twitter-image",
+  "/_next/",
+  "/favicon",
+];
 
 /** Public file extensions (static assets). */
 const PUBLIC_SUFFIXES = [
