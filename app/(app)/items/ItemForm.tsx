@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { Item, Priority, UseFrequency } from "@/lib/db";
-import { CATEGORIES, FREQUENCY_LABELS, formatCategory } from "@/lib/format";
+import { CATEGORIES, FREQUENCY_LABELS, formatCategory, getCurrencySymbol } from "@/lib/format";
 import { quarterToIso, today } from "@/lib/dates";
 import { IconTrash } from "@/components/icons";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -54,6 +54,7 @@ interface Props {
 }
 
 export default function ItemForm({ item }: Props) {
+  const currencySymbol = getCurrencySymbol();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -438,7 +439,7 @@ export default function ItemForm({ item }: Props) {
           </div>
           <div>
             <label className="label" htmlFor="purchasePrice">
-              Paid
+              Paid ({currencySymbol})
               <span className="ml-1 font-normal text-muted">optional</span>
             </label>
             <input
@@ -454,7 +455,7 @@ export default function ItemForm({ item }: Props) {
           </div>
           <div>
             <label className="label" htmlFor="currentValue">
-              Value
+              Value ({currencySymbol})
               <span className="ml-1 font-normal text-muted">optional</span>
             </label>
             <input

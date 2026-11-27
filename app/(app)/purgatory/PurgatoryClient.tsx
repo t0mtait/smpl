@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Item } from "@/lib/db";
-import { CATEGORIES, formatCategory, formatMoney, formatQuarter } from "@/lib/format";
+import { CATEGORIES, formatCategory, formatMoney, formatQuarter, getCurrencySymbol } from "@/lib/format";
 import { currentQuarter, daysSinceDate } from "@/lib/dates";
 import { shouldAutoSelectInput } from "@/lib/device";
 import { CategoryTag, Pagination } from "@/components/ui";
@@ -19,6 +19,7 @@ interface OffloadModalProps {
 }
 
 function OffloadModal({ item, onClose, onSuccess }: OffloadModalProps) {
+  const currencySymbol = getCurrencySymbol();
   const [amount, setAmount] = useState<string>("0");
   const [date, setDate] = useState<string>(currentQuarter());
   const [notes, setNotes] = useState<string>("");
@@ -77,11 +78,11 @@ function OffloadModal({ item, onClose, onSuccess }: OffloadModalProps) {
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
           <div>
             <label className="label" htmlFor="offload-amount">
-              $ Returned on offload
+              {currencySymbol} Returned on offload
             </label>
             <div className="relative">
               <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted">
-                $
+                {currencySymbol}
               </span>
               <input
                 id="offload-amount"
@@ -95,7 +96,7 @@ function OffloadModal({ item, onClose, onSuccess }: OffloadModalProps) {
                 required
               />
             </div>
-            <p className="mt-1 text-[11px] text-muted">Default is $0 (disposed / donated / no return).</p>
+            <p className="mt-1 text-[11px] text-muted">Default is {currencySymbol}0 (disposed / donated / no return).</p>
           </div>
 
           <div>
@@ -192,6 +193,7 @@ type PurgatorySortKey = "name" | "brand" | "category" | "value" | "acquired" | "
 type SortDirection = "asc" | "desc";
 
 export default function PurgatoryClient({ initialItems }: { initialItems: Item[] }) {
+  const currencySymbol = getCurrencySymbol();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -1014,7 +1016,7 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
               <div className="grid grid-cols-2 gap-3 sm:col-span-2">
                 <div>
                   <label className="label" htmlFor="edit-item-value">
-                    Value ($)
+                    Value ({currencySymbol})
                   </label>
                   <input
                     id="edit-item-value"
@@ -1029,7 +1031,7 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
 
                 <div>
                   <label className="label" htmlFor="edit-item-price">
-                    Paid ($)
+                    Paid ({currencySymbol})
                   </label>
                   <input
                     id="edit-item-price"

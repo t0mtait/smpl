@@ -10,6 +10,7 @@ import {
   formatCategory,
   formatMoney,
   formatQuarter,
+  getCurrencySymbol,
   getItemStatusInfo,
   getYearStyle,
 } from "@/lib/format";
@@ -27,6 +28,7 @@ import {
 } from "@/lib/sort";
 
 function InventoryInner() {
+  const currencySymbol = getCurrencySymbol();
   const params = useSearchParams();
   const [items, setItems] = useState<Item[] | null>(null);
   const [query, setQuery] = useState("");
@@ -1060,7 +1062,7 @@ function InventoryInner() {
               <div className="grid grid-cols-2 gap-3 sm:col-span-2">
                 <div>
                   <label className="label" htmlFor="edit-item-value">
-                    Value ($)
+                    Value ({currencySymbol})
                   </label>
                   <input
                     id="edit-item-value"
@@ -1075,7 +1077,7 @@ function InventoryInner() {
 
                 <div>
                   <label className="label" htmlFor="edit-item-price">
-                    Paid ($)
+                    Paid ({currencySymbol})
                   </label>
                   <input
                     id="edit-item-price"

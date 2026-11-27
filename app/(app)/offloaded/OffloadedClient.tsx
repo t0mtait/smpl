@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Item } from "@/lib/db";
-import { CATEGORIES, formatCategory, formatMoney, formatQuarter, getItemStatusInfo, getYearStyle } from "@/lib/format";
+import { CATEGORIES, formatCategory, formatMoney, formatQuarter, getCurrencySymbol, getItemStatusInfo, getYearStyle } from "@/lib/format";
 import { shouldAutoSelectInput } from "@/lib/device";
 import { CategoryTag, Pagination, StatusTag } from "@/components/ui";
 import {
@@ -25,6 +25,7 @@ export default function OffloadedClient({
   initialItems: Item[];
   saleAmounts: Record<number, number>;
 }) {
+  const currencySymbol = getCurrencySymbol();
   const router = useRouter();
   const [items, setItems] = useState<Item[]>(initialItems);
   const [query, setQuery] = useState("");
@@ -762,7 +763,7 @@ export default function OffloadedClient({
               <div className="grid grid-cols-2 gap-3 sm:col-span-2">
                 <div>
                   <label className="label" htmlFor="edit-item-value">
-                    Value ($)
+                    Value ({currencySymbol})
                   </label>
                   <input
                     id="edit-item-value"
@@ -777,7 +778,7 @@ export default function OffloadedClient({
 
                 <div>
                   <label className="label" htmlFor="edit-item-price">
-                    Paid ($)
+                    Paid ({currencySymbol})
                   </label>
                   <input
                     id="edit-item-price"

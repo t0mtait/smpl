@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import type { WishlistItem } from "@/lib/db";
-import { formatMoney, formatCategory, CATEGORIES } from "@/lib/format";
+import { formatMoney, formatCategory, getCurrencySymbol, CATEGORIES } from "@/lib/format";
 import { daysSinceDate } from "@/lib/dates";
 import { shouldAutoSelectInput } from "@/lib/device";
 import { CategoryTag, Pagination, PriorityRing } from "@/components/ui";
@@ -85,13 +85,16 @@ function CooldownRing({ days }: { days: number }) {
 
 export default function WishlistClient({
   isPro = true,
+  currency,
   initialSavedCount = 0,
   initialSumCost = 0,
 }: {
   isPro?: boolean;
+  currency?: string;
   initialSavedCount?: number;
   initialSumCost?: number;
 }) {
+  const currencySymbol = getCurrencySymbol(currency);
   const [items, setItems] = useState<WishlistItem[] | null>(null);
   const [savedCount, setSavedCount] = useState<number>(initialSavedCount);
   const [loading, setLoading] = useState(true);
@@ -701,7 +704,7 @@ export default function WishlistClient({
 
             <div>
               <label className="label" htmlFor="add-price">
-                Price ($)
+                Price ({currencySymbol})
               </label>
               <input
                 id="add-price"
@@ -1255,7 +1258,7 @@ export default function WishlistClient({
 
               <div>
                 <label className="label" htmlFor="edit-price">
-                  Price ($)
+                  Price ({currencySymbol})
                 </label>
                 <input
                   id="edit-price"
@@ -1412,7 +1415,7 @@ export default function WishlistClient({
 
             <div>
               <label className="label" htmlFor="convert-price">
-                Actual purchase price ($)
+                Actual purchase price ({currencySymbol})
               </label>
               <input
                 id="convert-price"

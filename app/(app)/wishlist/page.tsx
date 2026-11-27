@@ -17,6 +17,7 @@ export default async function WishlistPage() {
   return (
     <WishlistClient
       isPro={user.plan === "premium"}
+      currency={user.currency || "USD"}
       initialSavedCount={savedCount}
       initialSumCost={initialSumCost}
     />

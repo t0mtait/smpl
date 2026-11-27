@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { Disposition, Item } from "@/lib/db";
-import { formatDate, formatMoney, STATUS_LABELS, STATUS_STYLES } from "@/lib/format";
+import { formatDate, formatMoney, getCurrencySymbol, STATUS_LABELS, STATUS_STYLES } from "@/lib/format";
 import { StatusTag } from "@/components/ui";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { today } from "@/lib/dates";
@@ -31,6 +31,7 @@ const OUTCOMES: { value: Disposition; label: string; icon: React.ReactNode }[] =
 ];
 
 export default function ItemActions({ item }: { item: Item }) {
+  const currencySymbol = getCurrencySymbol();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [disposition, setDisposition] = useState<Disposition>("sold");
@@ -232,7 +233,7 @@ export default function ItemActions({ item }: { item: Item }) {
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
               <label className="label" htmlFor="amount">
-                Amount ($)
+                Amount ({currencySymbol})
                 {disposition === "sold" ? (
                   <span className="ml-1 font-normal text-muted">optional</span>
                 ) : null}
