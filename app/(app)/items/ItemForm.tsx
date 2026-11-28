@@ -8,6 +8,7 @@ import { quarterToIso, today } from "@/lib/dates";
 import { IconTrash } from "@/components/icons";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { compressImage } from "@/lib/image-compression";
+import { handleFormQuickSave, isQuickSaveKey } from "@/lib/keyboard";
 
 const CURRENT_YEAR = new Date().getFullYear();
 
@@ -56,11 +57,30 @@ interface Props {
 export default function ItemForm({ item }: Props) {
   const currencySymbol = getCurrencySymbol();
   const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [userCategories, setUserCategories] = useState<{ category: string; subcategories: string[] }[]>([]);
+
+  // Window-level shortcut listener for Command+Enter or Ctrl+Enter
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (isQuickSaveKey(e)) {
+        e.preventDefault();
+        if (formRef.current) {
+          if (typeof formRef.current.requestSubmit === "function") {
+            formRef.current.requestSubmit();
+          } else {
+            formRef.current.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+          }
+        }
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   // Photo upload & compression state
   const [photoFile, setPhotoFile] = useState<File | null>(null);
@@ -236,7 +256,7 @@ export default function ItemForm({ item }: Props) {
   };
 
   return (
-    <form onSubmit={submit} className="space-y-5">
+    <form ref={formRef} onSubmit={submit} onKeyDown={handleFormQuickSave} className="space-y-5">
       {error ? (
         <div className="card border-danger-line bg-danger-soft p-4 text-sm text-danger">{error}</div>
       ) : null}
@@ -557,8 +577,16 @@ export default function ItemForm({ item }: Props) {
 
       <div className="flex items-center justify-between gap-2">
         <div className="flex gap-2">
-          <button type="submit" className="btn-primary" disabled={saving}>
+          <button
+            type="submit"
+            className="btn-primary"
+            disabled={saving}
+            title="Save (⌘+Enter / Ctrl+Enter)"
+          >
             {saving ? "Saving…" : item ? "Save changes" : "Add item"}
+            <kbd className="ml-1.5 hidden sm:inline-flex items-center rounded border border-brand-fg/25 bg-brand-fg/10 px-1 py-0.5 text-[10px] font-sans opacity-90">
+              ⌘↵
+            </kbd>
           </button>
           <button type="button" className="btn-secondary" onClick={() => router.back()}>
             Cancel

@@ -11,6 +11,7 @@ import { CategoryTag, Pagination } from "@/components/ui";
 import { IconArrowLeft, IconBox, IconCheck,
   IconSearch, IconFlame, IconTrash, IconUndo } from "@/components/icons";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { handleFormQuickSave } from "@/lib/keyboard";
 
 interface OffloadModalProps {
   item: Item;
@@ -75,7 +76,7 @@ function OffloadModal({ item, onClose, onSuccess }: OffloadModalProps) {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+        <form onSubmit={handleSubmit} onKeyDown={handleFormQuickSave} className="mt-5 space-y-4">
           <div>
             <label className="label" htmlFor="offload-amount">
               {currencySymbol} Returned on offload
@@ -141,9 +142,13 @@ function OffloadModal({ item, onClose, onSuccess }: OffloadModalProps) {
               type="submit"
               className="btn-clay"
               disabled={busy}
+              title="Confirm offload (⌘+Enter / Ctrl+Enter)"
             >
               <IconCheck width={15} height={15} />
               {busy ? "Offloading…" : "Confirm Offload"}
+              <kbd className="ml-1.5 hidden sm:inline-flex items-center rounded border border-clay-fg/25 bg-clay-fg/10 px-1 py-0.5 text-[10px] font-sans opacity-90">
+                ⌘↵
+              </kbd>
             </button>
           </div>
         </form>
@@ -879,6 +884,7 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
           <form
             onSubmit={handleEditSubmit}
+            onKeyDown={handleFormQuickSave}
             className="card animate-rise w-full max-w-lg space-y-4 p-6 shadow-xl max-h-[90vh] overflow-y-auto"
           >
             <div className="flex items-center justify-between border-b border-line pb-3">
@@ -1107,8 +1113,16 @@ export default function PurgatoryClient({ initialItems }: { initialItems: Item[]
                 >
                   Cancel
                 </button>
-                <button type="submit" disabled={editBusy} className="btn-primary">
+                <button
+                  type="submit"
+                  disabled={editBusy}
+                  className="btn-primary"
+                  title="Save changes (⌘+Enter / Ctrl+Enter)"
+                >
                   {editBusy ? "Saving…" : "Save changes"}
+                  <kbd className="ml-1.5 hidden sm:inline-flex items-center rounded border border-brand-fg/25 bg-brand-fg/10 px-1 py-0.5 text-[10px] font-sans opacity-90">
+                    ⌘↵
+                  </kbd>
                 </button>
               </div>
             </div>

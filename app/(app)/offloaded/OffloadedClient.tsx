@@ -17,6 +17,7 @@ import {
   IconUndo,
 } from "@/components/icons";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { handleFormQuickSave } from "@/lib/keyboard";
 
 export default function OffloadedClient({
   initialItems,
@@ -626,6 +627,7 @@ export default function OffloadedClient({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
           <form
             onSubmit={handleEditSubmit}
+            onKeyDown={handleFormQuickSave}
             className="card animate-rise w-full max-w-lg space-y-4 p-6 shadow-xl max-h-[90vh] overflow-y-auto"
           >
             <div className="flex items-center justify-between border-b border-line pb-3">
@@ -851,8 +853,16 @@ export default function OffloadedClient({
                 >
                   Cancel
                 </button>
-                <button type="submit" disabled={editBusy} className="btn-primary">
+                <button
+                  type="submit"
+                  disabled={editBusy}
+                  className="btn-primary"
+                  title="Save changes (⌘+Enter / Ctrl+Enter)"
+                >
                   {editBusy ? "Saving…" : "Save changes"}
+                  <kbd className="ml-1.5 hidden sm:inline-flex items-center rounded border border-brand-fg/25 bg-brand-fg/10 px-1 py-0.5 text-[10px] font-sans opacity-90">
+                    ⌘↵
+                  </kbd>
                 </button>
               </div>
             </div>

@@ -7,6 +7,7 @@ import type { Disposition, Item } from "@/lib/db";
 import { formatDate, formatMoney, getCurrencySymbol, STATUS_LABELS, STATUS_STYLES } from "@/lib/format";
 import { StatusTag } from "@/components/ui";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { handleFormQuickSave } from "@/lib/keyboard";
 import { today } from "@/lib/dates";
 import {
   IconArchive,
@@ -201,7 +202,7 @@ export default function ItemActions({ item }: { item: Item }) {
       </div>
 
       {open ? (
-        <form onSubmit={submit} className="space-y-5 p-6">
+        <form onSubmit={submit} onKeyDown={handleFormQuickSave} className="space-y-5 p-6">
           {error ? (
             <div className="rounded-lg border border-danger-line bg-danger-soft p-3 text-sm text-danger">
               {error}
@@ -295,8 +296,16 @@ export default function ItemActions({ item }: { item: Item }) {
           </div>
 
           <div className="flex gap-2">
-            <button type="submit" className="btn-moss" disabled={busy}>
+            <button
+              type="submit"
+              className="btn-moss"
+              disabled={busy}
+              title="Record outcome (⌘+Enter / Ctrl+Enter)"
+            >
               {busy ? "Saving…" : "Record it"}
+              <kbd className="ml-1.5 hidden sm:inline-flex items-center rounded border border-moss-fg/25 bg-moss-fg/10 px-1 py-0.5 text-[10px] font-sans opacity-90">
+                ⌘↵
+              </kbd>
             </button>
             <button type="button" className="btn-secondary" onClick={() => setOpen(false)}>
               Cancel

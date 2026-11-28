@@ -8,6 +8,7 @@ import { daysSinceDate } from "@/lib/dates";
 import { shouldAutoSelectInput } from "@/lib/device";
 import { CategoryTag, Pagination, PriorityRing } from "@/components/ui";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { handleFormQuickSave } from "@/lib/keyboard";
 import {
   IconCheck,
   IconExternalLink,
@@ -668,7 +669,11 @@ export default function WishlistClient({
 
       {/* ---------------- Add Form Card ---------------- */}
       {showAddForm && (
-        <form onSubmit={handleAddSubmit} className="card animate-rise space-y-4 p-6 border-brand">
+        <form
+          onSubmit={handleAddSubmit}
+          onKeyDown={handleFormQuickSave}
+          className="card animate-rise space-y-4 p-6 border-brand"
+        >
           <div className="flex items-center justify-between border-b border-line pb-3">
             <h2 className="display text-xl">New wishlist candidate</h2>
             <button
@@ -828,8 +833,16 @@ export default function WishlistClient({
             >
               Cancel
             </button>
-            <button type="submit" disabled={addBusy} className="btn-primary">
+            <button
+              type="submit"
+              disabled={addBusy}
+              className="btn-primary"
+              title="Save to wishlist (⌘+Enter / Ctrl+Enter)"
+            >
               {addBusy ? "Adding…" : "Save to wishlist"}
+              <kbd className="ml-1.5 hidden sm:inline-flex items-center rounded border border-brand-fg/25 bg-brand-fg/10 px-1 py-0.5 text-[10px] font-sans opacity-90">
+                ⌘↵
+              </kbd>
             </button>
           </div>
         </form>
@@ -1222,6 +1235,7 @@ export default function WishlistClient({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
           <form
             onSubmit={handleEditSubmit}
+            onKeyDown={handleFormQuickSave}
             className="card animate-rise w-full max-w-lg space-y-4 p-6 shadow-xl"
           >
             <div className="flex items-center justify-between border-b border-line pb-3">
@@ -1377,8 +1391,16 @@ export default function WishlistClient({
               >
                 Cancel
               </button>
-              <button type="submit" disabled={editBusy} className="btn-primary">
+              <button
+                type="submit"
+                disabled={editBusy}
+                className="btn-primary"
+                title="Save changes (⌘+Enter / Ctrl+Enter)"
+              >
                 {editBusy ? "Saving…" : "Save changes"}
+                <kbd className="ml-1.5 hidden sm:inline-flex items-center rounded border border-brand-fg/25 bg-brand-fg/10 px-1 py-0.5 text-[10px] font-sans opacity-90">
+                  ⌘↵
+                </kbd>
               </button>
             </div>
           </form>
@@ -1390,6 +1412,7 @@ export default function WishlistClient({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
           <form
             onSubmit={handleConvertSubmit}
+            onKeyDown={handleFormQuickSave}
             className="card animate-rise w-full max-w-md space-y-4 p-6 shadow-xl"
           >
             <div className="flex items-center justify-between border-b border-line pb-3">
@@ -1438,8 +1461,16 @@ export default function WishlistClient({
               >
                 Cancel
               </button>
-              <button type="submit" disabled={convertBusy} className="btn-primary">
+              <button
+                type="submit"
+                disabled={convertBusy}
+                className="btn-primary"
+                title="Confirm purchase (⌘+Enter / Ctrl+Enter)"
+              >
                 {convertBusy ? "Moving…" : "Confirm purchase"}
+                <kbd className="ml-1.5 hidden sm:inline-flex items-center rounded border border-brand-fg/25 bg-brand-fg/10 px-1 py-0.5 text-[10px] font-sans opacity-90">
+                  ⌘↵
+                </kbd>
               </button>
             </div>
           </form>
