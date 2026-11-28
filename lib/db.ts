@@ -805,6 +805,38 @@ export function createItem(ownerId: number, input: ItemInput): Item {
   return item;
 }
 
+export function duplicateItem(ownerId: number, itemId: number): Item | null {
+  const original = getItem(ownerId, itemId);
+  if (!original) return null;
+
+  return createItem(ownerId, {
+    name: `${original.name} (Copy)`,
+    brand: original.brand,
+    category: original.category,
+    subcategory: original.subcategory,
+    quality: original.quality,
+    description: original.description,
+    location: original.location,
+    purchaseDate: original.purchaseDate,
+    offloadedDate: null,
+    purgatoryDate: null,
+    purchasePrice: original.purchasePrice,
+    currentValue: original.currentValue,
+    status:
+      original.status === "purgatory" ||
+      original.status === "sold" ||
+      original.status === "donated" ||
+      original.status === "disposed" ||
+      original.status === "closed"
+        ? "owned"
+        : original.status,
+    lastUsedAt: original.lastUsedAt,
+    useFrequency: original.useFrequency,
+    photoPath: original.photoPath,
+    priority: original.priority,
+  });
+}
+
 export function updateItem(ownerId: number, id: number, input: Partial<ItemInput>): Item | null {
   const existing = getItem(ownerId, id);
   if (!existing) return null;

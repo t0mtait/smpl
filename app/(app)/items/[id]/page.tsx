@@ -8,6 +8,7 @@ import { ActiveSectionSync } from "@/components/NavigationContext";
 import { ScoreRing, StatusTag, CategoryTag } from "@/components/ui";
 import { IconArrowLeft, IconPencil } from "@/components/icons";
 import ItemActions from "./ItemActions";
+import { DuplicateButton } from "./DuplicateButton";
 
 export const dynamic = "force-dynamic";
 
@@ -151,6 +152,7 @@ export default async function ItemPage({
                 <IconPencil width={15} height={15} />
                 Edit details
               </Link>
+              <DuplicateButton itemId={item.id} />
             </div>
           </header>
 

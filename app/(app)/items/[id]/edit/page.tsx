@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getItem } from "@/lib/db";
+import { getItem, listUserCategories } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { IconArrowLeft } from "@/components/icons";
 import { ActiveSectionSync } from "@/components/NavigationContext";
@@ -20,6 +20,7 @@ export default async function EditItemPage({
   const user = await requireUser(`/items/${id}/edit`);
   const item = getItem(user.id, Number(id));
   if (!item) notFound();
+  const initialCategories = listUserCategories(user.id);
 
   const isOffloaded =
     item.status === "sold" ||
@@ -55,7 +56,7 @@ export default async function EditItemPage({
           Back to item
         </Link>
       </header>
-      <ItemForm item={item} />
+      <ItemForm item={item} initialCategories={initialCategories} />
     </div>
   );
 }

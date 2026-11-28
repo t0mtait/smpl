@@ -52,9 +52,10 @@ function normalizeUsage(val: string | null | undefined): string {
 
 interface Props {
   item?: Item | null;
+  initialCategories?: { category: string; subcategories: string[] }[];
 }
 
-export default function ItemForm({ item }: Props) {
+export default function ItemForm({ item, initialCategories }: Props) {
   const currencySymbol = getCurrencySymbol();
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -62,7 +63,9 @@ export default function ItemForm({ item }: Props) {
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
-  const [userCategories, setUserCategories] = useState<{ category: string; subcategories: string[] }[]>([]);
+  const [userCategories, setUserCategories] = useState<{ category: string; subcategories: string[] }[]>(
+    initialCategories || []
+  );
 
   // Window-level shortcut listener for Command+Enter or Ctrl+Enter
   useEffect(() => {
@@ -147,15 +150,31 @@ export default function ItemForm({ item }: Props) {
     fetch("/api/user/categories")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data?.categories) setUserCategories(data.categories);
+        if (data?.categories) {
+          setUserCategories(data.categories);
+          if (!item) {
+            setForm((f) => {
+              if (!f.category || f.category === "uncategorized") {
+                return { ...f, category: data.categories[0]?.category || CATEGORIES[0] || "clothing" };
+              }
+              return f;
+            });
+          }
+        }
       })
       .catch(() => {});
-  }, []);
+  }, [item]);
+
+  const defaultCategory =
+    item?.category ||
+    initialCategories?.[0]?.category ||
+    CATEGORIES[0] ||
+    "clothing";
 
   const [form, setForm] = useState({
     name: item?.name ?? "",
     brand: item?.brand ?? "",
-    category: item?.category ?? "uncategorized",
+    category: defaultCategory,
     subcategory: item?.subcategory ?? "",
     quality: item?.quality ?? "",
     description: item?.description ?? "",
@@ -313,7 +332,11 @@ export default function ItemForm({ item }: Props) {
             <select id="subcategory" className="input" value={form.subcategory} onChange={set("subcategory")}>
               <option value="">None</option>
               {(() => {
-                const opts = userCategories.find((u) => u.category === form.category)?.subcategories || [];
+                const currentCat = (form.category || "").toLowerCase().trim();
+                const matched = userCategories.find(
+                  (u) => (u.category || "").toLowerCase().trim() === currentCat
+                );
+                const opts = matched?.subcategories || [];
                 const all = form.subcategory && !opts.includes(form.subcategory) ? [form.subcategory, ...opts] : opts;
                 return all.map((s) => (
                   <option key={s} value={s}>

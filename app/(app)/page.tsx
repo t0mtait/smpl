@@ -97,7 +97,7 @@ export default async function DashboardPage() {
         {/* Mobile: single compact row for all 4 tiles */}
         <div className="card p-3 sm:hidden shadow-sm">
           <div className="grid grid-cols-4 divide-x divide-line text-center">
-            <Link href="/items?status=owned" className="px-1 py-0.5 block hover:opacity-80">
+            <Link href="/items" className="px-1 py-0.5 block hover:opacity-80">
               <div className="text-[9px] font-semibold uppercase tracking-wider text-muted">Owned</div>
               <div className="mt-1 text-base font-bold tabular text-ink leading-none">{stats.ownedItems}</div>
               <div className="mt-1 text-[9px] tabular font-medium text-accent">{formatMoney(stats.totalValueOwned, user.currency)}</div>
@@ -127,7 +127,7 @@ export default async function DashboardPage() {
           {/* Consolidated tile for owned, purgatory, and offloaded */}
           <div className="card p-5 sm:p-6 shadow-sm flex-1 flex flex-col justify-between">
             <div className="grid grid-cols-3 divide-x divide-line h-full items-center">
-              <Link href="/items?status=owned" className="px-4 py-2 group hover:bg-wash/40 rounded-lg transition-colors flex flex-col justify-center h-full">
+              <Link href="/items" className="px-4 py-2 group hover:bg-wash/40 rounded-lg transition-colors flex flex-col justify-center h-full">
                 <div className="flex items-center justify-between text-muted">
                   <span className="text-[11px] font-semibold uppercase tracking-wider">Items owned</span>
                   <span className="text-muted group-hover:text-ink"><IconBox width={15} height={15} /></span>

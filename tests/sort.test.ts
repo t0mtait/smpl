@@ -335,6 +335,15 @@ function names(items: Item[]): string[] {
   eqList("purgatory filter",
     names(filterItems([purgItem, item({ id: 11, name: "Other" })], { query: "", status: "purgatory", category: "all" })),
     ["Purgatory Item"]);
+
+  eqList("owned status filter keeps owned items and excludes offloaded or purgatory",
+    names(filterItems([
+      item({ id: 20, name: "Owned Item 1", status: "owned" }),
+      item({ id: 21, name: "Owned Item 2", status: "owned", useFrequency: "daily" }),
+      item({ id: 22, name: "In Purgatory", status: "purgatory" }),
+      item({ id: 23, name: "Sold Item", status: "sold" }),
+    ], { query: "", status: "owned", category: "all" })),
+    ["Owned Item 1", "Owned Item 2"]);
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

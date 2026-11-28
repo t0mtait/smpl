@@ -247,7 +247,9 @@ export function filterItems(items: readonly Item[], filters: InventoryFilters): 
         key === "disposed" ||
         key === "closed";
 
-      if (filters.status === "offloaded") {
+      if (filters.status === "owned") {
+        if (item.status !== "owned" || isOffloaded || key === "purgatory") return false;
+      } else if (filters.status === "offloaded") {
         if (!isOffloaded) return false;
       } else if (filters.status === "offloaded_sold") {
         if (key !== "offloaded_sold" && key !== "sold") return false;

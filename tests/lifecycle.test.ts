@@ -164,15 +164,16 @@ const disposal = disposals.find((d) => d.itemId === item1.id);
 check("disposal record created with return proceeds", disposal?.amount === 275.0);
 check("disposal record disposition is sold", disposal?.disposition === "sold");
 
-// Create secondary item and test delete
+// Create secondary item and test duplicate and delete
 const tempItem = db.createItem(user.id, {
   name: "Cardboard Box",
   category: "home",
-  description: "",
-  location: "",
+  subcategory: "Storage",
+  description: "Moving box",
+  location: "Closet",
   purchaseDate: "2026-01-01",
   purchasePrice: 5,
-  currentValue: 0,
+  currentValue: 2,
   status: "owned",
   lastUsedAt: null,
   useFrequency: "rare",
@@ -180,6 +181,21 @@ const tempItem = db.createItem(user.id, {
   priority: "auto",
 });
 check("secondary item created", Boolean(tempItem));
+
+// Test item duplication
+const duplicatedItem = db.duplicateItem(user.id, tempItem.id);
+check("duplicateItem creates new item", Boolean(duplicatedItem && duplicatedItem.id !== tempItem.id));
+check("duplicated item has '(Copy)' suffix in name", duplicatedItem?.name === "Cardboard Box (Copy)");
+check("duplicated item preserves category", duplicatedItem?.category === "home");
+check("duplicated item preserves subcategory", duplicatedItem?.subcategory === "Storage");
+check("duplicated item preserves purchasePrice", duplicatedItem?.purchasePrice === 5);
+check("duplicated item preserves currentValue", duplicatedItem?.currentValue === 2);
+check("duplicated item status is owned", duplicatedItem?.status === "owned");
+
+// Delete duplicated item
+const deletedDup = db.deleteItem(user.id, duplicatedItem!.id);
+check("deleted duplicated item", deletedDup === true);
+
 const deleted = db.deleteItem(user.id, tempItem.id);
 check("deleteItem returns true", deleted === true);
 check("deleted item cannot be found", db.getItem(user.id, tempItem.id) === null);

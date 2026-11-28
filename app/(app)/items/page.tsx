@@ -15,7 +15,7 @@ import {
   getYearStyle,
 } from "@/lib/format";
 import { CategoryTag, Pagination, QualityIcon, StatusTag } from "@/components/ui";
-import { IconBox, IconFlame, IconPlus, IconSearch, IconSparkles, IconTag, IconTrash } from "@/components/icons";
+import { IconBox, IconCopy, IconFlame, IconPlus, IconSearch, IconSparkles, IconTag, IconTrash } from "@/components/icons";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { handleFormQuickSave } from "@/lib/keyboard";
 import {
@@ -33,7 +33,8 @@ function InventoryInner() {
   const params = useSearchParams();
   const [items, setItems] = useState<Item[] | null>(null);
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState(params.get("status") ?? "all");
+  const initialStatus = params.get("status");
+  const [status, setStatus] = useState(initialStatus === "owned" ? "all" : (initialStatus ?? "all"));
   const [category, setCategory] = useState(params.get("category") ?? "all");
   const [subcategory, setSubcategory] = useState("all");
   const [page, setPage] = useState(1);
@@ -73,6 +74,7 @@ function InventoryInner() {
   // Deletion state
   const [deletingItem, setDeletingItem] = useState<Item | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
+  const [duplicateBusy, setDuplicateBusy] = useState(false);
 
   // Bulk action state
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -269,6 +271,26 @@ function InventoryInner() {
       setError("Failed to delete item.");
     } finally {
       setDeleteBusy(false);
+    }
+  };
+
+  const handleDuplicate = async (id: number) => {
+    setDuplicateBusy(true);
+    try {
+      const res = await fetch(`/api/items/${id}/duplicate`, { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.item) {
+          setItems((prev) => (prev ? [data.item, ...prev] : [data.item]));
+          setEditingItem(null);
+        }
+      } else {
+        setError("Failed to duplicate item.");
+      }
+    } catch {
+      setError("Failed to duplicate item.");
+    } finally {
+      setDuplicateBusy(false);
     }
   };
 
@@ -881,6 +903,19 @@ function InventoryInner() {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
+                              handleDuplicate(item.id);
+                            }}
+                            title="Duplicate item"
+                            disabled={duplicateBusy}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-wash hover:text-ink disabled:opacity-50"
+                          >
+                            <IconCopy width={16} height={16} />
+                            <span className="sr-only">Duplicate item</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
                               moveToPurgatory(item.id);
                             }}
                             title="Move to Purgatory"
@@ -1121,14 +1156,25 @@ function InventoryInner() {
             </div>
 
             <div className="flex items-center justify-between gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setDeletingItem(editingItem)}
-                className="btn-danger inline-flex items-center gap-1.5 text-xs py-1.5 px-3"
-              >
-                <IconTrash width={14} height={14} />
-                Delete item
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDeletingItem(editingItem)}
+                  className="btn-danger inline-flex items-center gap-1.5 text-xs py-1.5 px-3"
+                >
+                  <IconTrash width={14} height={14} />
+                  Delete item
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDuplicate(editingItem.id)}
+                  disabled={duplicateBusy || editBusy}
+                  className="btn border border-line inline-flex items-center gap-1.5 text-xs py-1.5 px-3 hover:bg-wash"
+                >
+                  <IconCopy width={14} height={14} />
+                  {duplicateBusy ? "Duplicating…" : "Duplicate"}
+                </button>
+              </div>
               <div className="flex gap-2">
                 <button
                   type="button"

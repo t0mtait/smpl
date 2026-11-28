@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { User } from "@/lib/db";
@@ -59,6 +59,14 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
   const [categories, setCategories] = useState<UserCategoryData[]>(initialCategories);
   const [catBusy, setCatBusy] = useState(false);
   const [catError, setCatError] = useState<string | null>(null);
+  const [justAddedSubcat, setJustAddedSubcat] = useState<{ category: string; sub: string } | null>(null);
+
+  // Keep categories in sync with server revalidations
+  useEffect(() => {
+    if (initialCategories && initialCategories.length > 0) {
+      setCategories(initialCategories);
+    }
+  }, [initialCategories]);
 
   // New category input
   const [newCatName, setNewCatName] = useState("");
@@ -159,39 +167,120 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
 
   const handleAddSubcategory = async (category: string) => {
     const sub = (newSubcatNames[category] || "").trim();
-    if (!sub) return;
+    if (!sub || catBusy) return;
+
+    // Check if subcategory already exists (case-insensitive)
+    const catObj = categories.find((c) => c.category.toLowerCase() === category.toLowerCase());
+    if (catObj && catObj.subcategories.some((s) => s.toLowerCase() === sub.toLowerCase())) {
+      setCatError(`Subcategory "${sub}" already exists in ${formatCategory(category)}`);
+      const existingMatch = catObj.subcategories.find((s) => s.toLowerCase() === sub.toLowerCase());
+      if (existingMatch) {
+        setJustAddedSubcat({ category, sub: existingMatch });
+        setTimeout(() => setJustAddedSubcat(null), 2500);
+      }
+      return;
+    }
+
+    // Free tier limitation check
+    if (!isPro && catObj && catObj.subcategories.length >= 2) {
+      setCatError("Free plan is limited to 2 subcategories per category. Upgrade to Pro for unlimited subcategories.");
+      return;
+    }
+
+    // Ensure category is open/expanded so user sees the addition immediately
+    setExpandedCats((prev) => ({ ...prev, [category]: true }));
+
+    // Optimistic UI update: immediately insert the new subcategory in sorted order
+    const previousCategories = categories;
+    setCategories((prev) =>
+      prev.map((c) => {
+        if (c.category.toLowerCase() === category.toLowerCase()) {
+          const nextSubs = Array.from(new Set([...c.subcategories, sub])).sort((a, b) =>
+            a.localeCompare(b)
+          );
+          return { ...c, subcategories: nextSubs };
+        }
+        return c;
+      })
+    );
+
+    // Clear input field immediately
+    setNewSubcatNames((prev) => ({ ...prev, [category]: "" }));
+
+    // Highlight the newly added subcategory pill
+    setJustAddedSubcat({ category, sub });
+    setTimeout(() => {
+      setJustAddedSubcat((curr) => (curr?.category === category && curr?.sub === sub ? null : curr));
+    }, 2500);
+
     const ok = await mutateCategories({
       action: "add_subcategory",
       category,
       subcategory: sub,
     });
-    if (ok) {
-      setNewSubcatNames((prev) => ({ ...prev, [category]: "" }));
+
+    if (!ok) {
+      // Rollback on server error
+      setCategories(previousCategories);
+      setJustAddedSubcat(null);
     }
   };
 
   const handleRenameSubcategory = async (category: string, oldSub: string) => {
-    if (!editSubcatName.trim() || editSubcatName.trim() === oldSub) {
+    const nextSub = editSubcatName.trim();
+    if (!nextSub || nextSub === oldSub) {
       setEditingSubcat(null);
       return;
     }
+    const previousCategories = categories;
+
+    // Optimistic rename
+    setCategories((prev) =>
+      prev.map((c) => {
+        if (c.category.toLowerCase() === category.toLowerCase()) {
+          const nextSubs = c.subcategories.map((s) => (s === oldSub ? nextSub : s)).sort((a, b) => a.localeCompare(b));
+          return { ...c, subcategories: nextSubs };
+        }
+        return c;
+      })
+    );
+    setEditingSubcat(null);
+
     const ok = await mutateCategories({
       action: "rename_subcategory",
       category,
       oldSubcategory: oldSub,
-      newSubcategory: editSubcatName.trim(),
+      newSubcategory: nextSub,
     });
-    if (ok) setEditingSubcat(null);
+    if (!ok) {
+      setCategories(previousCategories);
+    }
   };
 
   const handleConfirmDeleteSubcategory = async () => {
     if (!subcatToDelete) return;
-    await mutateCategories({
-      action: "delete_subcategory",
-      category: subcatToDelete.category,
-      subcategory: subcatToDelete.sub,
-    });
+    const { category, sub } = subcatToDelete;
+    const previousCategories = categories;
+
+    // Optimistic delete
+    setCategories((prev) =>
+      prev.map((c) => {
+        if (c.category.toLowerCase() === category.toLowerCase()) {
+          return { ...c, subcategories: c.subcategories.filter((s) => s !== sub) };
+        }
+        return c;
+      })
+    );
     setSubcatToDelete(null);
+
+    const ok = await mutateCategories({
+      action: "delete_subcategory",
+      category,
+      subcategory: sub,
+    });
+    if (!ok) {
+      setCategories(previousCategories);
+    }
   };
 
   const handleSubscribe = async (
@@ -754,11 +843,18 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                         {c.subcategories.map((sub) => {
                           const isEditingSub =
                             editingSubcat?.category === c.category && editingSubcat?.oldSub === sub;
+                          const isJustAdded =
+                            justAddedSubcat?.category.toLowerCase() === c.category.toLowerCase() &&
+                            justAddedSubcat?.sub.toLowerCase() === sub.toLowerCase();
 
                           return (
                             <div
                               key={sub}
-                              className="inline-flex items-center rounded-md border border-line bg-card py-1.5 px-2.5 sm:py-0.5 sm:px-1.5 text-xs sm:text-[11px]"
+                              className={`inline-flex items-center rounded-md border py-1.5 px-2.5 sm:py-0.5 sm:px-1.5 text-xs sm:text-[11px] transition-all duration-300 ${
+                                isJustAdded
+                                  ? "border-accent bg-accent-soft text-accent ring-2 ring-accent/50 scale-105 font-semibold shadow-sm"
+                                  : "border-line bg-card"
+                              }`}
                             >
                               {isEditingSub ? (
                                 <div className="flex items-center gap-1">
@@ -830,6 +926,7 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                               type="text"
                               placeholder="+ Subcategory"
                               value={newSubcatNames[c.category] || ""}
+                              disabled={catBusy}
                               onChange={(e) =>
                                 setNewSubcatNames((prev) => ({
                                   ...prev,
@@ -837,12 +934,12 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                                 }))
                               }
                               onKeyDown={(e) => {
-                                if (e.key === "Enter") {
+                                if (e.key === "Enter" && !catBusy) {
                                   e.preventDefault();
                                   handleAddSubcategory(c.category);
                                 }
                               }}
-                              className="input py-1 px-2 sm:py-0.5 sm:px-1.5 text-xs sm:text-[11px] h-7 sm:h-6 w-28 sm:w-24 bg-card/60 focus:bg-card"
+                              className="input py-1 px-2 sm:py-0.5 sm:px-1.5 text-xs sm:text-[11px] h-7 sm:h-6 w-28 sm:w-24 bg-card/60 focus:bg-card disabled:opacity-50"
                             />
                             {(newSubcatNames[c.category] || "").trim() && (
                               <button
@@ -851,7 +948,7 @@ export default function AccountClient({ initialUser, initialCategories = [] }: A
                                 disabled={catBusy}
                                 className="btn-primary py-1 px-2 sm:py-0 sm:px-1.5 text-xs sm:text-[10px] h-7 sm:h-6"
                               >
-                                Add
+                                {catBusy ? "…" : "Add"}
                               </button>
                             )}
                           </div>
